@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35818.85 d17.13
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "projetodweb-connectify", "projetodweb-connectify.csproj", "{7EA42C3D-D2F0-43E0-ACD5-B3B7349663C2}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7EA42C3D-D2F0-43E0-ACD5-B3B7349663C2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7EA42C3D-D2F0-43E0-ACD5-B3B7349663C2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7EA42C3D-D2F0-43E0-ACD5-B3B7349663C2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7EA42C3D-D2F0-43E0-ACD5-B3B7349663C2}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {04FD0D1C-8B89-4024-9CFC-7D55269FA2E7}
+	EndGlobalSection
+EndGlobal
