@@ -21,8 +21,8 @@ namespace projetodweb_connectify.Models
         /// <summary>
         // propriedades de navegação para os utilizadores
         /// </summary>
-        public User User1 { get; set; }
-        public User User2 { get; set; }
+        public Users User1 { get; set; }
+        public Users User2 { get; set; }
 
         /// <summary>
         // data de criação da amizade

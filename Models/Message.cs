@@ -35,7 +35,7 @@ namespace projetodweb_connectify.Models
         /// <summary>
         /// propriedade de navegação para o utilizador que enviou a mensagem.
         /// </summary>
-        public virtual User Sender { get; set; }
+        public virtual Users Sender { get; set; }
 
         /// <summary>
         /// lista de destinatários da mensagem.

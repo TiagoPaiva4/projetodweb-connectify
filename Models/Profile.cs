@@ -23,7 +23,7 @@ namespace projetodweb_connectify.Models
         /// <summary>
         /// referência para o utilizador dono do perfil.
         /// </summary>
-        public User User { get; set; }
+        public Users User { get; set; }
 
         /// <summary>
         /// tipo de perfil: pessoal ou público

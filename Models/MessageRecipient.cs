@@ -33,6 +33,6 @@ namespace projetodweb_connectify.Models
         /// <summary>
         /// propriedade de navegação para o utilizador destinatário.
         /// </summary>
-        public virtual User Recipient { get; set; }
+        public virtual Users Recipient { get; set; }
     }
 }
