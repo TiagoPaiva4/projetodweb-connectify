@@ -16,16 +16,19 @@ namespace projetodweb_connectify.Models
         public int Id { get; set; }
 
         /// <summary>
-        /// nome de utilizador escolhido pelo utilizador. 
+        /// nome de utilizador escolhido pelo utilizador.
+        /// este atributo servirá para fazer a 'ponte'
+        /// entre a tabela dos Utilizadores e a 
+        /// tabela da Autenticação da Microsoft Identity
         /// </summary>
         [Required, MaxLength(50)]
-        public string Username { get; set; }
+        public string Username { get; set; } = string.Empty;
 
         /// <summary>
         /// endereço de email do utilizador. 
         /// </summary>
         [Required, MaxLength(100)]
-        public string Email { get; set; }
+        public string Email { get; set; } = string.Empty;
 
         /// <summary>
         /// número de telemóvel do utilizador
@@ -33,7 +36,7 @@ namespace projetodweb_connectify.Models
         [Display(Name = "Phone")]
         [StringLength(18)]
         [RegularExpression("(([+]|00)[0-9]{1,5})?[1-9][0-9]{5,10}", ErrorMessage = "Escreva um nº de telefone. Pode adicionar indicativo do país.")]
-        public string Phone { get; set; }
+        public string? Phone { get; set; }
         /*  9[1236][0-9]{7}  --> nºs telemóvel nacional
          *  (([+]|00)[0-9]{1,5})?[1-9][0-9]{5,10}  -->  nºs telefone internacionais
         */
@@ -43,7 +46,7 @@ namespace projetodweb_connectify.Models
         /// </summary>
         [Display(Name ="Password")]
         [Required]
-        public string PasswordHash { get; set; }
+        public string PasswordHash { get; set; } = string.Empty;
 
         /// <summary>
         /// data e hora de criação do utilizador. 
@@ -51,20 +54,20 @@ namespace projetodweb_connectify.Models
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
- 
+
         /// <summary>
         /// lista de perfis associados ao utilizador.
         /// </summary>
-        public ICollection<Profile> Profiles { get; set; }
+        public ICollection<Profile> Profiles { get; set; } = new List<Profile>();
 
         /// <summary>
         // propriedades de navegação para as amizades iniciadas (User1Id)
         /// </summary>
-        public ICollection<Friendship> FriendshipsInitiated { get; set; }
+        public ICollection<Friendship> FriendshipsInitiated { get; set; } = new List<Friendship>();
 
         /// <summary>
         // propriedades de navegação para as amizades recebidas (User2Id)
         /// </summary>
-        public ICollection<Friendship> FriendshipsReceived { get; set; }
+        public ICollection<Friendship> FriendshipsReceived { get; set; } = new List<Friendship>();
     }
 }

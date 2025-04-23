@@ -11,13 +11,11 @@ namespace projetodweb_connectify.Models
         /// <summary>
         /// identificador da mensagem.
         /// </summary>
-        [ForeignKey("Message")]
         public int MessageId { get; set; }
 
         /// <summary>
         /// identificador do utilizador destinatário.
         /// </summary>
-        [ForeignKey("Recipient")]
         public int RecipientId { get; set; }
 
         /// <summary>
@@ -28,11 +26,13 @@ namespace projetodweb_connectify.Models
         /// <summary>
         /// propriedade de navegação para a mensagem.
         /// </summary>
-        public virtual Message Message { get; set; }
+        [ForeignKey(nameof(MessageId))]
+        public virtual Message Message { get; set; } = null!;
 
         /// <summary>
         /// propriedade de navegação para o utilizador destinatário.
         /// </summary>
-        public virtual Users Recipient { get; set; }
+        [ForeignKey(nameof(RecipientId))]
+        public virtual Users Recipient { get; set; } = null!;
     }
 }

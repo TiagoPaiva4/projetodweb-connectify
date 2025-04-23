@@ -92,7 +92,24 @@ public class ApplicationDbContext : IdentityDbContext
         .HasDefaultValueSql("CURRENT_TIMESTAMP"); // Para SQL Server ou SQLite
 
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Friendship>()
+        .HasKey(f => new { f.User1Id, f.User2Id });
+
+        modelBuilder.Entity<Friendship>()
+            .HasOne(f => f.User1)
+            .WithMany(u => u.FriendshipsInitiated)
+            .HasForeignKey(f => f.User1Id)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Friendship>()
+            .HasOne(f => f.User2)
+            .WithMany(u => u.FriendshipsReceived)
+            .HasForeignKey(f => f.User2Id)
+            .OnDelete(DeleteBehavior.Restrict);
     }
+
+
 }
 
 

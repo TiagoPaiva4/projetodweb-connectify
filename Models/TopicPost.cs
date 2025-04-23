@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace projetodweb_connectify.Models
 {
@@ -23,7 +24,8 @@ namespace projetodweb_connectify.Models
         /// <summary>
         /// referência para o tópico associado a esta publicação.
         /// </summary>
-        public Topic Topic { get; set; }
+        [ForeignKey(nameof(TopicId))]
+        public Topic Topic { get; set; } = null!;
 
         /// <summary>
         /// identificador do perfil que criou a publicação.
@@ -34,13 +36,15 @@ namespace projetodweb_connectify.Models
         /// <summary>
         /// referência para o perfil do autor da publicação.
         /// </summary>
-        public Profile Profile { get; set; }
+        [ForeignKey(nameof(ProfileId))]
+        public Profile Profile { get; set; } = null!;
 
         /// <summary>
         /// conteúdo da publicação.
         /// </summary>
         [Required]
-        public string Content { get; set; }
+        [MaxLength(3000)]
+        public string Content { get; set; } = string.Empty;
 
         /// <summary>
         /// data e hora em que a publicação foi criada.
@@ -50,6 +54,6 @@ namespace projetodweb_connectify.Models
         /// <summary>
         /// lista de comentários associados a esta publicação.
         /// </summary>
-        public ICollection<TopicComment> Comments { get; set; }
+        public ICollection<TopicComment> Comments { get; set; } = new List<TopicComment>();
     }
 }

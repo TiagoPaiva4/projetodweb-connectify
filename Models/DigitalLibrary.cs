@@ -24,23 +24,23 @@ namespace projetodweb_connectify.Models
         /// <summary>
         /// referência para o perfil do utilizador que adicionou o recurso.
         /// </summary>
-        public Profile Profile { get; set; }
+        public Profile Profile { get; set; } = null!;
 
         /// <summary>
         /// título do recurso digital.
         /// </summary>
         [Required, MaxLength(255)]
-        public string Title { get; set; }
+        public string Title { get; set; } = string.Empty;
 
         /// <summary>
         /// descrição opcional do recurso digital.
         /// </summary>
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
         /// <summary>
         /// link para aceder ao recurso digital.
         /// </summary>
-        public string ResourceLink { get; set; }
+        public string? ResourceLink { get; set; }
 
         /// <summary>
         /// data e hora em que o recurso foi adicionado à biblioteca.

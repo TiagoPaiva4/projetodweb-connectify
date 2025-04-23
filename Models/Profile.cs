@@ -23,23 +23,24 @@ namespace projetodweb_connectify.Models
         /// <summary>
         /// referência para o utilizador dono do perfil.
         /// </summary>
-        public Users User { get; set; }
+        public Users User { get; set; } = null!;
 
         /// <summary>
         /// tipo de perfil: pessoal ou público
         /// </summary>
-        [Required]
-        public string Type { get; set; }
+        [Required, MaxLength(50)]
+        public string Type { get; set; } = string.Empty;
 
         /// <summary>
         /// biografia do utilizador, onde pode adicionar uma breve descrição sobre si.
         /// </summary>
-        public string Bio { get; set; }
+        [MaxLength(1000)]
+        public string? Bio { get; set; }
 
         /// <summary>
         /// url da foto de perfil do utilizador.
         /// </summary>
-        public string ProfilePicture { get; set; }
+        public string? ProfilePicture { get; set; }
 
         /// <summary>
         /// data e hora de criação do perfil. 
