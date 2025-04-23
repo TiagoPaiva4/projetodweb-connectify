@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace projetodweb_connectify.Models
 {
@@ -18,12 +19,13 @@ namespace projetodweb_connectify.Models
         /// título do tópico.
         /// </summary>
         [Required, MaxLength(255)]
-        public string Title { get; set; }
+        public string Title { get; set; } = string.Empty;
 
         /// <summary>
         /// descrição do tópico.
         /// </summary>
-        public string Description { get; set; }
+        [MaxLength(2000)]
+        public string? Description { get; set; }
 
         /// <summary>
         /// identificador do utilizador que criou o tópico.
@@ -34,7 +36,8 @@ namespace projetodweb_connectify.Models
         /// <summary>
         /// referência para o perfil do criador do tópico.
         /// </summary>
-        public Profile Creator { get; set; }
+        [ForeignKey(nameof(CreatedBy))]
+        public Profile Creator { get; set; } = null!;
 
         /// <summary>
         /// data e hora em que o tópico foi criado.

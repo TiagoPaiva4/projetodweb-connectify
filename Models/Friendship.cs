@@ -21,8 +21,17 @@ namespace projetodweb_connectify.Models
         /// <summary>
         // propriedades de navegação para os utilizadores
         /// </summary>
-        public Users User1 { get; set; }
-        public Users User2 { get; set; }
+        
+        /// <summary>
+        /// Utilizador que iniciou a amizade.
+        /// </summary>
+        [ForeignKey(nameof(User1Id))]
+        public Users User1 { get; set; } = null!;
+        /// <summary>
+        /// Utilizador que recebeu a amizade.
+        /// </summary>
+        [ForeignKey(nameof(User2Id))]
+        public Users User2 { get; set; } = null!;
 
         /// <summary>
         // data de criação da amizade
@@ -30,17 +39,7 @@ namespace projetodweb_connectify.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         /// <summary>
-        // chave primária composta (User1Id, User2Id)
-        /// </summary>
-        [Key]
-        public int Id
-        {
-            get { return 0; }
-            set { }
-        }
-
-        /// <summary>
-        // garante que User1Id e User2Id não são iguais
+        /// Valida se os utilizadores são diferentes.
         /// </summary>
         public static bool IsValidFriendship(int user1Id, int user2Id)
         {
