@@ -85,6 +85,13 @@ public class ApplicationDbContext : IdentityDbContext
         // Definir chave primária composta para MessageRecipient
         modelBuilder.Entity<MessageRecipient>()
             .HasKey(mr => new { mr.MessageId, mr.RecipientId });
+
+        // Guarda automaticamente a data e hora em que o utilizador se registou 
+        modelBuilder.Entity<Users>()
+        .Property(u => u.CreatedAt)
+        .HasDefaultValueSql("CURRENT_TIMESTAMP"); // Para SQL Server ou SQLite
+
+        base.OnModelCreating(modelBuilder);
     }
 }
 
