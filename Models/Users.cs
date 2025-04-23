@@ -16,7 +16,10 @@ namespace projetodweb_connectify.Models
         public int Id { get; set; }
 
         /// <summary>
-        /// nome de utilizador escolhido pelo utilizador. 
+        /// nome de utilizador escolhido pelo utilizador.
+        /// este atributo servirá para fazer a 'ponte'
+        /// entre a tabela dos Utilizadores e a 
+        /// tabela da Autenticação da Microsoft Identity
         /// </summary>
         [Required, MaxLength(50)]
         public string Username { get; set; } = string.Empty;
