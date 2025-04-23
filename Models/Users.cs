@@ -51,7 +51,7 @@ namespace projetodweb_connectify.Models
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-
+ 
         /// <summary>
         /// lista de perfis associados ao utilizador.
         /// </summary>
