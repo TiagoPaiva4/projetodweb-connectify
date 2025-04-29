@@ -19,6 +19,11 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 
+using projetodweb_connectify.Data;
+using projetodweb_connectify.Models;
+
+
+
 namespace projetodweb_connectify.Areas.Identity.Pages.Account
 {
     public class RegisterModel : PageModel
@@ -59,44 +64,49 @@ namespace projetodweb_connectify.Areas.Identity.Pages.Account
         public string ReturnUrl { get; set; }
 
         /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
+        /// Se estiver especificado a Autenticação por outros fornecedores
+        /// de autenticação, este atributo terá essa lista de outros fornecedores
         /// </summary>
         public IList<AuthenticationScheme> ExternalLogins { get; set; }
 
+
         /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
+        /// define os atributos que estarão presentes na interface da página
         /// </summary>
         public class InputModel
         {
             /// <summary>
-            ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-            ///     directly from your code. This API may change or be removed in future releases.
+            /// email do novo utilizador
             /// </summary>
-            [Required]
-            [EmailAddress]
+            [Required(ErrorMessage = "O {0} é de preenchimento obrigatório.")]
+            [EmailAddress(ErrorMessage = "Tem de escrever um {0} válido.")]
             [Display(Name = "Email")]
             public string Email { get; set; }
 
+
             /// <summary>
-            ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-            ///     directly from your code. This API may change or be removed in future releases.
+            /// password associada ao utilizador
             /// </summary>
-            [Required]
-            [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
+            [Required(ErrorMessage = "O {0} é de preenchimento obrigatório.")]
+            [StringLength(20, ErrorMessage = "A {0} tem de ter, pelo menos, {2} e um máximo de {1} caracteres.", MinimumLength = 6)]
             [DataType(DataType.Password)]
             [Display(Name = "Password")]
             public string Password { get; set; }
 
             /// <summary>
-            ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-            ///     directly from your code. This API may change or be removed in future releases.
+            /// confirmação da password
             /// </summary>
             [DataType(DataType.Password)]
-            [Display(Name = "Confirm password")]
-            [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
+            [Display(Name = "Confirmar password")]
+            [Compare(nameof(Password), ErrorMessage = "A password e a sua confirmação não coincidem.")]
             public string ConfirmPassword { get; set; }
+
+
+            /// <summary>
+            /// Incorporação dos dados de um Utilizador
+            /// no formulário de Registo
+            /// </summary>
+            public Users User { get; set; }
         }
 
 
