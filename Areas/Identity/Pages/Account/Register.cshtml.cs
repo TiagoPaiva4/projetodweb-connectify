@@ -53,16 +53,17 @@ namespace projetodweb_connectify.Areas.Identity.Pages.Account
           _context = context;
         }
 
-            /// <summary>
-            ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-            ///     directly from your code. This API may change or be removed in future releases.
-            /// </summary>
-            [BindProperty]
+
+        /// <summary>
+        /// este objeto será usado para fazer a transposição de dados entre este
+        /// ficheiro (de programação) e a sua respetiva visualização
+        /// </summary>
+        [BindProperty]
         public InputModel Input { get; set; }
 
         /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
+        /// se for instanciado, este atributo terá o link para onde a aplicação
+        /// será redirecionada, após Registo
         /// </summary>
         public string ReturnUrl { get; set; }
 
