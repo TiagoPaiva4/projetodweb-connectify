@@ -27,7 +27,6 @@ namespace projetodweb_connectify.Models
         /// <summary>
         /// endereço de email do utilizador. 
         /// </summary>
-        [Required, MaxLength(100)]
         public string Email { get; set; } = string.Empty;
 
         /// <summary>
@@ -44,8 +43,6 @@ namespace projetodweb_connectify.Models
         /// <summary>
         /// hash da password do utilizador para garantir segurança.
         /// </summary>
-        [Display(Name ="Password")]
-        [Required]
         public string PasswordHash { get; set; } = string.Empty;
 
         /// <summary>
