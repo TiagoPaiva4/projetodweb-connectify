@@ -8,11 +8,13 @@ using Microsoft.EntityFrameworkCore;
 using projetodweb_connectify.Data;
 using projetodweb_connectify.Models;
 
+
 namespace projetodweb_connectify.Controllers
 {
     public class ProfilesController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly ILogger<ProfilesController> _logger;
 
         public ProfilesController(ApplicationDbContext context)
         {
@@ -25,6 +27,31 @@ namespace projetodweb_connectify.Controllers
             var applicationDbContext = _context.Profiles.Include(p => p.User);
             return View(await applicationDbContext.ToListAsync());
         }
+
+        [HttpGet("Profiles/MyProfile")]
+        public async Task<IActionResult> MyProfile()
+        {
+            var email = User.Identity?.Name;
+
+            if (email == null)
+                return Unauthorized();
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == email);
+            Console.WriteLine("EMAIL DO LOGIN: " + user);
+
+            if (user == null)
+                return NotFound("Utilizador não encontrado.");
+
+            var profile = await _context.Profiles
+                .Include(p => p.User)
+                .FirstOrDefaultAsync(p => p.UserId == user.Id);
+
+            if (profile == null)
+                return NotFound("Perfil não encontrado.");
+
+            return View("Details", profile);
+        }
+
 
         // GET: Profiles/Details/5
         public async Task<IActionResult> Details(int? id)
