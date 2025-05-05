@@ -135,10 +135,11 @@ namespace projetodweb_connectify.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,UserId,Type,Bio,ProfilePicture,CreatedAt")] Profile profile)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,UserId,Name,Type,Bio,ProfilePicture,CreatedAt")] Profile profile)
         {
             if (id != profile.Id)
             {
+                Console.WriteLine($"[ERRO] ID da rota ({id}) é diferente do ID do perfil ({profile.Id}).");
                 return NotFound();
             }
 
@@ -146,6 +147,15 @@ namespace projetodweb_connectify.Controllers
             {
                 try
                 {
+                    Console.WriteLine("ModelState válido.");
+                    Console.WriteLine($"ID: {profile.Id}");
+                    Console.WriteLine($"UserID: {profile.UserId}");
+                    Console.WriteLine($"Name: {profile.Name}");
+                    Console.WriteLine($"Type: {profile.Type}");
+                    Console.WriteLine($"Bio: {profile.Bio}");
+                    Console.WriteLine($"ProfilePicture: {profile.ProfilePicture}");
+                    Console.WriteLine($"CreatedAt: {profile.CreatedAt}");
+
                     _context.Update(profile);
                     await _context.SaveChangesAsync();
                 }
@@ -157,6 +167,7 @@ namespace projetodweb_connectify.Controllers
                     }
                     else
                     {
+                        Console.WriteLine("[ERRO] Conflito de concorrência detectado.");
                         throw;
                     }
                 }

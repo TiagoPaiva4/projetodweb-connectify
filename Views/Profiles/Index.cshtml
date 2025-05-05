@@ -8,10 +8,10 @@
 
 <div class="card mt-4">
     <div class="card-body">
+        <img src="@Model.ProfilePicture" alt="Foto de Perfil" class="img-thumbnail" style="width: 100px; height: 100px;" />
         <h5 class="card-title">@Model.User.Username</h5>
         <p class="card-text"><strong>Nome:</strong> @Model.Name</p>
         <p class="card-text"><strong>Bio:</strong> @Model.Bio</p>
-        <p class="card-text"><strong>Foto:</strong> @Model.ProfilePicture</p>
         <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Editar Perfil</a>
     </div>
 </div>

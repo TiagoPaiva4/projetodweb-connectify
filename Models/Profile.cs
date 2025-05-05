@@ -49,7 +49,7 @@ namespace projetodweb_connectify.Models
         /// <summary>
         /// url da foto de perfil do utilizador.
         /// </summary>
-        public string? ProfilePicture { get; set; }
+        public string ProfilePicture { get; set; } = "/images/defaultuser.png";
 
         /// <summary>
         /// data e hora de criação do perfil. 
