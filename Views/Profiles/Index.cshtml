@@ -1,63 +1,17 @@
-﻿@model IEnumerable<projetodweb_connectify.Models.Profile>
+﻿@model projetodweb_connectify.Models.Profile
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "O Meu Perfil";
 }
 
-<h1>Index</h1>
+<h1>O Meu Perfil</h1>
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<p>
-    <a asp-action="MyProfile" class="btn btn-primary">Ver o Meu Perfil</a>
-</p>
-
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.User)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Type)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Bio)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.ProfilePicture)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.CreatedAt)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.User.Username)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Type)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Bio)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.ProfilePicture)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.CreatedAt)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-            </td>
-        </tr>
-}
-    </tbody>
-</table>
+<div class="card mt-4">
+    <div class="card-body">
+        <h5 class="card-title">@Model.User.Username</h5>
+        <p class="card-text"><strong>Nome:</strong> @Model.Name</p>
+        <p class="card-text"><strong>Bio:</strong> @Model.Bio</p>
+        <p class="card-text"><strong>Foto:</strong> @Model.ProfilePicture</p>
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Editar Perfil</a>
+    </div>
+</div>

@@ -24,9 +24,26 @@ namespace projetodweb_connectify.Controllers
         // GET: Profiles
         public async Task<IActionResult> Index()
         {
-            var applicationDbContext = _context.Profiles.Include(p => p.User);
-            return View(await applicationDbContext.ToListAsync());
+            var email = User.Identity?.Name;
+
+            if (email == null)
+                return Unauthorized();
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == email);
+
+            if (user == null)
+                return NotFound("Utilizador não encontrado.");
+
+            var profile = await _context.Profiles
+                .Include(p => p.User)
+                .FirstOrDefaultAsync(p => p.UserId == user.Id);
+
+            if (profile == null)
+                return NotFound("Perfil não encontrado.");
+
+            return View(profile); // envia diretamente o perfil
         }
+
 
         [HttpGet("Profiles/MyProfile")]
         public async Task<IActionResult> MyProfile()
