@@ -79,6 +79,13 @@ namespace projetodweb_connectify.Areas.Identity.Pages.Account
         /// </summary>
         public class InputModel
         {
+            /*
+            // Adicione os campos necessários para a sua entidade Users
+            [Required(ErrorMessage = "O {0} é de preenchimento obrigatório.")]
+            [MaxLength(50)]
+            [Display(Name = "Nome de Utilizador")]
+            public string Username { get; set; }*/
+
             /// <summary>
             /// email do novo utilizador
             /// </summary>
@@ -142,10 +149,7 @@ namespace projetodweb_connectify.Areas.Identity.Pages.Account
             {
                 var user = CreateUser();
 
-                /*
-                 * O USERNAME está a ser registado com o email, alterar isso!!!!!*
-                await _userStore.SetUserNameAsync(user, Input.User.Username, CancellationToken.None);
-                */
+   
 
                 // atribuir ao objeto 'user' o email e o username
                 await _emailStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
@@ -170,22 +174,24 @@ namespace projetodweb_connectify.Areas.Identity.Pages.Account
                     Input.User.Username = Input.Email;
                     try
                     {
-                        
-                        // Se a criação foi bem-sucedida, obtém o userId
-                        //var userId = await _userManager.GetUserIdAsync(user); 
-                        /*
-                        var novoPerfil = new Profile
-                        {
-                            
-                            
-                            Name = "Novo utilizador", // ou outro valor default
-                            Bio = "Teste", // ou null, se for permitido
-                                      // outros campos que queiras inicializar...
-                        };*/
-                        
-
                         _context.Add(Input.User);
                         await _context.SaveChangesAsync();
+
+                        
+                        // *** Obter o ID do User que acabou de ser guardado ***
+                        int registeredUserId = Input.User.Id;
+
+                        // *** Criar e guardar o Profile ***
+                        var newProfile = new Profile
+                        {
+                            UserId = registeredUserId,
+                            Name = Input.User.Username, // Ou outra lógica para o nome
+                            Type = "Pessoal", // Ou outro valor padrão
+                            CreatedAt = DateTime.UtcNow
+                        };
+                        _context.Profiles.Add(newProfile);
+                        await _context.SaveChangesAsync();
+                        
                     }
                     catch (Exception)
                     {
