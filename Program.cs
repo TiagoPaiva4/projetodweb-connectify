@@ -5,7 +5,13 @@ using projetodweb_connectify.Data;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnectionDocker") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
+// Builder Tiago
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
+// Builder M�rio 
+//var connectionString = builder.Configuration.GetConnectionString("DefaultConnectionDocker") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
@@ -22,8 +28,6 @@ builder.Services.AddSession(options => {
     options.Cookie.IsEssential = true;
 });
 builder.Services.AddDistributedMemoryCache();
-
-
 
 
 var app = builder.Build();
