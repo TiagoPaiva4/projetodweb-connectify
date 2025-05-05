@@ -142,8 +142,13 @@ namespace projetodweb_connectify.Areas.Identity.Pages.Account
             {
                 var user = CreateUser();
 
+                /*
+                 * O USERNAME está a ser registado com o email, alterar isso!!!!!*
+                await _userStore.SetUserNameAsync(user, Input.User.Username, CancellationToken.None);
+                */
+
                 // atribuir ao objeto 'user' o email e o username
-                await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
+                await _emailStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
                 await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
                 // guardar os dados do 'user' na BD, juntando-lhe a password
                 var result = await _userManager.CreateAsync(user, Input.Password);
@@ -165,6 +170,20 @@ namespace projetodweb_connectify.Areas.Identity.Pages.Account
                     Input.User.Username = Input.Email;
                     try
                     {
+                        
+                        // Se a criação foi bem-sucedida, obtém o userId
+                        //var userId = await _userManager.GetUserIdAsync(user); 
+                        /*
+                        var novoPerfil = new Profile
+                        {
+                            
+                            
+                            Name = "Novo utilizador", // ou outro valor default
+                            Bio = "Teste", // ou null, se for permitido
+                                      // outros campos que queiras inicializar...
+                        };*/
+                        
+
                         _context.Add(Input.User);
                         await _context.SaveChangesAsync();
                     }

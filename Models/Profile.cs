@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace projetodweb_connectify.Models
 {
@@ -18,12 +19,20 @@ namespace projetodweb_connectify.Models
         /// identificador do utilizador associado ao perfil.
         /// </summary>
         [Required]
-        public int UserId { get; set; }
+        public int UserId { get; set; } 
 
         /// <summary>
         /// referência para o utilizador dono do perfil.
         /// </summary>
+        [ForeignKey("UserId")]
         public Users User { get; set; } = null!;
+
+        /// <summary>
+        /// nome do utilizador associado ao perfil.
+        /// </summary>
+        [Required]
+        [MaxLength(100)]
+        public string Name { get; set; } = string.Empty;
 
         /// <summary>
         /// tipo de perfil: pessoal ou público

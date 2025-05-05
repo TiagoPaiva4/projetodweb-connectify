@@ -107,6 +107,12 @@ public class ApplicationDbContext : IdentityDbContext
             .WithMany(u => u.FriendshipsReceived)
             .HasForeignKey(f => f.User2Id)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Profile>()
+        .HasOne(p => p.User)
+        .WithMany(u => u.Profiles) // Aqui é necessário o nome da coleção
+        .HasForeignKey(p => p.UserId);
+
     }
 
 
