@@ -135,12 +135,9 @@ namespace projetodweb_connectify.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,UserId,Type,Bio,ProfilePicture,Name,CreatedAt")] Profile profile)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,UserId,Type,Bio,ProfilePicture,Name,CreatedAt")] Profile profile, IFormFile ProfilePicture)
 
         {
-            Console.WriteLine("Método Edit chamado.");
-            Console.WriteLine($"ID recebido: {id}");
-            Console.WriteLine($"ID do perfil: {profile.Id}");
             if (id != profile.Id)
             {
                 return NotFound();
@@ -151,6 +148,24 @@ namespace projetodweb_connectify.Controllers
                 Console.WriteLine("ModelState é válido.");
                 try
                 {
+                    if (ProfilePicture != null && ProfilePicture.Length > 0)
+                    {
+                        var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "profile");
+                        Directory.CreateDirectory(uploadsFolder); // Garante que a pasta existe
+
+                        var uniqueFileName = Guid.NewGuid().ToString() + Path.GetExtension(ProfilePicture.FileName);
+                        var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                        using (var stream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await ProfilePicture.CopyToAsync(stream);
+                        }
+
+                        // Atualiza o caminho da imagem no modelo
+                        profile.ProfilePicture = "/images/profile/" + uniqueFileName;
+                    }
+
+
                     _context.Update(profile);
                     await _context.SaveChangesAsync();
                 }
