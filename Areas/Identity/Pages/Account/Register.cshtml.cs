@@ -79,6 +79,13 @@ namespace projetodweb_connectify.Areas.Identity.Pages.Account
         /// </summary>
         public class InputModel
         {
+            /*
+            // Adicione os campos necessários para a sua entidade Users
+            [Required(ErrorMessage = "O {0} é de preenchimento obrigatório.")]
+            [MaxLength(50)]
+            [Display(Name = "Nome de Utilizador")]
+            public string Username { get; set; }*/
+
             /// <summary>
             /// email do novo utilizador
             /// </summary>
@@ -142,8 +149,10 @@ namespace projetodweb_connectify.Areas.Identity.Pages.Account
             {
                 var user = CreateUser();
 
+   
+
                 // atribuir ao objeto 'user' o email e o username
-                await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
+                await _emailStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
                 await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
                 // guardar os dados do 'user' na BD, juntando-lhe a password
                 var result = await _userManager.CreateAsync(user, Input.Password);
@@ -167,6 +176,22 @@ namespace projetodweb_connectify.Areas.Identity.Pages.Account
                     {
                         _context.Add(Input.User);
                         await _context.SaveChangesAsync();
+
+                        
+                        // *** Obter o ID do User que acabou de ser guardado ***
+                        int registeredUserId = Input.User.Id;
+
+                        // *** Criar e guardar o Profile ***
+                        var newProfile = new Profile
+                        {
+                            UserId = registeredUserId,
+                            Name = "", // Ou outra lógica para o nome
+                            Type = "Pessoal", // Ou outro valor padrão
+                            CreatedAt = DateTime.UtcNow
+                        };
+                        _context.Profiles.Add(newProfile);
+                        await _context.SaveChangesAsync();
+                        
                     }
                     catch (Exception)
                     {

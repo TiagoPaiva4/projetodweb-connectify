@@ -107,6 +107,14 @@ public class ApplicationDbContext : IdentityDbContext
             .WithMany(u => u.FriendshipsReceived)
             .HasForeignKey(f => f.User2Id)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Profile>()
+            .HasOne(p => p.User)
+            .WithOne(u => u.Profile)
+            .HasForeignKey<Profile>(p => p.UserId)
+            .OnDelete(DeleteBehavior.Restrict); // evitar que o User apague o perfil
+
+
     }
 
 
