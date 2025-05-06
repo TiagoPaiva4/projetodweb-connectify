@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace projetodweb_connectify.Models
 {
@@ -18,11 +19,12 @@ namespace projetodweb_connectify.Models
         /// <summary>
         /// identificador do utilizador associado ao perfil.
         /// </summary>
-        public int UserId { get; set; } 
+        public int UserId { get; set; }
 
         /// <summary>
         /// referência para o utilizador dono do perfil.
         /// </summary>
+        [ValidateNever]
         [ForeignKey("UserId")]
         public Users User { get; set; } = null!;
 
