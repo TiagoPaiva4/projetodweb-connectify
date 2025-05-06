@@ -13,12 +13,6 @@
     <thead>
         <tr>
             <th>
-                @Html.DisplayNameFor(model => model.IsPersonal)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.IsPrivate)
-            </th>
-            <th>
                 @Html.DisplayNameFor(model => model.Title)
             </th>
             <th>
@@ -36,12 +30,6 @@
     <tbody>
 @foreach (var item in Model) {
         <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.IsPersonal)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.IsPrivate)
-            </td>
             <td>
                 @Html.DisplayFor(modelItem => item.Title)
             </td>

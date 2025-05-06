@@ -54,7 +54,7 @@ namespace projetodweb_connectify.Controllers
                 return Unauthorized();
 
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == email);
-            Console.WriteLine("EMAIL DO LOGIN: " + user);
+            
 
             if (user == null)
                 return NotFound("Utilizador não encontrado.");
