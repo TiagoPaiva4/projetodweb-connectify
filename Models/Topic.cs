@@ -16,6 +16,16 @@ namespace projetodweb_connectify.Models
         public int Id { get; set; }
 
         /// <summary>
+        /// Indica se o tópico é o tópico pessoal do utilizador.
+        /// </summary>
+        public bool IsPersonal { get; set; } = false;
+
+        /// <summary>
+        /// Indica se o tópico é privado (apenas o utilizador e amigos podem ver).
+        /// </summary>
+        public bool IsPrivate { get; set; } = false;
+
+        /// <summary>
         /// título do tópico.
         /// </summary>
         [Required, MaxLength(255)]
