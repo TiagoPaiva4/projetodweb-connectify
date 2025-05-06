@@ -61,13 +61,60 @@ namespace projetodweb_connectify.Controllers
         {
             if (ModelState.IsValid)
             {
+                // Preenche automaticamente os campos IsPersonal, IsPrivate e CreatedAt
+                topic.IsPersonal = false;
+                topic.IsPrivate = false;
+                topic.CreatedAt = DateTime.UtcNow;
+
+                // Obter o e-mail do usuário logado
+                var email = User.Identity?.Name;
+
+                if (email == null)
+                {
+                    return Unauthorized();
+                }
+
+                // Buscar o usuário no banco de dados com o e-mail logado
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == email);
+
+                if (user == null)
+                {
+                    return NotFound("Utilizador não encontrado.");
+                }
+
+                // Buscar o perfil do usuário
+                var profile = await _context.Profiles
+                    .Include(p => p.User)
+                    .FirstOrDefaultAsync(p => p.UserId == user.Id);
+
+
+                // Atribuir o ID do usuário logado ao campo CreatedBy
+                topic.CreatedBy = user.Id;
+
+                // Atribuir o perfil do usuário à propriedade de navegação 'Creator'
+                topic.Creator = profile;
+
+                // Adicionar o tópico ao banco de dados
                 _context.Add(topic);
+
                 await _context.SaveChangesAsync();
+
                 return RedirectToAction(nameof(Index));
             }
+            foreach (var key in ModelState.Keys)
+            {
+                var state = ModelState[key];
+                foreach (var error in state.Errors)
+                {
+                    Console.WriteLine($"Erro no campo '{key}': {error.ErrorMessage}");
+                }
+            }
+
+            // Carregar as informações necessárias para a view, caso haja erros
             ViewData["CreatedBy"] = new SelectList(_context.Profiles, "Id", "Id", topic.CreatedBy);
             return View(topic);
         }
+
 
         // GET: Topics/Edit/5
         public async Task<IActionResult> Edit(int? id)

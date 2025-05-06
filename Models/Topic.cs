@@ -47,7 +47,7 @@ namespace projetodweb_connectify.Models
         /// referência para o perfil do criador do tópico.
         /// </summary>
         [ForeignKey(nameof(CreatedBy))]
-        public Profile Creator { get; set; } = null!;
+        public Profile? Creator { get; set; } 
 
         /// <summary>
         /// data e hora em que o tópico foi criado.
