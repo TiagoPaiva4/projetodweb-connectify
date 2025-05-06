@@ -185,7 +185,7 @@ namespace projetodweb_connectify.Areas.Identity.Pages.Account
                         var newProfile = new Profile
                         {
                             UserId = registeredUserId,
-                            Name = Input.User.Username, // Ou outra lógica para o nome
+                            Name = "", // Ou outra lógica para o nome
                             Type = "Pessoal", // Ou outro valor padrão
                             CreatedAt = DateTime.UtcNow
                         };

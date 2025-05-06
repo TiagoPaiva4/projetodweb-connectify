@@ -53,9 +53,9 @@ namespace projetodweb_connectify.Models
 
 
         /// <summary>
-        /// lista de perfis associados ao utilizador.
+        /// perfil associado ao utilizador.
         /// </summary>
-        public ICollection<Profile> Profiles { get; set; } = new List<Profile>();
+        public Profile? Profile { get; set; }
 
         /// <summary>
         // propriedades de navegação para as amizades iniciadas (User1Id)

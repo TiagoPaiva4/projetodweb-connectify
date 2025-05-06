@@ -135,27 +135,22 @@ namespace projetodweb_connectify.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,UserId,Name,Type,Bio,ProfilePicture,CreatedAt")] Profile profile)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,UserId,Type,Bio,ProfilePicture,Name,CreatedAt")] Profile profile)
+
         {
+            Console.WriteLine("Método Edit chamado.");
+            Console.WriteLine($"ID recebido: {id}");
+            Console.WriteLine($"ID do perfil: {profile.Id}");
             if (id != profile.Id)
             {
-                Console.WriteLine($"[ERRO] ID da rota ({id}) é diferente do ID do perfil ({profile.Id}).");
                 return NotFound();
             }
 
             if (ModelState.IsValid)
             {
+                Console.WriteLine("ModelState é válido.");
                 try
                 {
-                    Console.WriteLine("ModelState válido.");
-                    Console.WriteLine($"ID: {profile.Id}");
-                    Console.WriteLine($"UserID: {profile.UserId}");
-                    Console.WriteLine($"Name: {profile.Name}");
-                    Console.WriteLine($"Type: {profile.Type}");
-                    Console.WriteLine($"Bio: {profile.Bio}");
-                    Console.WriteLine($"ProfilePicture: {profile.ProfilePicture}");
-                    Console.WriteLine($"CreatedAt: {profile.CreatedAt}");
-
                     _context.Update(profile);
                     await _context.SaveChangesAsync();
                 }
@@ -167,15 +162,24 @@ namespace projetodweb_connectify.Controllers
                     }
                     else
                     {
-                        Console.WriteLine("[ERRO] Conflito de concorrência detectado.");
                         throw;
                     }
                 }
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["UserId"] = new SelectList(_context.Users, "Id", "Username", profile.UserId);
+            foreach (var key in ModelState.Keys)
+            {
+                var state = ModelState[key];
+                foreach (var error in state.Errors)
+                {
+                    Console.WriteLine($"Erro no campo '{key}': {error.ErrorMessage}");
+                }
+            }
+
+            Console.WriteLine("ModelState inválido. Retornando view com modelo.");
             return View(profile);
         }
+
 
         // GET: Profiles/Delete/5
         public async Task<IActionResult> Delete(int? id)

@@ -18,7 +18,6 @@ namespace projetodweb_connectify.Models
         /// <summary>
         /// identificador do utilizador associado ao perfil.
         /// </summary>
-        [Required]
         public int UserId { get; set; } 
 
         /// <summary>
@@ -30,15 +29,14 @@ namespace projetodweb_connectify.Models
         /// <summary>
         /// nome do utilizador associado ao perfil.
         /// </summary>
-        [Required]
         [MaxLength(100)]
         public string Name { get; set; } = string.Empty;
 
         /// <summary>
         /// tipo de perfil: pessoal ou público
         /// </summary>
-        [Required, MaxLength(50)]
-        public string Type { get; set; } = string.Empty;
+        [MaxLength(50)]
+        public string Type { get; set; } = "Pessoal";
 
         /// <summary>
         /// biografia do utilizador, onde pode adicionar uma breve descrição sobre si.

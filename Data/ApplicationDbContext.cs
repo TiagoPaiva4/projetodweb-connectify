@@ -109,9 +109,11 @@ public class ApplicationDbContext : IdentityDbContext
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Profile>()
-        .HasOne(p => p.User)
-        .WithMany(u => u.Profiles) // Aqui é necessário o nome da coleção
-        .HasForeignKey(p => p.UserId);
+            .HasOne(p => p.User)
+            .WithOne(u => u.Profile)
+            .HasForeignKey<Profile>(p => p.UserId)
+            .OnDelete(DeleteBehavior.Restrict); // evitar que o User apague o perfil
+
 
     }
 
