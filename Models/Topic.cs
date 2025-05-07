@@ -53,5 +53,10 @@ namespace projetodweb_connectify.Models
         /// data e hora em que o tópico foi criado.
         /// </summary>
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        /// <summary>
+        /// Lista de publicações associadas a este tópico.
+        /// </summary>
+        public ICollection<TopicPost> Posts { get; set; } = new List<TopicPost>();
     }
 }

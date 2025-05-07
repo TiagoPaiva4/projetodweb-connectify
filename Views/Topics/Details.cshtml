@@ -4,45 +4,70 @@
     ViewData["Title"] = "Details";
 }
 
-<h1>Details</h1>
+<h1>@Html.DisplayFor(model => model.Title)</h1>
+<p class="text-muted">@Html.DisplayFor(model => model.Description)</p>
 
 <div>
-    <h4>Topic</h4>
     <hr />
     <dl class="row">
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Title)
+        @* Removed Title and Description from here as they are displayed above more prominently *@
+        <dt class="col-sm-2">
+            Criado por
         </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Title)
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Creator.User.Username) @* Assuming Profile has User and User has Username *@
         </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Description)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Description)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Creator)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Creator.Id)
-        </dd>
-        <dt class = "col-sm-2">
+        <dt class="col-sm-2">
             @Html.DisplayNameFor(model => model.CreatedAt)
         </dt>
-        <dd class = "col-sm-10">
+        <dd class="col-sm-10">
             @Html.DisplayFor(model => model.CreatedAt)
         </dd>
     </dl>
 </div>
-<div>
+
+<div class="my-3">
     <a asp-controller="TopicPosts" asp-action="Create" asp-route-topicId="@Model.Id" class="btn btn-primary">
-        Nova Publicação
+        <i class="fas fa-plus-circle"></i> Nova Publicação
     </a>
 </div>
 
-<div>
-    <a asp-action="Edit" asp-route-id="@Model?.Id">Edit</a> |
-    <a asp-action="Index">Back to List</a>
+<hr />
+
+<h3>Publicações no Tópico</h3>
+
+@if (Model.Posts != null && Model.Posts.Any())
+{
+    foreach (var post in Model.Posts) // Already ordered by controller if you implemented that
+    {
+        <div class="card mb-3">
+            <div class="card-body">
+                <p class="card-text">@Html.Raw(System.Web.HttpUtility.HtmlEncode(post.Content).Replace("\n", "<br />"))</p>
+                <footer class="blockquote-footer">
+                    Publicado por <a asp-controller="Profiles" asp-action="Details" asp-route-id="@post.ProfileId">@(post.Profile?.User?.Username ?? "Utilizador Desconhecido")</a>
+                    em <span title="@post.CreatedAt.ToString("F")">@post.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                </footer>
+                @* You could add edit/delete links for posts here, checking post.ProfileId against logged-in user's profile ID *@
+                @*
+                @if (User.Identity.IsAuthenticated && post.Profile?.User?.UserName == User.Identity.Name)
+                {
+                    <div class="mt-2">
+                        <a asp-controller="TopicPosts" asp-action="Edit" asp-route-id="@post.Id" class="btn btn-sm btn-outline-secondary">Editar Post</a>
+                        <a asp-controller="TopicPosts" asp-action="Delete" asp-route-id="@post.Id" class="btn btn-sm btn-outline-danger">Apagar Post</a>
+                    </div>
+                }
+                *@
+            </div>
+        </div>
+    }
+}
+else
+{
+    <p>Ainda não existem publicações neste tópico. Seja o primeiro a publicar!</p>
+}
+
+<div class="mt-4">
+    <a asp-action="Index" class="btn btn-outline-info">
+        <i class="fas fa-arrow-left"></i> Voltar à Lista de Tópicos
+    </a>
 </div>

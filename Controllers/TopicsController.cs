@@ -34,12 +34,36 @@ namespace projetodweb_connectify.Controllers
                 return NotFound();
             }
 
+            // Log the ID being requested
+            Console.WriteLine($"Fetching details for Topic ID: {id}");
+
             var topic = await _context.Topics
-                .Include(t => t.Creator)
+                .Include(t => t.Creator) // Creator of the Topic
+                    .ThenInclude(c => c.User) // User who is the creator of the topic
+                .Include(t => t.Posts)    // <<-- CRUCIAL: Include the collection of posts
+                    .ThenInclude(p => p.Profile) // For each post, include its author's Profile
+                        .ThenInclude(profile => profile.User) // For each post's Profile, include the User
                 .FirstOrDefaultAsync(m => m.Id == id);
+
             if (topic == null)
             {
+                // Log if topic not found
+                Console.WriteLine($"Topic with ID: {id} not found.");
                 return NotFound();
+            }
+
+            // Log the number of posts found for this topic
+            if (topic.Posts != null)
+            {
+                Console.WriteLine($"Topic ID: {id} - Number of posts loaded: {topic.Posts.Count}");
+                // Order posts after loading and checking count
+                topic.Posts = topic.Posts.OrderByDescending(p => p.CreatedAt).ToList();
+            }
+            else
+            {
+                // This case should ideally not happen if .Include(t => t.Posts) is used,
+                // as EF Core usually initializes the collection.
+                Console.WriteLine($"Topic ID: {id} - Posts collection is NULL.");
             }
 
             return View(topic);

@@ -34,16 +34,28 @@ namespace projetodweb_connectify.Controllers
                 return NotFound();
             }
 
-            var topicPost = await _context.TopicPosts
-                .Include(t => t.Profile)
-                .Include(t => t.Topic)
+            var topic = await _context.Topics
+                .Include(t => t.Creator) // Creator of the Topic
+                    .ThenInclude(c => c.User) // User who is the creator of the topic
+                .Include(t => t.Posts)    // Include the collection of posts for this topic
+                    .ThenInclude(p => p.Profile) // For each post, include its author's Profile
+                        .ThenInclude(profile => profile.User) // For each post's Profile, include the User
                 .FirstOrDefaultAsync(m => m.Id == id);
-            if (topicPost == null)
+
+            if (topic == null)
             {
                 return NotFound();
             }
 
-            return View(topicPost);
+            // Optionally, sort posts if you want them in a specific order (e.g., newest first)
+            // This can also be done in the view, but doing it here can be cleaner.
+            if (topic.Posts != null)
+            {
+                topic.Posts = topic.Posts.OrderByDescending(p => p.CreatedAt).ToList();
+            }
+
+
+            return View(topic);
         }
 
         // GET: TopicPosts/Create
