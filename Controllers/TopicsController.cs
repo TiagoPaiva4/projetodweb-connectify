@@ -216,15 +216,37 @@ namespace projetodweb_connectify.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var topic = await _context.Topics.FindAsync(id);
-            if (topic != null)
-            {
-                _context.Topics.Remove(topic);
-            }
+            var email = User.Identity?.Name;
+            if (email == null)
+                return Unauthorized();
 
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == email);
+            if (user == null)
+                return Unauthorized();
+
+            var profile = await _context.Profiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+            if (profile == null)
+                return Unauthorized();
+
+            var topic = await _context.Topics.FindAsync(id);
+            if (topic == null)
+                return NotFound();
+
+            // Bloqueia a eliminação do tópico pessoail do utilizador
+            if (topic.IsPersonal && topic.IsPrivate)
+                return Forbid(); 
+
+            // Verifica se o utilizador é o criador
+            if (topic.CreatedBy != profile.Id)
+                return Forbid();
+
+            _context.Topics.Remove(topic);
             await _context.SaveChangesAsync();
+
             return RedirectToAction(nameof(Index));
         }
+
+
 
         private bool TopicExists(int id)
         {
