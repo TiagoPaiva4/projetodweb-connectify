@@ -21,7 +21,11 @@ using Microsoft.Extensions.Logging;
 
 using projetodweb_connectify.Data;
 using projetodweb_connectify.Models;
+
 using static System.Runtime.InteropServices.JavaScript.JSType;
+
+using projetodweb_connectify.Services.Email;
+
 
 
 
@@ -34,7 +38,7 @@ namespace projetodweb_connectify.Areas.Identity.Pages.Account
         private readonly IUserStore<IdentityUser> _userStore;
         private readonly IUserEmailStore<IdentityUser> _emailStore;
         private readonly ILogger<RegisterModel> _logger;
-        private readonly IEmailSender _emailSender;
+        private readonly ICustomEmailSender _emailSender;
         private readonly ApplicationDbContext _context;
 
         public RegisterModel(
@@ -42,7 +46,7 @@ namespace projetodweb_connectify.Areas.Identity.Pages.Account
           IUserStore<IdentityUser> userStore,
           SignInManager<IdentityUser> signInManager,
           ILogger<RegisterModel> logger,
-          IEmailSender emailSender,
+          ICustomEmailSender emailSender,
           ApplicationDbContext context
           ) {
           _userManager = userManager;
@@ -231,9 +235,10 @@ namespace projetodweb_connectify.Areas.Identity.Pages.Account
                             protocol: Request.Scheme);
 
                         // criar o email e enviá-lo
-                        await _emailSender.SendEmailAsync(Input.Email, "Confirm your email",
-                            $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
-
+                        //await _emailSender.SendEmailAsync(Input.Email, "Confirm your email",
+                        //    $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+                        await _emailSender.SendEmailAsync(Input.Email, Input.User.Username ?? Input.Email, callbackUrl);
+                        
                         // Se tiver sido definido que o Registo deve ser seguido de validação do
                         // email, redireciona para a página de Confirmação de Registo de um novo Utilizador
                         // este parâmetro está escrito no ficheiro 'Program.cs'
