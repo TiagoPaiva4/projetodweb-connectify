@@ -16,6 +16,16 @@ namespace projetodweb_connectify.Models
         public int Id { get; set; }
 
         /// <summary>
+        /// Indica se o tópico é o tópico pessoal do utilizador.
+        /// </summary>
+        public bool IsPersonal { get; set; } = false;
+
+        /// <summary>
+        /// Indica se o tópico é privado (apenas o utilizador e amigos podem ver).
+        /// </summary>
+        public bool IsPrivate { get; set; } = false;
+
+        /// <summary>
         /// título do tópico.
         /// </summary>
         [Required, MaxLength(255)]
@@ -37,7 +47,7 @@ namespace projetodweb_connectify.Models
         /// referência para o perfil do criador do tópico.
         /// </summary>
         [ForeignKey(nameof(CreatedBy))]
-        public Profile Creator { get; set; } = null!;
+        public Profile? Creator { get; set; } 
 
         /// <summary>
         /// data e hora em que o tópico foi criado.

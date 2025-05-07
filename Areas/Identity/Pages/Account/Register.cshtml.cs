@@ -21,7 +21,11 @@ using Microsoft.Extensions.Logging;
 
 using projetodweb_connectify.Data;
 using projetodweb_connectify.Models;
+
+using static System.Runtime.InteropServices.JavaScript.JSType;
+
 using projetodweb_connectify.Services.Email;
+
 
 
 
@@ -191,6 +195,19 @@ namespace projetodweb_connectify.Areas.Identity.Pages.Account
                             CreatedAt = DateTime.UtcNow
                         };
                         _context.Profiles.Add(newProfile);
+                        await _context.SaveChangesAsync();
+
+                        
+                        var personalTopic = new Topic
+                        {
+                            Title = "Publicações Pessoais",
+                            Description = "Tópico privado para o utilizador.",
+                            CreatedBy = newProfile.Id,
+                            IsPersonal = true,
+                            IsPrivate = true,
+                            CreatedAt = DateTime.UtcNow
+                        };
+                        _context.Topics.Add(personalTopic);
                         await _context.SaveChangesAsync();
                         
                     }
