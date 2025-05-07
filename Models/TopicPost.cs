@@ -25,7 +25,7 @@ namespace projetodweb_connectify.Models
         /// referência para o tópico associado a esta publicação.
         /// </summary>
         [ForeignKey(nameof(TopicId))]
-        public Topic Topic { get; set; } = null!;
+        public Topic? Topic { get; set; } 
 
         /// <summary>
         /// identificador do perfil que criou a publicação.
@@ -37,7 +37,7 @@ namespace projetodweb_connectify.Models
         /// referência para o perfil do autor da publicação.
         /// </summary>
         [ForeignKey(nameof(ProfileId))]
-        public Profile Profile { get; set; } = null!;
+        public Profile? Profile { get; set; }
 
         /// <summary>
         /// conteúdo da publicação.

@@ -66,7 +66,7 @@ namespace projetodweb_connectify.Controllers
                 topic.IsPrivate = false;
                 topic.CreatedAt = DateTime.UtcNow;
 
-                // Obter o e-mail do usuário logado
+                // Obter o e-mail do utilizador logado
                 var email = User.Identity?.Name;
 
                 if (email == null)
@@ -74,7 +74,7 @@ namespace projetodweb_connectify.Controllers
                     return Unauthorized();
                 }
 
-                // Buscar o usuário no banco de dados com o e-mail logado
+                // Buscar o utilizador no banco de dados com o e-mail logado
                 var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == email);
 
                 if (user == null)
@@ -82,16 +82,16 @@ namespace projetodweb_connectify.Controllers
                     return NotFound("Utilizador não encontrado.");
                 }
 
-                // Buscar o perfil do usuário
+                // Encontrar o perfil do utilizador
                 var profile = await _context.Profiles
                     .Include(p => p.User)
                     .FirstOrDefaultAsync(p => p.UserId == user.Id);
 
 
-                // Atribuir o ID do usuário logado ao campo CreatedBy
+                // Atribuir o ID do utilizador logado ao campo CreatedBy
                 topic.CreatedBy = user.Id;
 
-                // Atribuir o perfil do usuário à propriedade de navegação 'Creator'
+                // Atribuir o perfil do utilizador à propriedade de navegação 'Creator'
                 topic.Creator = profile;
 
                 // Adicionar o tópico ao banco de dados
