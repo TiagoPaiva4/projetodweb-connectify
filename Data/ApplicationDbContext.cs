@@ -47,6 +47,11 @@ public class ApplicationDbContext : IdentityDbContext
     /// </summary>
     public DbSet<TopicComment> TopicComments { get; set; }
 
+    /// <summary>
+    /// tabela SavedTopic na BD
+    /// </summary>
+    public DbSet<SavedTopic> SavedTopics { get; set; }
+
     public DbSet<Message> Messages { get; set; }
     public DbSet<MessageRecipient> MessageRecipients { get; set; }
 
@@ -114,7 +119,42 @@ public class ApplicationDbContext : IdentityDbContext
             .HasForeignKey<Profile>(p => p.UserId)
             .OnDelete(DeleteBehavior.Restrict); // evitar que o User apague o perfil
 
+        // --- Configure Composite Key for SavedTopic ---
+        modelBuilder.Entity<SavedTopic>()
+            .HasKey(st => new { st.ProfileId, st.TopicId }); 
 
+        // Profile -> SavedTopic (One-to-Many)
+        modelBuilder.Entity<SavedTopic>()
+            .HasOne(st => st.SaverProfile)
+            .WithMany(p => p.SavedTopics)
+            .HasForeignKey(st => st.ProfileId)
+            .OnDelete(DeleteBehavior.Cascade); // If profile deleted, remove their saved records
+
+        // Topic -> SavedTopic (One-to-Many)
+        modelBuilder.Entity<SavedTopic>()
+            .HasOne(st => st.Topic) 
+            .WithMany(t => t.Savers)
+            .HasForeignKey(st => st.TopicId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // --- Optional: Configure other relationships if needed ---
+        modelBuilder.Entity<TopicPost>()
+           .HasOne(tp => tp.Profile) // Assuming Profile is the navigation property name in TopicPost
+           .WithMany() // Profile doesn't need a collection of all TopicPosts it ever made across all topics here.
+           .HasForeignKey(tp => tp.ProfileId)
+           .OnDelete(DeleteBehavior.Restrict); // Prevent profile deletion if they have posts? Or Cascade? Decide based on your rules. Often Restrict is safer here initially.
+
+        modelBuilder.Entity<TopicPost>()
+           .HasOne(tp => tp.Topic)
+           .WithMany(t => t.Posts)
+           .HasForeignKey(tp => tp.TopicId)
+           .OnDelete(DeleteBehavior.Cascade); // If topic deleted, delete its posts
+
+        modelBuilder.Entity<Topic>()
+            .HasOne(t => t.Creator) // Assuming Creator is the navigation property name in Topic
+            .WithMany() // Profile doesn't necessarily need a direct collection of Topics it created here if already handled elsewhere or not needed.
+            .HasForeignKey(t => t.CreatedBy)
+            .OnDelete(DeleteBehavior.Restrict); // Prevent profile deletion if they created topics? Or Cascade? Often Restrict is safer.
     }
 
 

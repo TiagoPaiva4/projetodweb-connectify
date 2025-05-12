@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -22,8 +24,14 @@ namespace projetodweb_connectify.Controllers
         // GET: Topics
         public async Task<IActionResult> Index()
         {
-            var applicationDbContext = _context.Topics.Include(t => t.Creator);
-            return View(await applicationDbContext.ToListAsync());
+            // Eager load the Creator profile, and optionally the User associated with the creator profile
+            var topics = await _context.Topics
+                                     .Include(t => t.Creator)          // Include the Profile object of the creator
+                                      .ThenInclude(c => c.User)     // Include the User object linked to the creator's Profile
+                                     .Where(t => !t.IsPersonal)       // Exclude personal profile topics from the main index
+                                     .OrderByDescending(t => t.CreatedAt) // Optional: Order by creation date
+                                     .ToListAsync();
+            return View(topics);
         }
 
         // GET: Topics/Details/5
@@ -40,22 +48,18 @@ namespace projetodweb_connectify.Controllers
             var topic = await _context.Topics
                 .Include(t => t.Creator) // Creator of the Topic
                     .ThenInclude(c => c.User) // User who is the creator of the topic
-                .Include(t => t.Posts)    // <<-- CRUCIAL: Include the collection of posts
+                .Include(t => t.Posts)   
                     .ThenInclude(p => p.Profile) // For each post, include its author's Profile
                         .ThenInclude(profile => profile.User) // For each post's Profile, include the User
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (topic == null)
             {
-                // Log if topic not found
-                Console.WriteLine($"Topic with ID: {id} not found.");
                 return NotFound();
             }
 
-            // Log the number of posts found for this topic
             if (topic.Posts != null)
             {
-                Console.WriteLine($"Topic ID: {id} - Number of posts loaded: {topic.Posts.Count}");
                 // Order posts after loading and checking count
                 topic.Posts = topic.Posts.OrderByDescending(p => p.CreatedAt).ToList();
             }
@@ -110,7 +114,6 @@ namespace projetodweb_connectify.Controllers
                 var profile = await _context.Profiles
                     .Include(p => p.User)
                     .FirstOrDefaultAsync(p => p.UserId == user.Id);
-
 
                 // Atribuir o ID do utilizador logado ao campo CreatedBy
                 topic.CreatedBy = user.Id;
@@ -213,9 +216,6 @@ namespace projetodweb_connectify.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-
-
-
         // GET: Topics/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
@@ -270,11 +270,125 @@ namespace projetodweb_connectify.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-
-
-        private bool TopicExists(int id)
+        // POST: Topics/SaveTopic/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize] // <<< Ensure user MUST be logged in to save
+        public async Task<IActionResult> SaveTopic(int id) // id is TopicId
         {
-            return _context.Topics.Any(e => e.Id == id);
+            var topicToSave = await _context.Topics.FindAsync(id);
+            if (topicToSave == null)
+            {
+                return NotFound("Tópico não encontrado.");
+            }
+
+            // --- Get current user's Profile ID ---
+            var userEmail = User.Identity?.Name; // Using email as identifier
+            if (string.IsNullOrEmpty(userEmail))
+            {
+                return Unauthorized("Utilizador não identificado.");
+            }
+
+            var appUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == userEmail);
+            if (appUser == null)
+            {
+                // Should not happen if [Authorize] is working, but good practice
+                return Unauthorized("Conta de utilizador não encontrada.");
+            }
+
+            var userProfile = await _context.Profiles.FirstOrDefaultAsync(p => p.UserId == appUser.Id);
+            if (userProfile == null)
+            {
+                // User is logged in but doesn't have a profile yet.
+                // Redirect them to create one? Or just show an error.
+                TempData["ErrorMessage"] = "Precisa de criar um perfil antes de poder guardar tópicos.";
+                // Redirect to profile creation or MyProfile which might handle the creation flow
+                return RedirectToAction("MyProfile", "Profiles");
+                // Or: return Forbid("Perfil do utilizador não encontrado.");
+            }
+            int profileId = userProfile.Id;
+            // --- End Get Profile ID ---
+
+
+            // Check if already saved
+            bool alreadySaved = await _context.SavedTopics
+                                              .AnyAsync(st => st.TopicId == id && st.ProfileId == profileId);
+
+            if (!alreadySaved)
+            {
+                Console.WriteLine($"User Profile {profileId} saving Topic {id}");
+                var savedTopicEntry = new SavedTopic
+                {
+                    ProfileId = profileId,
+                    TopicId = id,
+                    SavedAt = DateTime.UtcNow
+                };
+                _context.SavedTopics.Add(savedTopicEntry);
+                await _context.SaveChangesAsync();
+                Console.WriteLine("Topic saved successfully.");
+                TempData["SuccessMessage"] = "Tópico guardado com sucesso!"; // Feedback
+            }
+            else
+            {
+                Console.WriteLine($"Topic {id} already saved by Profile {profileId}.");
+                TempData["InfoMessage"] = "Este tópico já está na sua lista de guardados."; // Feedback
+            }
+
+            // Redirect back to the Topic Index page after saving
+            return RedirectToAction(nameof(Index));
         }
+
+
+        // POST: Topics/UnsaveTopic/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UnsaveTopic(int id) // id is TopicId
+        {
+            // No need to find the Topic itself, just the SavedTopic entry
+
+            // Get current user's Profile ID
+            var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out int appUserId))
+            {
+                return Unauthorized("Utilizador não identificado.");
+            }
+            var userProfile = await _context.Profiles.FirstOrDefaultAsync(p => p.UserId == appUserId);
+            if (userProfile == null)
+            {
+                return NotFound("Perfil do utilizador não encontrado.");
+            }
+            int profileId = userProfile.Id;
+
+
+            // Find the saved entry
+            var savedTopicEntry = await _context.SavedTopics
+                                                .FirstOrDefaultAsync(st => st.TopicId == id && st.ProfileId == profileId);
+
+            if (savedTopicEntry != null)
+            {
+                Console.WriteLine($"User Profile {profileId} unsaving Topic {id}");
+                _context.SavedTopics.Remove(savedTopicEntry);
+                await _context.SaveChangesAsync();
+                Console.WriteLine("Topic unsaved successfully.");
+                TempData["SuccessMessage"] = "Tópico removido da sua lista de guardados."; // Feedback
+            }
+            else
+            {
+                Console.WriteLine($"Topic {id} was not found in saved list for Profile {profileId}.");
+                // Optionally provide feedback: TempData["InfoMessage"] = "Este tópico não estava na sua lista.";
+            }
+
+            // Redirect back to where the user was (usually their profile page or the topic page)
+            string? returnUrl = Request.Headers["Referer"].ToString();
+            if (!string.IsNullOrEmpty(returnUrl))
+            {
+                return Redirect(returnUrl);
+            }
+
+            // Fallback: If unsaving from profile, go back there. If from topic page, go there.
+            // This might need refinement based on where the unsave button is placed.
+            return RedirectToAction("MyProfile", "Profiles"); // Default fallback to profile
+        }
+
     }
 }

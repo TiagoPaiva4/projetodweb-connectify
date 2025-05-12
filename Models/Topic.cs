@@ -58,5 +58,12 @@ namespace projetodweb_connectify.Models
         /// Lista de publicações associadas a este tópico.
         /// </summary>
         public ICollection<TopicPost> Posts { get; set; } = new List<TopicPost>();
+
+
+        // --- NEW NAVIGATION PROPERTY for Savers ---
+        /// <summary>
+        /// Collection navigation property for the profiles that have saved this topic.
+        /// </summary>
+        public virtual ICollection<SavedTopic> Savers { get; set; } = new List<SavedTopic>(); // Renamed for clarity
     }
 }
