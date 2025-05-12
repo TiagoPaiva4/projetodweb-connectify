@@ -224,6 +224,31 @@ namespace projetodweb_connectify.Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("projetodweb_connectify.Models.Category", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CategoryImageUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Categories");
+                });
+
             modelBuilder.Entity("projetodweb_connectify.Models.DigitalLibrary", b =>
                 {
                     b.Property<int>("Id")
@@ -383,6 +408,9 @@ namespace projetodweb_connectify.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("CategoryId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -404,7 +432,12 @@ namespace projetodweb_connectify.Data.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
+                    b.Property<string>("TopicImageUrl")
+                        .HasColumnType("nvarchar(max)");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
 
                     b.HasIndex("CreatedBy");
 
@@ -651,11 +684,18 @@ namespace projetodweb_connectify.Data.Migrations
 
             modelBuilder.Entity("projetodweb_connectify.Models.Topic", b =>
                 {
+                    b.HasOne("projetodweb_connectify.Models.Category", "Category")
+                        .WithMany("Topics")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("projetodweb_connectify.Models.Profile", "Creator")
                         .WithMany()
                         .HasForeignKey("CreatedBy")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Category");
 
                     b.Navigation("Creator");
                 });
@@ -696,6 +736,11 @@ namespace projetodweb_connectify.Data.Migrations
                     b.Navigation("Profile");
 
                     b.Navigation("Topic");
+                });
+
+            modelBuilder.Entity("projetodweb_connectify.Models.Category", b =>
+                {
+                    b.Navigation("Topics");
                 });
 
             modelBuilder.Entity("projetodweb_connectify.Models.Message", b =>

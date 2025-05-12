@@ -38,6 +38,11 @@ public class ApplicationDbContext : IdentityDbContext
     public DbSet<Topic> Topics { get; set; }
 
     /// <summary>
+    /// tabela Category na BD
+    /// </summary>
+    public DbSet<Category> Categories { get; set; }
+
+    /// <summary>
     /// tabela TopicPosts na BD
     /// </summary>
     public DbSet<TopicPost> TopicPosts { get; set; }
@@ -136,6 +141,17 @@ public class ApplicationDbContext : IdentityDbContext
             .WithMany(t => t.Savers)
             .HasForeignKey(st => st.TopicId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Relação entre Topic e Category (EF Core deve inferir, mas pode ser explícito)
+        modelBuilder.Entity<Topic>()
+            .HasOne(t => t.Category)      // Um tópico tem uma categoria
+            .WithMany(c => c.Topics)      // Uma categoria tem muitos tópicos
+            .HasForeignKey(t => t.CategoryId) // A chave estrangeira em Topic é CategoryId
+            .OnDelete(DeleteBehavior.SetNull); // Ou .SetNull, ou .Cascade dependendo da sua política.
+                                                // Restrict: Impede a exclusão de uma categoria se houver tópicos nela.
+                                                // SetNull: Define CategoryId como null nos tópicos se a categoria for excluída (torna CategoryId anulável no Topic).
+                                                // Cascade: Exclui todos os tópicos da categoria se a categoria for excluída (geralmente não recomendado para categorias).
+
 
         // --- Optional: Configure other relationships if needed ---
         modelBuilder.Entity<TopicPost>()
