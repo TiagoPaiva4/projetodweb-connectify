@@ -8,11 +8,10 @@ using Microsoft.EntityFrameworkCore;
 using projetodweb_connectify.Data;
 using projetodweb_connectify.Models;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity; // If you're restricting access
 
 namespace projetodweb_connectify.Controllers
 {
-    [Authorize] // Apply authorization at controller level if most actions require it
+    [Authorize]
     public class ProfilesController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -44,190 +43,341 @@ namespace projetodweb_connectify.Controllers
                 return NotFound("Utilizador não encontrado.");
             }
 
+            Console.WriteLine($"User found: ID={appUser.Id}, Username={appUser.Username}");
+
+            // --- Fetch Profile with Eager Loading ---
             var profile = await _context.Profiles
-                                        .Include(p => p.User)
-                                        .FirstOrDefaultAsync(p => p.UserId == appUser.Id);
+                .Where(p => p.UserId == appUser.Id)
+                .Include(p => p.User)
+                // --- Load Saved Topics ---
+                .Include(p => p.SavedTopics)        // Include the SavedTopic join entities
+                    .ThenInclude(st => st.Topic)    // For each SavedTopic, include the actual Topic
+                    .ThenInclude(t => t.Creator)    // Include the creator of the saved topic (optional, but good to have)
+                    .ThenInclude(c => c.User)       // Include the User object for the creator (optional)
+                .FirstOrDefaultAsync();
 
             if (profile == null)
             {
                 return NotFound("Perfil não encontrado. Por favor, crie ou complete o seu perfil.");
             }
 
-            // --- Fetch Personal Topic and its Posts (TopicPost entities) ---
-            // Include the Posts (which are TopicPost entities) and their associated Profile (author)
+            Console.WriteLine($"Profile found: ID={profile.Id}, Name={profile.Name}");
+
+            // --- Populate DisplaySavedTopics ---
+            if (profile.SavedTopics != null)
+            {
+                // Order by WHEN the topic was SAVED (using SavedTopic.SavedAt)
+                profile.DisplaySavedTopics = profile.SavedTopics
+                    .OrderByDescending(st => st.SavedAt) // Order by the save date
+                    .Select(st => st.Topic)            // Select the Topic object itself
+                    .ToList();                         // Materialize the list
+                Console.WriteLine($"Loaded {profile.DisplaySavedTopics.Count} saved topics for display (ordered by save date).");
+            }
+            else
+            {
+                profile.DisplaySavedTopics = new List<Topic>();
+            }
+
+            // --- Fetch Personal Topic and its Posts (Remains the same) ---
             profile.PersonalTopic = await _context.Topics
-                .Include(t => t.Posts)                 // Include the collection of TopicPost
-                    .ThenInclude(tp => tp.Profile)     // Include the Profile (author) of each TopicPost
+                .Include(t => t.Posts)
+                    .ThenInclude(tp => tp.Profile)
                 .FirstOrDefaultAsync(t => t.CreatedBy == profile.Id && t.IsPersonal);
 
             if (profile.PersonalTopic != null)
             {
-                // Assign the TopicPost entities, ordered by newest first
-                // The 'Posts' collection on Topic *is* the ICollection<TopicPost>
                 profile.PersonalTopicPosts = profile.PersonalTopic.Posts
-                                                   .OrderByDescending(tp => tp.CreatedAt) // Order by TopicPost creation date
+                                                   .OrderByDescending(tp => tp.CreatedAt)
                                                    .ToList();
+                Console.WriteLine($"Loaded {profile.PersonalTopicPosts.Count} personal topic posts.");
             }
             else
             {
-                profile.PersonalTopicPosts = new List<TopicPost>(); // Ensure it's not null for the view
+                profile.PersonalTopicPosts = new List<TopicPost>();
+                Console.WriteLine("Personal topic not found or has no posts.");
             }
 
-            // --- Fetch OTHER Created Topics (Non-Personal, Non-Private) ---
-            Console.WriteLine($"Fetching non-personal, non-private topics where Topic.CreatedBy == {profile.Id}");
+            // --- Fetch OTHER Created Topics (Remains the same) ---
             profile.CreatedTopics = await _context.Topics
-                                           .Where(t => t.CreatedBy == profile.Id && !t.IsPersonal && !t.IsPrivate)
+                                           .Where(t => t.CreatedBy == profile.Id && !t.IsPersonal) // Removed the !IsPrivate check here, show all non-personal created ones
                                            .OrderByDescending(t => t.CreatedAt)
                                            .ToListAsync();
+            Console.WriteLine($"Loaded {profile.CreatedTopics.Count} other created topics.");
 
-            // Use the "Index" view
-            return View("Index", profile);
+            // --- Return the View ---
+            return View("Index", profile); // Pass the profile WITH DisplaySavedTopics populated
         }
-
-
 
         // GET: Profiles/Details/5
         public async Task<IActionResult> Details(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
+            if (id == null) return NotFound();
+            // Include User for display
+            // Include saved topics count/list if you want to show it on other people's profiles too
             var profile = await _context.Profiles
                 .Include(p => p.User)
+                // Example: Include count of saved topics for general profiles
+                // .Include(p => p.SavedTopics)
                 .FirstOrDefaultAsync(m => m.Id == id);
-            if (profile == null)
-            {
-                return NotFound();
-            }
+            if (profile == null) return NotFound();
 
             return View(profile);
         }
 
+
         // GET: Profiles/Create
         public IActionResult Create()
         {
-            ViewData["UserId"] = new SelectList(_context.Users, "Id", "Username");
+            // Should likely only be accessible if user DOES NOT have a profile yet
+            var userEmail = User.Identity?.Name;
+            if (string.IsNullOrEmpty(userEmail)) return Unauthorized();
+            var appUser = _context.Users.FirstOrDefault(u => u.Username == userEmail);
+            if (appUser != null)
+            {
+                bool profileExists = _context.Profiles.Any(p => p.UserId == appUser.Id);
+                if (profileExists)
+                {
+                    TempData["InfoMessage"] = "Já possui um perfil.";
+                    return RedirectToAction(nameof(MyProfile));
+                }
+            }
+            // Maybe pre-populate User details if possible, but UserId will be set on POST
             return View();
         }
 
         // POST: Profiles/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,UserId,Type,Bio,ProfilePicture,CreatedAt")] Profile profile)
+        public async Task<IActionResult> Create([Bind("Name,Type,Bio,ProfilePicture")] Profile profile) 
         {
+            var identityName = User.Identity?.Name;
+            var appUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == identityName);
+            if (appUser == null) return Unauthorized();
+
+            bool profileExists = await _context.Profiles.AnyAsync(p => p.UserId == appUser.Id);
+            if (profileExists)
+            {
+                ModelState.AddModelError(string.Empty, "Já existe um perfil para este utilizador.");
+            }
+
+            profile.UserId = appUser.Id;
+            profile.CreatedAt = DateTime.UtcNow;
+
+            // --- Create the Personal Topic ---
+            var personalTopic = new Topic
+            {
+                Title = $"Perfil de {profile.Name ?? appUser.Username}", 
+                Description = $"Posts pessoais de {profile.Name ?? appUser.Username}.",
+                IsPersonal = true,
+                IsPrivate = true, // Personal topics are usually private to the profile context
+                Creator = profile, // Link via navigation property
+                CreatedAt = DateTime.UtcNow
+                // CreatedBy will be set automatically if Creator is set and relationship is configured,
+                // otherwise set profile.Id after saving profile but before saving topic (needs two steps)
+            };
+            // Link the profile to the topic
+            profile.PersonalTopic = personalTopic; // Link navigation property
+
+            ModelState.Remove("User");
+            ModelState.Remove("SavedTopics");
+            ModelState.Remove("DisplaySavedTopics");
+            ModelState.Remove("PersonalTopic"); // Let EF handle this via navigation property
+            ModelState.Remove("PersonalTopicPosts");
+            ModelState.Remove("CreatedTopics");
+            ModelState.Remove("UserId");
+            ModelState.Remove("Id");
+            ModelState.Remove("CreatedAt");
+
+
             if (ModelState.IsValid)
             {
-                _context.Add(profile);
+                if (string.IsNullOrEmpty(profile.ProfilePicture))
+                {
+                    profile.ProfilePicture = "/images/defaultuser.png";
+                }
+
+                _context.Add(profile); // This will also add the linked personalTopic due to the relationship
                 await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+
+                // --- Verification (Optional): Ensure Personal Topic got the Profile ID ---
+                var createdProfile = await _context.Profiles.Include(p => p.PersonalTopic).FirstOrDefaultAsync(p => p.UserId == appUser.Id);
+                if (createdProfile?.PersonalTopic != null && createdProfile.PersonalTopic.CreatedBy == 0)
+                {
+                    // If CreatedBy wasn't set automatically, update it now
+                    createdProfile.PersonalTopic.CreatedBy = createdProfile.Id;
+                    _context.Update(createdProfile.PersonalTopic);
+                    await _context.SaveChangesAsync();
+                    Console.WriteLine($"Personal Topic CreatedBy explicitly set to Profile ID: {createdProfile.Id}");
+                }
+                else if (createdProfile?.PersonalTopic != null)
+                {
+                    Console.WriteLine($"Personal Topic correctly linked with CreatedBy: {createdProfile.PersonalTopic.CreatedBy}");
+                }
+                else
+                {
+                    Console.WriteLine($"Warning: Personal Topic not found or not linked after saving profile.");
+                }
+                // --- End Verification ---
+
+                TempData["SuccessMessage"] = "Perfil e tópico pessoal criados com sucesso!";
+                return RedirectToAction(nameof(MyProfile));
             }
-            ViewData["UserId"] = new SelectList(_context.Users, "Id", "Username", profile.UserId);
+
+            Console.WriteLine("ModelState inválido no Create POST:");
+            LogModelStateErrors(ModelState);
+
             return View(profile);
         }
 
         // GET: Profiles/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
-            var profile = await _context.Profiles.FindAsync(id);
+            var identityName = User.Identity?.Name;
+            var appUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == identityName);
+            if (appUser == null) return Unauthorized();
+
+            var profile = await _context.Profiles.FirstOrDefaultAsync(p => p.Id == id && p.UserId == appUser.Id);
+
             if (profile == null)
             {
-                return NotFound();
+                TempData["ErrorMessage"] = "Perfil não encontrado ou não tem permissão para o editar.";
+                return RedirectToAction(nameof(MyProfile));
             }
-            ViewData["UserId"] = new SelectList(_context.Users, "Id", "Username", profile.UserId);
             return View(profile);
         }
 
+
         // POST: Profiles/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,UserId,Type,Bio,ProfilePicture,Name,CreatedAt")] Profile profile, IFormFile ProfilePicture)
-
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Type,Bio")] Profile profileViewModel, IFormFile? ProfilePictureFile)
         {
-            if (id != profile.Id)
+            var identityName = User.Identity?.Name;
+            var appUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == identityName);
+            if (appUser == null) return Unauthorized("Utilizador não encontrado.");
+
+            var profileToUpdate = await _context.Profiles.FirstOrDefaultAsync(p => p.Id == id && p.UserId == appUser.Id);
+            if (profileToUpdate == null) return NotFound("Perfil não encontrado ou não pertence ao utilizador atual.");
+
+            profileToUpdate.Name = profileViewModel.Name;
+            profileToUpdate.Bio = profileViewModel.Bio;
+            profileToUpdate.Type = profileViewModel.Type;
+
+            ModelState.Remove("User");
+            ModelState.Remove("UserId");
+            ModelState.Remove("CreatedAt");
+            ModelState.Remove("ProfilePicture");
+            ModelState.Remove("SavedTopics");
+            ModelState.Remove("DisplaySavedTopics");
+            ModelState.Remove("PersonalTopic");
+            ModelState.Remove("PersonalTopicPosts");
+            ModelState.Remove("CreatedTopics");
+
+            if (ProfilePictureFile != null && ProfilePictureFile.Length > 0)
             {
-                return NotFound();
+                Console.WriteLine($"Processing uploaded file: {ProfilePictureFile.FileName}");
+                try
+                {
+                    // (File saving logic - same as before)
+                    var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "profile");
+                    Directory.CreateDirectory(uploadsFolder);
+                    var uniqueFileName = Guid.NewGuid().ToString() + Path.GetExtension(ProfilePictureFile.FileName);
+                    var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                    if (!string.IsNullOrEmpty(profileToUpdate.ProfilePicture) && profileToUpdate.ProfilePicture != "/images/defaultuser.png" && !profileToUpdate.ProfilePicture.StartsWith("/images/profile/"))
+                    {
+                        // Handle potential old default or unexpected path format if needed
+                        Console.WriteLine($"Old profile picture path might not be standard: {profileToUpdate.ProfilePicture}");
+                    }
+                    else if (!string.IsNullOrEmpty(profileToUpdate.ProfilePicture) && profileToUpdate.ProfilePicture != "/images/defaultuser.png")
+                    {
+                        try
+                        {
+                            var oldFilePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", profileToUpdate.ProfilePicture.TrimStart('/'));
+                            if (System.IO.File.Exists(oldFilePath))
+                            {
+                                System.IO.File.Delete(oldFilePath);
+                                Console.WriteLine($"Deleted old profile picture: {oldFilePath}");
+                            }
+                            else
+                            {
+                                Console.WriteLine($"Old profile picture file not found: {oldFilePath}");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Error deleting old profile picture: {ex.Message}");
+                            // Log but don't prevent new upload
+                        }
+                    }
+
+
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await ProfilePictureFile.CopyToAsync(stream);
+                    }
+                    profileToUpdate.ProfilePicture = "/images/profile/" + uniqueFileName;
+                    Console.WriteLine($"Profile picture path updated to: {profileToUpdate.ProfilePicture}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error uploading profile picture: {ex.Message}");
+                    ModelState.AddModelError(nameof(ProfilePictureFile), "Erro ao carregar a imagem.");
+                    return View(profileToUpdate);
+                }
             }
 
             if (ModelState.IsValid)
             {
-                Console.WriteLine("ModelState é válido.");
                 try
                 {
-                    if (ProfilePicture != null && ProfilePicture.Length > 0)
-                    {
-                        var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "profile");
-                        Directory.CreateDirectory(uploadsFolder); // Garante que a pasta existe
-
-                        var uniqueFileName = Guid.NewGuid().ToString() + Path.GetExtension(ProfilePicture.FileName);
-                        var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-                        using (var stream = new FileStream(filePath, FileMode.Create))
-                        {
-                            await ProfilePicture.CopyToAsync(stream);
-                        }
-
-                        // Atualiza o caminho da imagem no modelo
-                        profile.ProfilePicture = "/images/profile/" + uniqueFileName;
-                    }
-
-
-                    _context.Update(profile);
                     await _context.SaveChangesAsync();
+                    TempData["SuccessMessage"] = "Perfil atualizado com sucesso!";
+                    return RedirectToAction(nameof(MyProfile));
                 }
-                catch (DbUpdateConcurrencyException)
+                catch (DbUpdateConcurrencyException ex)
                 {
-                    if (!ProfileExists(profile.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    Console.WriteLine($"Concurrency Error: {ex.Message}");
+                    ModelState.AddModelError(string.Empty, "Os dados foram modificados por outro utilizador. Recarregue a página e tente novamente.");
+                    var entry = ex.Entries.Single();
+                    await entry.ReloadAsync();
+                    ModelState.AddModelError(string.Empty, "Os valores atuais da base de dados foram carregados.");
+                    // Return the reloaded entity for the user to review/resubmit
+                    return View(await _context.Profiles.FindAsync(id)); // Re-fetch the potentially changed data
                 }
-                return RedirectToAction(nameof(Index));
-            }
-            foreach (var key in ModelState.Keys)
-            {
-                var state = ModelState[key];
-                foreach (var error in state.Errors)
+                catch (DbUpdateException ex)
                 {
-                    Console.WriteLine($"Erro no campo '{key}': {error.ErrorMessage}");
+                    Console.WriteLine($"Database Error: {ex.InnerException?.Message ?? ex.Message}");
+                    ModelState.AddModelError(string.Empty, "Ocorreu um erro ao guardar na base de dados.");
                 }
             }
 
-            Console.WriteLine("ModelState inválido. Retornando view com modelo.");
-            return View(profile);
+            Console.WriteLine("ModelState inválido ou erro ao guardar. Retornando View.");
+            LogModelStateErrors(ModelState);
+            return View(profileToUpdate);
         }
 
 
         // GET: Profiles/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
+
+            var identityName = User.Identity?.Name;
+            var appUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == identityName);
+            if (appUser == null) return Unauthorized();
 
             var profile = await _context.Profiles
                 .Include(p => p.User)
-                .FirstOrDefaultAsync(m => m.Id == id);
+                .FirstOrDefaultAsync(p => p.Id == id && p.UserId == appUser.Id);
+
             if (profile == null)
             {
-                return NotFound();
+                TempData["ErrorMessage"] = "Perfil não encontrado ou não tem permissão para o excluir.";
+                return RedirectToAction(nameof(MyProfile));
             }
-
             return View(profile);
         }
 
@@ -236,19 +386,95 @@ namespace projetodweb_connectify.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var profile = await _context.Profiles.FindAsync(id);
-            if (profile != null)
+            var identityName = User.Identity?.Name;
+            var appUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == identityName);
+            if (appUser == null) return Unauthorized();
+
+            // Find profile including related data that might prevent deletion
+            var profile = await _context.Profiles
+                .Include(p => p.PersonalTopic) // Need to delete this too potentially
+                .Include(p => p.CreatedTopics) // Check if creator of other topics
+                .Include(p => p.SavedTopics)   // Need to delete these links
+                .FirstOrDefaultAsync(p => p.Id == id && p.UserId == appUser.Id);
+
+            if (profile == null)
             {
-                _context.Profiles.Remove(profile);
+                TempData["ErrorMessage"] = "Perfil não encontrado ou não autorizado a excluir.";
+                return RedirectToAction(nameof(MyProfile));
             }
 
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            try
+            {
+                // --- Manual Cascade Deletion (if needed or safer) ---
+
+                // 1. Remove SavedTopic links
+                if (profile.SavedTopics.Any())
+                {
+                    _context.SavedTopics.RemoveRange(profile.SavedTopics);
+                    Console.WriteLine($"Removed {profile.SavedTopics.Count} SavedTopic entries for profile {id}.");
+                }
+
+                // 2. Handle Personal Topic Posts (if cascade delete isn't set up properly for Topic->Posts)
+                //    Usually Topic deletion handles this, but check your DbContext OnModelCreating.
+
+                // 3. Delete Personal Topic (if it exists)
+                if (profile.PersonalTopic != null)
+                {
+                    // Need to load posts of personal topic if not already loaded and cascade isn't reliable
+                    var personalTopicPosts = await _context.TopicPosts.Where(tp => tp.TopicId == profile.PersonalTopic.Id).ToListAsync();
+                    if (personalTopicPosts.Any())
+                    {
+                        _context.TopicPosts.RemoveRange(personalTopicPosts);
+                        Console.WriteLine($"Removed {personalTopicPosts.Count} posts from personal topic {profile.PersonalTopic.Id}.");
+                    }
+                    _context.Topics.Remove(profile.PersonalTopic);
+                    Console.WriteLine($"Removed personal topic {profile.PersonalTopic.Id} for profile {id}.");
+                }
+
+                // 4. Handle Other Created Topics? (Decide policy: Delete them? Orphan them? Prevent profile deletion?)
+                //    Current logic seems to prevent deletion of creator if topics exist (FK constraint).
+                //    For now, let's assume profile deletion is blocked if other topics exist,
+                //    or they need to be deleted/reassigned manually first.
+
+                // 5. Handle Posts created by this profile in OTHER topics (TopicPosts where ProfileId = profile.Id)
+                //    Similar decision: Delete them? Orphan them? Prevent deletion?
+                //    Let's assume deletion is blocked by FK or needs manual cleanup.
+
+                // 6. Handle Comments by this profile... (similar decision)
+
+                // 7. Finally, remove the profile itself
+                _context.Profiles.Remove(profile);
+                Console.WriteLine($"Removing profile {id}.");
+
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "Perfil excluído com sucesso.";
+
+                // Sign user out after deleting their profile data
+                // This requires `SignInManager<ApplicationUser>` dependency injection if using Identity
+                // await _signInManager.SignOutAsync(); // Uncomment if using Identity SignInManager
+                // For now, just redirect to home
+                return RedirectToAction("Index", "Home");
+            }
+            catch (DbUpdateException ex) // Catch potential FK constraint violations
+            {
+                Console.WriteLine($"Error deleting profile {id}: {ex.InnerException?.Message ?? ex.Message}");
+                TempData["ErrorMessage"] = "Não foi possível excluir o perfil. Pode ser necessário remover manualmente os tópicos criados, posts ou comentários associados primeiro.";
+                // You could try to provide more specific error messages based on `ex.InnerException` if needed.
+                return RedirectToAction(nameof(Delete), new { id = id });
+            }
         }
 
-        private bool ProfileExists(int id)
+        // Helper to log ModelState errors
+        private void LogModelStateErrors(Microsoft.AspNetCore.Mvc.ModelBinding.ModelStateDictionary modelState)
         {
-            return _context.Profiles.Any(e => e.Id == id);
+            foreach (var key in modelState.Keys)
+            {
+                var state = modelState[key];
+                if (state.Errors.Any())
+                {
+                    Console.WriteLine($"  - {key}: {string.Join("; ", state.Errors.Select(e => e.ErrorMessage))}");
+                }
+            }
         }
     }
 }

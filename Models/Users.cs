@@ -56,7 +56,7 @@ namespace projetodweb_connectify.Models
         /// <summary>
         /// perfil associado ao utilizador.
         /// </summary>
-        public Profile? Profile { get; set; }
+        public virtual Profile? Profile { get; set; }
 
         /// <summary>
         // propriedades de navegação para as amizades iniciadas (User1Id)
