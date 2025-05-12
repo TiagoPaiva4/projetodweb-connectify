@@ -4,14 +4,184 @@
     ViewData["Title"] = "O Meu Perfil";
 }
 
-<h1>O Meu Perfil</h1>
+<h1>@ViewData["Title"]</h1>
 
-<div class="card mt-4">
-    <div class="card-body">
-        <img src="@Model.ProfilePicture" alt="Foto de Perfil" class="img-thumbnail" style="width: 100px; height: 100px;" />
-        <h5 class="card-title">@Model.User.Username</h5>
-        <p class="card-text"><strong>Nome:</strong> @Model.Name</p>
-        <p class="card-text"><strong>Bio:</strong> @Model.Bio</p>
-        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Editar Perfil</a>
-    </div>
-</div>
+<div class="container mt-4">
+    <div class="row">
+        @if (Model != null)
+        {
+            <div class="col-md-4">
+                <!-- Profile Card (remains the same) -->
+                <div class="card mb-4">
+                    <img src="@(string.IsNullOrEmpty(Model.ProfilePicture) ? "/images/default-profile.png" : Model.ProfilePicture)"
+                         alt="Foto de Perfil de @(Model.Name ?? Model.User?.Username)"
+                         class="card-img-top"
+                         style="object-fit: cover; max-height: 300px; min-height: 200px; background-color: #eee;"
+                         onerror="this.onerror=null; this.src='/images/default-profile.png';" />
+                    <div class="card-body">
+                        <h5 class="card-title">@(Model.Name ?? Model.User?.Username ?? "Utilizador")</h5>
+                        @if (!string.IsNullOrEmpty(Model.Name) && !string.IsNullOrEmpty(Model.User?.Username) && Model.Name != Model.User.Username)
+                        {
+                            <p class="card-subtitle mb-2 text-muted">@@@(Model.User.Username)</p>
+                        }
+                        <p class="card-text"><strong>Bio:</strong> @(string.IsNullOrWhiteSpace(Model.Bio) ? Html.Raw("<i>Nenhuma bio definida.</i>") : Html.Raw(Model.Bio))</p>
+                        <p class="card-text"><small class="text-muted">Membro desde: @Model.CreatedAt.ToString("dd/MM/yyyy")</small></p>
+                        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary btn-block">Editar Perfil</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-8">
+
+                <!-- Section for Personal Topic Posts -->
+                <h2>Posts</h2>
+                <hr />
+                @if (Model.PersonalTopic != null)
+                {
+                    @* Button to add a new TopicPost to the personal topic *@
+                    <div class="mb-3">
+                        @* This link likely goes to a Create action that handles TopicPost creation *@
+                        <a asp-controller="TopicPosts" asp-action="Create" asp-route-topicId="@Model.PersonalTopic.Id" class="btn btn-info btn-sm">
+                            <i class="fas fa-plus"></i> Novo Post
+                        </a>
+                        @* OR if your PostsController handles TopicPost creation:
+                         <a asp-controller="Posts" asp-action="Create" asp-route-topicId="@Model.PersonalTopic.Id" class="btn btn-info btn-sm">...</a>
+                         *@
+                    </div>
+
+                    @if (Model.PersonalTopicPosts != null && Model.PersonalTopicPosts.Any())
+                    {
+                        <ul class="list-group list-group-flush mb-4">
+                            @* Loop through the TopicPost entities directly *@
+                            @foreach (var topicPost in Model.PersonalTopicPosts)
+                            {
+                                <li class="list-group-item mb-3 border rounded p-3 shadow-sm">
+                                    <div class="d-flex w-100 justify-content-between mb-2">
+                                        <div>
+                                            @* Access the author's profile via topicPost.Profile *@
+                                            <img src="@(topicPost.Profile?.ProfilePicture ?? "/images/default-profile.png")" alt="Autor" class="rounded-circle me-2" width="30" height="30" style="object-fit: cover;" onerror="this.onerror=null; this.src='/images/default-profile.png';" />
+                                            <strong>@(topicPost.Profile?.Name ?? "Utilizador Desconhecido")</strong>
+                                        </div>
+                                        @* Use topicPost.CreatedAt for the timestamp *@
+                                        <small class="text-muted">@topicPost.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small>
+                                    </div>
+                                    @* Access content directly from topicPost *@
+                                    <p class="mb-1 post-content">@Html.Raw(topicPost.Content)</p>
+
+                                    @* Edit/Delete links for the TopicPost - Check if the current user is the author *@
+                                    @* Check against topicPost.ProfileId *@
+                                    @if (topicPost.ProfileId == Model.Id)
+                                    {
+                                        <div class="mt-2 text-end">
+                                            @* Links should target actions that handle TopicPost entities, using topicPost.Id *@
+                                            <a asp-controller="TopicPosts" asp-action="Edit" asp-route-id="@topicPost.Id" class="btn btn-sm btn-outline-secondary me-1">
+                                                <i class="fas fa-edit"></i> Editar
+                                            </a>
+                                            @* OR if PostsController handles TopicPost edits:
+                                            <a asp-controller="Posts" asp-action="Edit" asp-route-id="@topicPost.Id" class="btn btn-sm btn-outline-secondary me-1">...</a>
+                                            *@
+                                            <form asp-controller="TopicPosts" asp-action="Delete" asp-route-id="@topicPost.Id" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir este post?');">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="returnUrl" value="@Url.Action("MyProfile", "Profiles")" />
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <i class="fas fa-trash"></i> Excluir
+                                                </button>
+                                            </form>
+                                            @* OR if PostsController handles TopicPost deletes:
+                                            <form asp-controller="Posts" asp-action="Delete" asp-route-id="@topicPost.Id" ...>...</form>
+                                            *@
+                                        </div>
+                                    }
+                                    @* --- Add Comment Section/Link Here (Optional) ---
+                                        The link would likely target a CommentsController action, passing topicPost.Id
+                                        <div class="mt-2">
+                                            <a asp-controller="TopicComments" asp-action="IndexForPost" asp-route-topicPostId="@topicPost.Id" class="btn btn-sm btn-light">Comentários (@topicPost.Comments?.Count ?? 0)</a>
+                                        </div>
+                                    *@
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <div class="alert alert-light" role="alert">
+                            <i class="fas fa-info-circle"></i> Ainda não há posts no seu perfil. Comece por <a asp-controller="TopicPosts" asp-action="Create" asp-route-topicId="@Model.PersonalTopic.Id">adicionar um</a>!
+                            @* OR <a asp-controller="Posts" ...> *@
+                        </div>
+                    }
+                }
+                else // Personal Topic itself wasn't found
+                {
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-exclamation-triangle"></i> O seu tópico pessoal não foi encontrado.
+                    </div>
+                }
+
+                <!-- Section for Other Created Topics (remains the same logic) -->
+                <h2 class="mt-5">Tópicos</h2>
+                <hr />
+                @if (Model.CreatedTopics != null && Model.CreatedTopics.Any())
+                {
+                    <ul class="list-group list-group-flush">
+                        @foreach (var topic in Model.CreatedTopics)
+                        {
+                            <li class="list-group-item mb-3 border rounded p-3 shadow-sm">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">
+                                        <a asp-controller="Topics" asp-action="Details" asp-route-id="@topic.Id">@topic.Title</a>
+                                        @if (topic.IsPrivate)
+                                        {
+                                            <span class="badge bg-secondary ms-2">Privado</span>
+                                        }
+                                    </h5>
+                                    <small class="text-muted">@topic.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small>
+                                </div>
+                                <p class="mb-1">@Html.Raw(topic.Description?.Length > 150 ? topic.Description.Substring(0, 150) + "..." : topic.Description ?? "Sem descrição.")</p>
+                                <div class="mt-2 text-end">
+                                    <a asp-controller="Topics" asp-action="Edit" asp-route-id="@topic.Id" class="btn btn-sm btn-outline-secondary me-1"><i class="fas fa-edit"></i> Editar Tópico</a>
+                                    <a asp-controller="Topics" asp-action="Delete" asp-route-id="@topic.Id" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i> Excluir Tópico</a>
+                                    @* Link to add post (TopicPost) to this specific topic *@
+                                    <a asp-controller="TopicPosts" asp-action="Create" asp-route-topicId="@topic.Id" class="btn btn-sm btn-outline-info ms-1"><i class="fas fa-plus"></i> Add Post</a>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <div class="alert alert-light" role="alert">
+                        <i class="fas fa-info-circle"></i> Você ainda não criou nenhum outro tópico.
+                    </div>
+                }
+                <p class="mt-3">
+                    <a asp-controller="Topics" asp-action="Create" class="btn btn-success"><i class="fas fa-plus-circle"></i> Criar Novo Tópico</a>
+                </p>
+
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-danger" role="alert">
+                Não foi possível carregar os dados do perfil.
+            </div>
+        }
+    </div> 
+</div> 
+
+@* Include sections for Scripts and Styles as before *@
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
+@section Styles {
+    <style>
+        .card-img-top {
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .list-group-item {
+            background-color: #fff;
+        }
+    </style>
+}

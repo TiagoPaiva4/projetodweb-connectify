@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using projetodweb_connectify.Data;
 
@@ -11,9 +12,11 @@ using projetodweb_connectify.Data;
 namespace projetodweb_connectify.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250507150051_TopicoPostFK")]
+    partial class TopicoPostFK
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -651,7 +654,7 @@ namespace projetodweb_connectify.Data.Migrations
                         .IsRequired();
 
                     b.HasOne("projetodweb_connectify.Models.Topic", "Topic")
-                        .WithMany("Posts")
+                        .WithMany()
                         .HasForeignKey("TopicId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -664,11 +667,6 @@ namespace projetodweb_connectify.Data.Migrations
             modelBuilder.Entity("projetodweb_connectify.Models.Message", b =>
                 {
                     b.Navigation("Recipients");
-                });
-
-            modelBuilder.Entity("projetodweb_connectify.Models.Topic", b =>
-                {
-                    b.Navigation("Posts");
                 });
 
             modelBuilder.Entity("projetodweb_connectify.Models.TopicPost", b =>

@@ -34,12 +34,36 @@ namespace projetodweb_connectify.Controllers
                 return NotFound();
             }
 
+            // Log the ID being requested
+            Console.WriteLine($"Fetching details for Topic ID: {id}");
+
             var topic = await _context.Topics
-                .Include(t => t.Creator)
+                .Include(t => t.Creator) // Creator of the Topic
+                    .ThenInclude(c => c.User) // User who is the creator of the topic
+                .Include(t => t.Posts)    // <<-- CRUCIAL: Include the collection of posts
+                    .ThenInclude(p => p.Profile) // For each post, include its author's Profile
+                        .ThenInclude(profile => profile.User) // For each post's Profile, include the User
                 .FirstOrDefaultAsync(m => m.Id == id);
+
             if (topic == null)
             {
+                // Log if topic not found
+                Console.WriteLine($"Topic with ID: {id} not found.");
                 return NotFound();
+            }
+
+            // Log the number of posts found for this topic
+            if (topic.Posts != null)
+            {
+                Console.WriteLine($"Topic ID: {id} - Number of posts loaded: {topic.Posts.Count}");
+                // Order posts after loading and checking count
+                topic.Posts = topic.Posts.OrderByDescending(p => p.CreatedAt).ToList();
+            }
+            else
+            {
+                // This case should ideally not happen if .Include(t => t.Posts) is used,
+                // as EF Core usually initializes the collection.
+                Console.WriteLine($"Topic ID: {id} - Posts collection is NULL.");
             }
 
             return View(topic);
@@ -66,7 +90,7 @@ namespace projetodweb_connectify.Controllers
                 topic.IsPrivate = false;
                 topic.CreatedAt = DateTime.UtcNow;
 
-                // Obter o e-mail do usuário logado
+                // Obter o e-mail do utilizador logado
                 var email = User.Identity?.Name;
 
                 if (email == null)
@@ -74,7 +98,7 @@ namespace projetodweb_connectify.Controllers
                     return Unauthorized();
                 }
 
-                // Buscar o usuário no banco de dados com o e-mail logado
+                // Buscar o utilizador no banco de dados com o e-mail logado
                 var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == email);
 
                 if (user == null)
@@ -82,16 +106,16 @@ namespace projetodweb_connectify.Controllers
                     return NotFound("Utilizador não encontrado.");
                 }
 
-                // Buscar o perfil do usuário
+                // Encontrar o perfil do utilizador
                 var profile = await _context.Profiles
                     .Include(p => p.User)
                     .FirstOrDefaultAsync(p => p.UserId == user.Id);
 
 
-                // Atribuir o ID do usuário logado ao campo CreatedBy
+                // Atribuir o ID do utilizador logado ao campo CreatedBy
                 topic.CreatedBy = user.Id;
 
-                // Atribuir o perfil do usuário à propriedade de navegação 'Creator'
+                // Atribuir o perfil do utilizador à propriedade de navegação 'Creator'
                 topic.Creator = profile;
 
                 // Adicionar o tópico ao banco de dados

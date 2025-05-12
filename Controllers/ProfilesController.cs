@@ -7,67 +7,83 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using projetodweb_connectify.Data;
 using projetodweb_connectify.Models;
-
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity; // If you're restricting access
 
 namespace projetodweb_connectify.Controllers
 {
+    [Authorize] // Apply authorization at controller level if most actions require it
     public class ProfilesController : Controller
     {
         private readonly ApplicationDbContext _context;
-        private readonly ILogger<ProfilesController> _logger;
 
         public ProfilesController(ApplicationDbContext context)
         {
             _context = context;
         }
 
-        // GET: Profiles
-        public async Task<IActionResult> Index()
+        // GET: Profiles (Index - Redirects to MyProfile for logged-in users)
+        public IActionResult Index()
         {
-            var email = User.Identity?.Name;
-
-            if (email == null)
-                return Unauthorized();
-
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == email);
-
-            if (user == null)
-                return NotFound("Utilizador não encontrado.");
-
-            var profile = await _context.Profiles
-                .Include(p => p.User)
-                .FirstOrDefaultAsync(p => p.UserId == user.Id);
-
-            if (profile == null)
-                return NotFound("Perfil não encontrado.");
-
-            return View(profile); // envia diretamente o perfil
+            return RedirectToAction(nameof(MyProfile));
         }
 
-
+        // GET: Profiles/MyProfile
         [HttpGet("Profiles/MyProfile")]
         public async Task<IActionResult> MyProfile()
         {
-            var email = User.Identity?.Name;
-
-            if (email == null)
+            var userEmail = User.Identity?.Name;
+            if (string.IsNullOrEmpty(userEmail))
+            {
                 return Unauthorized();
+            }
 
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == email);
-            
-
-            if (user == null)
+            var appUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == userEmail);
+            if (appUser == null)
+            {
                 return NotFound("Utilizador não encontrado.");
+            }
 
             var profile = await _context.Profiles
-                .Include(p => p.User)
-                .FirstOrDefaultAsync(p => p.UserId == user.Id);
+                                        .Include(p => p.User)
+                                        .FirstOrDefaultAsync(p => p.UserId == appUser.Id);
 
             if (profile == null)
-                return NotFound("Perfil não encontrado.");
+            {
+                return NotFound("Perfil não encontrado. Por favor, crie ou complete o seu perfil.");
+            }
 
-            return View("Details", profile);
+            // --- Fetch Personal Topic and its Posts (TopicPost entities) ---
+            // Include the Posts (which are TopicPost entities) and their associated Profile (author)
+            profile.PersonalTopic = await _context.Topics
+                .Include(t => t.Posts)                 // Include the collection of TopicPost
+                    .ThenInclude(tp => tp.Profile)     // Include the Profile (author) of each TopicPost
+                .FirstOrDefaultAsync(t => t.CreatedBy == profile.Id && t.IsPersonal);
+
+            if (profile.PersonalTopic != null)
+            {
+                // Assign the TopicPost entities, ordered by newest first
+                // The 'Posts' collection on Topic *is* the ICollection<TopicPost>
+                profile.PersonalTopicPosts = profile.PersonalTopic.Posts
+                                                   .OrderByDescending(tp => tp.CreatedAt) // Order by TopicPost creation date
+                                                   .ToList();
+            }
+            else
+            {
+                profile.PersonalTopicPosts = new List<TopicPost>(); // Ensure it's not null for the view
+            }
+
+            // --- Fetch OTHER Created Topics (Non-Personal, Non-Private) ---
+            Console.WriteLine($"Fetching non-personal, non-private topics where Topic.CreatedBy == {profile.Id}");
+            profile.CreatedTopics = await _context.Topics
+                                           .Where(t => t.CreatedBy == profile.Id && !t.IsPersonal && !t.IsPrivate)
+                                           .OrderByDescending(t => t.CreatedAt)
+                                           .ToListAsync();
+
+            // Use the "Index" view
+            return View("Index", profile);
         }
+
 
 
         // GET: Profiles/Details/5

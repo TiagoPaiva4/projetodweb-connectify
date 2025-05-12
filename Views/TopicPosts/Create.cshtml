@@ -1,0 +1,38 @@
+﻿@model projetodweb_connectify.Models.TopicPost
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>Create Post</h1>
+
+<h4>TopicPost</h4>
+<h1>Criar Publicação no Tópico: @ViewBag.TopicTitle</h1>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Create" asp-route-topicId="@Model.TopicId">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="TopicId" />
+
+            <div class="form-group">
+                <label asp-for="Content" class="control-label"></label>
+                <textarea asp-for="Content" class="form-control" rows="5"></textarea>
+                <span asp-validation-for="Content" class="text-danger"></span>
+            </div>
+            <div class="form-group mt-2">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-controller="Topics" asp-action="Details" asp-route-id="@Model.TopicId">Back to Topic</a>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
