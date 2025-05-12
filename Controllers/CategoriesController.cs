@@ -33,15 +33,31 @@ namespace projetodweb_connectify.Controllers
                 return NotFound();
             }
 
+            // Carregar a categoria e INCLUIR os tópicos associados.
+            // Para cada tópico, incluir o seu Criador e o Utilizador do Criador.
+            // Também incluir a imagem do tópico se quiser exibi-la.
             var category = await _context.Categories
+                .Include(c => c.Topics) // Inclui a coleção de tópicos da categoria
+                    .ThenInclude(t => t.Creator) // Para cada tópico, inclui o Profile do criador
+                        .ThenInclude(p => p.User) // Para cada Profile do criador, inclui o ApplicationUser
+                                                  //  .Include(c => c.Topics) // Já incluído acima, mas se quisesse incluir outra coisa dos tópicos:
+                                                  //      .ThenInclude(t => t.ALGUMA_OUTRA_PROPRIEDADE_DO_TOPICO_QUE_SEJA_NAVEGACAO)
                 .FirstOrDefaultAsync(m => m.Id == id);
+
             if (category == null)
             {
                 return NotFound();
             }
 
+            // Opcional: Ordenar os tópicos dentro da categoria, se desejar
+            if (category.Topics != null)
+            {
+                category.Topics = category.Topics.OrderByDescending(t => t.CreatedAt).ToList();
+            }
+
             return View(category);
         }
+
 
         // GET: Categories/Create
         public IActionResult Create()
