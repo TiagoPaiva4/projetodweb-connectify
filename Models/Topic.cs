@@ -66,10 +66,23 @@ namespace projetodweb_connectify.Models
         public ICollection<TopicPost> Posts { get; set; } = new List<TopicPost>();
 
 
-        // --- NEW NAVIGATION PROPERTY for Savers ---
         /// <summary>
-        /// Collection navigation property for the profiles that have saved this topic.
+        /// Coleção de registos que representam os perfis que guardaram este tópico.
         /// </summary>
-        public virtual ICollection<SavedTopic> Savers { get; set; } = new List<SavedTopic>(); // Renamed for clarity
+        public virtual ICollection<SavedTopic> Savers { get; set; } = new List<SavedTopic>();
+
+        /// <summary>
+        /// Identificador da categoria à qual este tópico pertence.
+        /// </summary>
+        //[Required(ErrorMessage = "Por favor, selecione uma categoria para o tópico.")]
+        [Display(Name = "Categoria")]
+        public int? CategoryId { get; set; } 
+
+        /// <summary>
+        /// Referência para a entidade da categoria associada ao tópico.
+        /// </summary>
+        [ForeignKey(nameof(CategoryId))]
+        public virtual Category? Category { get; set; } 
+
     }
 }
