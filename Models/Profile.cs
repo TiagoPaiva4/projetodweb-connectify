@@ -56,9 +56,25 @@ namespace projetodweb_connectify.Models
         /// </summary>
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        // This property will NOT be mapped to the database
-        // It's just for carrying data to the view
+        /// <summary>
+        /// lista de tópicos criados por este perfil. 
+        /// não é mapeada para a base de dados e serve apenas para transporte de dados para a view.
+        /// </summary>
         [NotMapped]
         public List<Topic> CreatedTopics { get; set; } = new List<Topic>();
+
+        /// <summary>
+        /// tópico pessoal associado ao perfil.
+        /// não é mapeado para a base de dados, apenas usado na lógica da aplicação.
+        /// </summary>
+        [NotMapped] 
+        public Topic? PersonalTopic { get; set; } 
+
+        /// <summary>
+        /// lista de publicações feitas no tópico pessoal.
+        /// não é mapeada para a base de dados, usada apenas para carregar dados na aplicação.
+        /// </summary>
+        [NotMapped] 
+        public ICollection<TopicPost> PersonalTopicPosts { get; set; } = new List<TopicPost>(); 
     }
 }
