@@ -38,6 +38,12 @@ namespace projetodweb_connectify.Models
         public string? Description { get; set; }
 
         /// <summary>
+        /// URL ou caminho para a imagem do tópico.
+        /// </summary>
+        [Display(Name = "Imagem do Tópico")]
+        public string? TopicImageUrl { get; set; } 
+
+        /// <summary>
         /// identificador do utilizador que criou o tópico.
         /// </summary>
         [Required]

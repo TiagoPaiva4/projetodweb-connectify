@@ -1,38 +1,66 @@
 ﻿@model projetodweb_connectify.Models.Topic
 
 @{
-    ViewData["Title"] = "Create";
+    ViewData["Title"] = "Criar Novo Tópico"; // Título mais descritivo
 }
 
-<h1>Create</h1>
+<h1>@ViewData["Title"]</h1>
 
-<h4>Topic</h4>
+<h4>Tópico</h4>
 <hr />
 <div class="row">
-    <div class="col-md-4">
-        <form asp-action="Create">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group">
+    <div class="col-md-6">
+        @* Aumentar um pouco a largura da coluna para melhor layout *@
+        @* ALTERAÇÃO 1: Adicionar method="post" e enctype="multipart/form-data" ao formulário *@
+        <form asp-action="Create" method="post" enctype="multipart/form-data">
+            <div asp-validation-summary="All" class="text-danger"></div> @* Mudar para "All" para ver erros de propriedade e de modelo *@
+
+            <div class="form-group mb-3">
+                @* Adicionar mb-3 para espaçamento *@
                 <label asp-for="Title" class="control-label"></label>
                 <input asp-for="Title" class="form-control" />
                 <span asp-validation-for="Title" class="text-danger"></span>
             </div>
-            <div class="form-group">
+
+            <div class="form-group mb-3">
                 <label asp-for="Description" class="control-label"></label>
-                <input asp-for="Description" class="form-control" />
+                @* Usar textarea para descrição é geralmente melhor *@
+                <textarea asp-for="Description" class="form-control" rows="5"></textarea>
                 <span asp-validation-for="Description" class="text-danger"></span>
             </div>
+
+            @* ALTERAÇÃO 2: Adicionar o campo de input para a imagem do tópico *@
+            <div class="form-group mb-3">
+                <label asp-for="TopicImageUrl" class="control-label"></label>
+                @* O 'name' do input deve corresponder ao parâmetro IFormFile no seu método do controller *@
+                <input type="file" name="topicImageFile" class="form-control" accept="image/png, image/jpeg, image/gif" />
+                <span asp-validation-for="TopicImageUrl" class="text-danger"></span> @* Validação para o campo do modelo, se houver *@
+                <small class="form-text text-muted">Opcional. Se não fornecer uma imagem, uma padrão será usada.</small>
+            </div>
+
+            @* ALTERAÇÃO 3: Adicionar campo para IsPrivate (se aplicável e editável na criação) *@
+            <div class="form-group form-check mb-3">
+                <input class="form-check-input" asp-for="IsPrivate" />
+                <label class="form-check-label" asp-for="IsPrivate">@Html.DisplayNameFor(model => model.IsPrivate)</label>
+                <small class="form-text text-muted d-block">Se marcado, apenas certos utilizadores (ex: amigos) poderão ver este tópico (dependendo da sua lógica futura).</small>
+            </div>
+
+
             <div class="form-group">
-                <input type="submit" value="Create" class="btn btn-primary" />
+                <input type="submit" value="Criar Tópico" class="btn btn-primary" />
+                <a asp-action="Index" class="btn btn-secondary ms-2">Cancelar</a> @* Adicionar ms-2 para espaçamento *@
             </div>
         </form>
     </div>
 </div>
 
-<div>
-    <a asp-action="Index">Back to List</a>
+<div class="mt-3">
+    @* Adicionar mt-3 para espaçamento *@
+    <a asp-action="Index">Voltar à Lista de Tópicos</a>
 </div>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }
