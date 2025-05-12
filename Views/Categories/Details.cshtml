@@ -2,8 +2,8 @@
 
 @{
     ViewData["Title"] = $"Detalhes da Categoria: {Model.Name}";
-    string defaultTopicImage = Url.Content("~/images/topics/default_topic.jpeg"); // Ajuste se necessário
-    string defaultCategoryImage = Url.Content("~/images/categories/default_category_image.png"); // Ajuste
+    string defaultTopicImage = Url.Content("~/images/topics/default_topic.jpeg"); 
+    string defaultCategoryImage = Url.Content("~/images/categories/default_category_image.png"); 
     string categoryImageUrl = string.IsNullOrEmpty(Model.CategoryImageUrl) ? defaultCategoryImage : Url.Content(Model.CategoryImageUrl);
 }
 

@@ -2,13 +2,11 @@
 
 @{
     ViewData["Title"] = "Categorias";
-    string defaultCategoryImage = Url.Content("~/images/categories/default_category_image.png"); // Ajuste
+    string defaultCategoryImage = Url.Content("~/images/categories/default_category_image.png"); 
 }
 
 <h1>@ViewData["Title"]</h1>
 <p><a asp-action="Create" class="btn btn-success">Criar Nova Categoria</a></p>
-
-@* ... (TempData messages) ... *@
 
 <table class="table table-striped table-hover align-middle">
     <thead>

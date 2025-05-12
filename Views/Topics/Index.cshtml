@@ -1,16 +1,63 @@
 ﻿@model IEnumerable<projetodweb_connectify.Models.Topic>
 @using Microsoft.AspNetCore.Identity
+@using projetodweb_connectify.Models
 
 @{
     ViewData["Title"] = "Tópicos";
-    // Caminho para a imagem padrão do tópico (ajuste conforme a sua localização exata)
-    string defaultTopicImage = Url.Content("~/images/topics/default_topic_image.png");
-
-    // Obter o ID do perfil do utilizador logado do ViewData (definido no controller)
+    string defaultTopicImage = Url.Content("~/images/topics/default_topic_image.png"); 
     int? loggedInUserProfileId = ViewData["CurrentUserProfileId"] as int?;
+    // Obter a lista de categorias do ViewData
+    var categoriesList = ViewData["CategoriesList"] as List<Category>;
+    string defaultCategoryImage = Url.Content("~/images/categories/default_category_image.png"); // Caminho da imagem padrão da CATEGORIA
 }
 
-<h1>@ViewData["Title"]</h1>
+
+@* ========== NOVA SEÇÃO DE CATEGORIAS ========== *@
+<div class="category-section mb-4">
+    <h2 class="h4 category-section-title mb-3">
+        <a asp-controller="Categories" asp-action="Index" class="text-decoration-none text-dark fw-bold">
+            Categorias <i class="fas fa-arrow-right ms-1 fs-sm align-middle"></i>
+        </a>
+    </h2>
+
+    @if (categoriesList != null && categoriesList.Any())
+    {
+        <div class="category-scroll-container pb-2"> @* Container para scroll horizontal *@
+            @foreach (var category in categoriesList)
+            {
+                <a asp-controller="Categories" asp-action="Details" asp-route-id="@category.Id" class="category-item">
+                    @{
+                        // Determina se usa a imagem da categoria ou a padrão
+                        string imageUrl = string.IsNullOrEmpty(category.CategoryImageUrl) ? defaultCategoryImage : Url.Content(category.CategoryImageUrl);
+                    }
+                    <div class="category-icon-circle" style="background-image: url('@imageUrl');">
+                        @* Opcional: Adicionar um ícone overlay ou deixar vazio para mostrar só a imagem *@
+                        @* Ex: <i class="fas fa-tag category-icon-overlay"></i> *@
+                    </div>
+                    <span class="category-name">@category.Name</span>
+                </a>
+            }
+            @* Pode adicionar um último item "Ver Mais" se quiser, mesmo com scroll *@
+            <a asp-controller="Categories" asp-action="Index" class="category-item category-item-more">
+                 <div class="category-icon-circle">
+                     <i class="fas fa-ellipsis-h category-default-icon"></i>
+                 </div>
+                 <span class="category-name">Ver Todas</span>
+            </a>
+        </div>
+    }
+    else
+    {
+        <p class="text-muted mb-0">Nenhuma categoria encontrada.</p>
+    }
+</div>
+@* ========== FIM DA SEÇÃO DE CATEGORIAS ========== *@
+
+<h2 class="h4 category-section-title mb-3">
+    <a asp-controller="Topics" asp-action="Index" class="text-decoration-none text-dark fw-bold">
+        Tópicos <i class="fas fa-arrow-right ms-1 fs-sm align-middle"></i>
+    </a>
+</h2>
 
 <p>
     @if (User.Identity != null && User.Identity.IsAuthenticated)
@@ -31,20 +78,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 }
-@if (TempData["InfoMessage"] != null)
-{
-    <div class="alert alert-info alert-dismissible fade show" role="alert">
-        @TempData["InfoMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-}
-@if (TempData["ErrorMessage"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        @TempData["ErrorMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-}
+
 
 @if (!Model.Any())
 {
@@ -65,9 +99,10 @@ else
     <table class="table table-striped table-hover align-middle">
         <thead class="table-light">
             <tr>
-                <th style="width: 10%;">Imagem</th> @* Definir uma largura para a coluna da imagem *@
-                <th style="width: 25%;">Título</th>
-                <th style="width: 30%;">Descrição (início)</th>
+                <th style="width: 10%;">Imagem</th>
+                <th style="width: 20%;">Título</th>
+                <th style="width: 15%;">Categoria</th> 
+                <th style="width: 20%;">Descrição (início)</th>
                 <th style="width: 15%;">Criador</th>
                 <th style="width: 10%;">Data</th>
                 <th style="width: 10%;">Ações</th>
@@ -94,13 +129,25 @@ else
                             <span class="badge bg-warning text-dark ms-1" title="Tópico Privado"><i class="fas fa-lock"></i></span>
                         }
                     </td>
+                    @* Célula para Categoria *@
+                    <td>
+                        @if (item.Category != null)
+                        {
+                            <a asp-controller="Categories" asp-action="Details" asp-route-id="@item.CategoryId" class="badge bg-secondary text-decoration-none">
+                                @Html.DisplayFor(modelItem => item.Category.Name)
+                            </a>
+                        }
+                        else
+                        {
+                            <span class="text-muted">(N/A)</span>
+                        }
+                    </td>
                     <td>
                         @Html.Raw(item.Description?.Length > 70 ? System.Web.HttpUtility.HtmlEncode(item.Description.Substring(0, 70)) + "..." : System.Web.HttpUtility.HtmlEncode(item.Description ?? ""))
                     </td>
                     <td>
                         @if (item.Creator != null)
                         {
-                            // Tenta mostrar o nome do perfil primeiro, depois o username do utilizador associado
                             var displayName = !string.IsNullOrEmpty(item.Creator.Name) ? item.Creator.Name : item.Creator.User?.Username;
                             if (!string.IsNullOrEmpty(displayName))
                             {
@@ -117,35 +164,24 @@ else
                         }
                     </td>
                     <td>
-                        <span title="@item.CreatedAt.ToString("F")">@item.CreatedAt.ToString("dd/MM/yy")</span>
-                        <br />
+                        <span title="@item.CreatedAt.ToString("F")">@item.CreatedAt.ToString("dd/MM/yy")</span><br />
                         <small class="text-muted">@item.CreatedAt.ToString("HH:mm")</small>
                     </td>
                     <td>
                         <div class="btn-group btn-group-sm" role="group" aria-label="Ações do Tópico">
-                            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-info" title="Detalhes">
-                                <i class="fas fa-eye"></i> @* Olho para detalhes *@
-                            </a>
-
+                            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-info" title="Detalhes"><i class="fas fa-eye"></i></a>
                             @if (User.Identity != null && User.Identity.IsAuthenticated)
                             {
                                 <form asp-action="SaveTopic" asp-route-id="@item.Id" method="post" style="display:inline;" class="ms-1">
                                     @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-outline-success" title="Guardar Tópico">
-                                        <i class="far fa-bookmark"></i> @* far para bookmark não preenchido *@
-                                    </button>
+                                    <button type="submit" class="btn btn-outline-success" title="Guardar Tópico"><i class="far fa-bookmark"></i></button>
                                 </form>
-
                                 @if (loggedInUserProfileId.HasValue && item.CreatedBy == loggedInUserProfileId.Value)
                                 {
-                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-outline-secondary ms-1" title="Editar">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-outline-secondary ms-1" title="Editar"><i class="fas fa-edit"></i></a>
                                     <form asp-action="Delete" asp-route-id="@item.Id" method="post" style="display:inline;" class="ms-1" onsubmit="return confirm('Tem a certeza que quer eliminar este tópico e TODAS as suas publicações? Esta ação não pode ser desfeita.');">
                                         @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn btn-outline-danger" title="Eliminar">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
+                                        <button type="submit" class="btn btn-outline-danger" title="Eliminar"><i class="fas fa-trash-alt"></i></button>
                                     </form>
                                 }
                             }
@@ -158,15 +194,123 @@ else
 }
 
 @* Adicionar Font Awesome se não estiver no _Layout.cshtml *@
-
 @section Styles {
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-        <style>
-            td .btn-group form button {
-                line-height: 1.3;
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        /* Estilos para a tabela (mantidos) */
+        td .btn-group form button {
+            line-height: 1.3;
+        }
+
+        td .btn-group form {
+            margin-bottom: 0;
+        }
+
+        /* ========== Estilos para a Nova Seção de Categorias ========== */
+        .category-section-title a {
+            color: #343a40; /* Cor escura para o título */
+            transition: color 0.2s ease-in-out;
+        }
+
+            .category-section-title a:hover {
+                color: #0d6efd; /* Cor primária do Bootstrap no hover */
             }
-            td .btn-group form {
-                margin-bottom: 0;
+
+        .category-section-title .fs-sm {
+            font-size: 0.9em; /* Tamanho ligeiramente menor para a seta */
+        }
+
+        .category-scroll-container {
+            display: flex; /* Cria um layout flexível (horizontal por padrão) */
+            overflow-x: auto; /* Habilita scroll horizontal se o conteúdo exceder */
+            white-space: nowrap; /* Impede que os itens quebrem para a linha seguinte */
+            padding-bottom: 15px; /* Espaço para a barra de scroll não sobrepor */
+            scrollbar-width: thin; /* Firefox */
+            scrollbar-color: #adb5bd #f8f9fa; /* Firefox - thumb track */
+        }
+            /* Webkit (Chrome, Safari, Edge) scrollbar styles */
+            .category-scroll-container::-webkit-scrollbar {
+                height: 8px; /* Altura da barra de scroll horizontal */
             }
-        </style>
+
+            .category-scroll-container::-webkit-scrollbar-track {
+                background: #f8f9fa; /* Cor da pista */
+                border-radius: 4px;
+            }
+
+            .category-scroll-container::-webkit-scrollbar-thumb {
+                background-color: #adb5bd; /* Cor do polegar da scrollbar */
+                border-radius: 4px;
+                border: 2px solid #f8f9fa; /* Cria um padding visual */
+            }
+
+                .category-scroll-container::-webkit-scrollbar-thumb:hover {
+                    background-color: #6c757d; /* Cor mais escura no hover */
+                }
+
+
+        .category-item {
+            display: inline-block; /* Permite que os itens fiquem lado a lado */
+            text-align: center; /* Centraliza o nome abaixo do círculo */
+            margin-right: 20px; /* Espaçamento entre itens */
+            text-decoration: none; /* Remove sublinhado do link */
+            color: inherit; /* Herda a cor do texto normal */
+            flex-shrink: 0; /* Impede que os itens encolham */
+            transition: transform 0.2s ease; /* Animação suave no hover */
+        }
+
+            .category-item:hover {
+                transform: translateY(-3px); /* Leve elevação no hover */
+            }
+
+            .category-item:last-child {
+                margin-right: 0; /* Remove margem do último item */
+            }
+
+
+        .category-icon-circle {
+            width: 65px; /* Tamanho do círculo */
+            height: 65px;
+            border-radius: 50%; /* Faz o div ser um círculo */
+            background-color: #e9ecef; /* Cor de fundo padrão cinza claro */
+            display: flex;
+            align-items: center; /* Centraliza conteúdo verticalmente */
+            justify-content: center; /* Centraliza conteúdo horizontalmente */
+            margin-bottom: 8px; /* Espaço entre o círculo e o nome */
+            border: 1px solid #dee2e6; /* Borda leve */
+            background-size: cover; /* Faz a imagem de fundo cobrir o div */
+            background-position: center; /* Centraliza a imagem de fundo */
+            background-repeat: no-repeat;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* Sombra suave */
+        }
+            /* Se a imagem não carregar ou for a padrão, mostrar um ícone */
+            .category-icon-circle[style*="default_category_image.png"]::before,
+            .category-icon-circle:not([style*="background-image"]) { /* Fallback se style n for aplicado */
+                content: "\f02b"; /* Código unicode para fas fa-tag */
+                font-family: "Font Awesome 6 Free";
+                font-weight: 900; /* Necessário para ícones sólidos do Font Awesome */
+                font-size: 24px;
+                color: #6c757d; /* Cor cinza para o ícone padrão */
+            }
+
+
+        .category-name {
+            font-size: 0.8rem; /* Tamanho do texto do nome */
+            display: block; /* Garante que o nome fique abaixo */
+            color: #495057; /* Cor ligeiramente mais escura para o nome */
+            font-weight: 500;
+            white-space: normal; /* Permite quebrar linha se nome for longo */
+            max-width: 70px; /* Limita largura para nomes longos */
+        }
+
+        .category-item-more .category-icon-circle {
+            background-color: #f8f9fa; /* Fundo diferente para 'ver mais' */
+            border-style: dashed;
+        }
+
+        .category-item-more .category-default-icon {
+            color: #6c757d;
+        }
+
+    </style>
 }

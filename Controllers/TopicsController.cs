@@ -26,13 +26,21 @@ namespace projetodweb_connectify.Controllers
         // GET: Topics
         public async Task<IActionResult> Index()
         {
+            // Carregar Tópicos (com Categoria incluída para a tabela principal)
             var topics = await _context.Topics
                                      .Include(t => t.Creator)
                                         .ThenInclude(c => c.User)
-                                     .Include(t => t.Category) // <<< ADICIONADO: Incluir Categoria
+                                     .Include(t => t.Category) 
                                      .Where(t => !t.IsPersonal)
                                      .OrderByDescending(t => t.CreatedAt)
                                      .ToListAsync();
+
+            // Carregar Categorias para exibir no topo
+            var categories = await _context.Categories
+                                         // .Include(c => c.Topics) // Opcional: incluir para contar ou ordenar por popularidade
+                                         .OrderBy(c => c.Name) // Ordenar alfabeticamente, por exemplo
+                                         .ToListAsync();
+            ViewData["CategoriesList"] = categories; // Passar a lista para a view
 
             // Lógica para obter o ProfileID do utilizador logado (se estiver logado)
             if (User.Identity != null && User.Identity.IsAuthenticated)
@@ -70,7 +78,7 @@ namespace projetodweb_connectify.Controllers
                 .Include(t => t.Posts)
                     .ThenInclude(p => p.Profile)
                         .ThenInclude(profile => profile.User)
-                .Include(t => t.Category) // <<< ADICIONADO: Incluir Categoria
+                .Include(t => t.Category) 
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (topic == null)
@@ -160,7 +168,7 @@ namespace projetodweb_connectify.Controllers
             ModelState.Remove(nameof(Topic.TopicImageUrl));
             ModelState.Remove(nameof(Topic.Posts));
             ModelState.Remove(nameof(Topic.Savers));
-            ModelState.Remove(nameof(Topic.Category)); // <<< ADICIONADO: Remover a propriedade de navegação Category da validação explícita
+            ModelState.Remove(nameof(Topic.Category)); 
 
             if (ModelState.IsValid)
             {
@@ -226,7 +234,7 @@ namespace projetodweb_connectify.Controllers
                 return NotFound();
             }
 
-            // <<< ALTERADO: Incluir Categoria ao carregar para edição
+            //Incluir Categoria ao carregar para edição
             var topic = await _context.Topics.Include(t => t.Category).FirstOrDefaultAsync(t => t.Id == id);
             if (topic == null)
             {
@@ -242,7 +250,7 @@ namespace projetodweb_connectify.Controllers
                 return Forbid("Não tem permissão para editar este tópico.");
             }
 
-            // <<< ALTERADO: Carregar ViewData["CategoryId"] para o dropdown
+            //Carregar ViewData["CategoryId"] para o dropdown
             ViewData["CategoryId"] = new SelectList(await _context.Categories.OrderBy(c => c.Name).ToListAsync(), "Id", "Name", topic.CategoryId);
             return View(topic);
         }
@@ -251,7 +259,6 @@ namespace projetodweb_connectify.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize]
-        // <<< ALTERADO: Adicionado CategoryId ao Bind
         public async Task<IActionResult> Edit(int id, [Bind("Id,Title,Description,TopicImageUrl,IsPrivate,CategoryId")] Topic updatedTopicViewModel, IFormFile? topicImageFile)
         {
             if (id != updatedTopicViewModel.Id)
@@ -288,7 +295,7 @@ namespace projetodweb_connectify.Controllers
             ModelState.Remove(nameof(Topic.IsPersonal));
             ModelState.Remove(nameof(Topic.Posts));
             ModelState.Remove(nameof(Topic.Savers));
-            ModelState.Remove(nameof(Topic.Category)); // <<< ADICIONADO: Remover a propriedade de navegação Category
+            ModelState.Remove(nameof(Topic.Category));
 
             if (ModelState.IsValid)
             {
@@ -378,8 +385,6 @@ namespace projetodweb_connectify.Controllers
             return View(updatedTopicViewModel);
         }
 
-        // Delete, SaveTopic, UnsaveTopic (mantêm-se iguais em relação à categoria, pois não a modificam diretamente)
-        // ... (código restante para Delete, SaveTopic, UnsaveTopic) ...
         // GET: Topics/Delete/5
         [Authorize]
         public async Task<IActionResult> Delete(int? id)
@@ -392,7 +397,7 @@ namespace projetodweb_connectify.Controllers
             var topic = await _context.Topics
                 .Include(t => t.Creator)
                     .ThenInclude(c => c.User)
-                .Include(t => t.Category) // <<< ADICIONADO: Incluir Categoria para exibição na view de confirmação
+                .Include(t => t.Category) 
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (topic == null)
@@ -453,7 +458,7 @@ namespace projetodweb_connectify.Controllers
 
             try
             {
-                if (!string.IsNullOrEmpty(topic.TopicImageUrl) && topic.TopicImageUrl != "/images/topics/default_topic.jpeg") // Verifique o nome da sua imagem padrão
+                if (!string.IsNullOrEmpty(topic.TopicImageUrl) && topic.TopicImageUrl != "/images/topics/default_topic.jpeg") 
                 {
                     string wwwRootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
                     string imagePath = Path.Combine(wwwRootPath, topic.TopicImageUrl.TrimStart('/'));

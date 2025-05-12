@@ -2,7 +2,7 @@
 
 @{
     ViewData["Title"] = "Edit";
-    string defaultCategoryImage = Url.Content("~/images/categories/default_category_image.png"); // Ajuste
+    string defaultCategoryImage = Url.Content("~/images/categories/default_category_image.png"); 
     string currentImageUrl = string.IsNullOrEmpty(Model.CategoryImageUrl) ? defaultCategoryImage : Url.Content(Model.CategoryImageUrl);
 }
 
