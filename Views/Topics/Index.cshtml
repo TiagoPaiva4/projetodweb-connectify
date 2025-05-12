@@ -1,14 +1,19 @@
 ﻿@model IEnumerable<projetodweb_connectify.Models.Topic>
-@using Microsoft.AspNetCore.Identity 
+@using Microsoft.AspNetCore.Identity
 
 @{
-    ViewData["Title"] = "Tópicos"; // Changed title
+    ViewData["Title"] = "Tópicos";
+    // Caminho para a imagem padrão do tópico (ajuste conforme a sua localização exata)
+    string defaultTopicImage = Url.Content("~/images/topics/default_topic_image.png");
+
+    // Obter o ID do perfil do utilizador logado do ViewData (definido no controller)
+    int? loggedInUserProfileId = ViewData["CurrentUserProfileId"] as int?;
 }
 
 <h1>@ViewData["Title"]</h1>
 
 <p>
-    @if (User.Identity != null && User.Identity.IsAuthenticated) // Only show Create New if logged in
+    @if (User.Identity != null && User.Identity.IsAuthenticated)
     {
         <a asp-action="Create" class="btn btn-success"><i class="fas fa-plus-circle"></i> Criar Novo Tópico</a>
     }
@@ -41,119 +46,127 @@
     </div>
 }
 
-
-<table class="table table-striped table-hover">
-    @* Added some Bootstrap classes *@
-    <thead class="table-light">
-        @* Light header *@
-        <tr>
-            <th>
-                @* @Html.DisplayNameFor(model => model.Title) *@
-                Título
-            </th>
-            <th>
-                @* @Html.DisplayNameFor(model => model.Description) *@
-                Descrição (início)
-            </th>
-            <th>
-                @* @Html.DisplayNameFor(model => model.Creator) *@
-                Criador
-            </th>
-            <th>
-                @* @Html.DisplayNameFor(model => model.CreatedAt) *@
-                Data Criação
-            </th>
-            <th>Ações</th> @* Combined actions header *@
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
+@if (!Model.Any())
+{
+    <div class="alert alert-info mt-3" role="alert">
+        Ainda não existem tópicos.
+        @if (User.Identity != null && User.Identity.IsAuthenticated)
         {
+            @:Seja o primeiro a <a asp-action="Create" class="alert-link">criar um</a>!
+        }
+        else
+        {
+            @:<a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Url.Action("Index", "Topics")" class="alert-link">Faça login</a> para criar o primeiro tópico!
+        }
+    </div>
+}
+else
+{
+    <table class="table table-striped table-hover align-middle">
+        <thead class="table-light">
             <tr>
-                <td>
-                    @* Link title to details page *@
-                    <a asp-action="Details" asp-route-id="@item.Id"><strong>@Html.DisplayFor(modelItem => item.Title)</strong></a>
-                    @if (item.IsPrivate)
-                    {
-                        <span class="badge bg-secondary ms-1" title="Tópico Privado"><i class="fas fa-lock"></i></span>
-                    }
-                </td>
-                <td>
-                    @* Display a snippet of the description *@
-                    @Html.Raw(item.Description?.Length > 100 ? item.Description.Substring(0, 100) + "..." : item.Description ?? "")
-                </td>
-                <td>
-                    @* Display Creator's Name or Username - Fallback to ID if names are null *@
-                    @Html.DisplayFor(modelItem => item.Creator.Name)
-                    @if (string.IsNullOrEmpty(item.Creator.Name) && item.Creator.User != null)
-                    {
-                        <span class="text-muted">(@(item.Creator.User.Username))</span>
-                    }
-                    else if (string.IsNullOrEmpty(item.Creator.Name) && item.Creator.User == null)
-                    {
-                        <span class="text-danger">(ID: @item.Creator.Id)</span> @* Fallback if data is missing *@
-                    }
-                </td>
-                <td>
-                    @item.CreatedAt.ToString("dd/MM/yyyy HH:mm") @* Format date *@
-                </td>
-                <td>
-                    @* --- Action Buttons --- *@
-                    <div class="btn-group btn-group-sm" role="group">
-                        @* Group buttons *@
-
-                        @* Details Button *@
-                        <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-info" title="Detalhes">
-                            <i class="fas fa-info-circle"></i>
-                        </a>
-
-                        @* Save Topic Button (Only show if user is logged in) *@
-                        @if (User.Identity != null && User.Identity.IsAuthenticated)
-                        {
-                            <form asp-action="SaveTopic" asp-route-id="@item.Id" method="post" style="display:inline;" class="ms-1">
-                                @* Added margin start *@
-                                @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-outline-success" title="Guardar Tópico">
-                                    <i class="fas fa-bookmark"></i> @* Bookmark icon for Save *@
-                                </button>
-                            </form>
-                        }
-
-                        @* Edit & Delete Buttons (Should only show if the current user is the CREATOR) *@
-                        @* You'll need to get the current user's Profile ID to compare here *@
-                        @* This requires passing the current user's profile ID to the view or doing the check in the controller/service *@
-                        @* --- Example (Simplified - Needs current user ProfileId passed in ViewData or ViewModel) --- *@
-                        @* @if (User.Identity.IsAuthenticated && ViewData["CurrentUserProfileId"] as int? == item.CreatedBy) *@
-                        @* { *@
-                        @* <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-outline-secondary ms-1" title="Editar"> *@
-                        @*     <i class="fas fa-edit"></i> *@
-                        @* </a> *@
-                        @* <form asp-action="Delete" asp-route-id="@item.Id" method="post" style="display:inline;" class="ms-1" onsubmit="return confirm('Tem a certeza que quer eliminar este tópico e TODOS os seus posts?');"> *@
-                        @*      @Html.AntiForgeryToken() *@
-                        @*      <button type="submit" class="btn btn-outline-danger" title="Eliminar"> *@
-                        @*          <i class="fas fa-trash"></i> *@
-                        @*      </button> *@
-                        @* </form> *@
-                        @* } *@
-                        @* --- End Conditional Edit/Delete --- *@
-                    </div>
-                </td>
+                <th style="width: 10%;">Imagem</th> @* Definir uma largura para a coluna da imagem *@
+                <th style="width: 25%;">Título</th>
+                <th style="width: 30%;">Descrição (início)</th>
+                <th style="width: 15%;">Criador</th>
+                <th style="width: 10%;">Data</th>
+                <th style="width: 10%;">Ações</th>
             </tr>
-        }
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>
+                        @{
+                            string topicImageUrl = string.IsNullOrEmpty(item.TopicImageUrl) ? defaultTopicImage : Url.Content(item.TopicImageUrl);
+                        }
+                        <a asp-action="Details" asp-route-id="@item.Id">
+                            <img src="@topicImageUrl" alt="Imagem do Tópico: @item.Title" class="img-thumbnail" style="width: 80px; height: 60px; object-fit: cover;" />
+                        </a>
+                    </td>
+                    <td>
+                        <a asp-action="Details" asp-route-id="@item.Id" class="text-decoration-none">
+                            <strong>@Html.DisplayFor(modelItem => item.Title)</strong>
+                        </a>
+                        @if (item.IsPrivate)
+                        {
+                            <span class="badge bg-warning text-dark ms-1" title="Tópico Privado"><i class="fas fa-lock"></i></span>
+                        }
+                    </td>
+                    <td>
+                        @Html.Raw(item.Description?.Length > 70 ? System.Web.HttpUtility.HtmlEncode(item.Description.Substring(0, 70)) + "..." : System.Web.HttpUtility.HtmlEncode(item.Description ?? ""))
+                    </td>
+                    <td>
+                        @if (item.Creator != null)
+                        {
+                            // Tenta mostrar o nome do perfil primeiro, depois o username do utilizador associado
+                            var displayName = !string.IsNullOrEmpty(item.Creator.Name) ? item.Creator.Name : item.Creator.User?.Username;
+                            if (!string.IsNullOrEmpty(displayName))
+                            {
+                                <a asp-controller="Profiles" asp-action="Details" asp-route-id="@item.Creator.Id" class="text-decoration-none">@displayName</a>
+                            }
+                            else
+                            {
+                                <span class="text-muted">(ID Perfil: @item.Creator.Id)</span>
+                            }
+                        }
+                        else
+                        {
+                            <span class="text-danger">(Criador não associado)</span>
+                        }
+                    </td>
+                    <td>
+                        <span title="@item.CreatedAt.ToString("F")">@item.CreatedAt.ToString("dd/MM/yy")</span>
+                        <br />
+                        <small class="text-muted">@item.CreatedAt.ToString("HH:mm")</small>
+                    </td>
+                    <td>
+                        <div class="btn-group btn-group-sm" role="group" aria-label="Ações do Tópico">
+                            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-info" title="Detalhes">
+                                <i class="fas fa-eye"></i> @* Olho para detalhes *@
+                            </a>
 
-@* Add Font Awesome if not already included in _Layout.cshtml *@
+                            @if (User.Identity != null && User.Identity.IsAuthenticated)
+                            {
+                                <form asp-action="SaveTopic" asp-route-id="@item.Id" method="post" style="display:inline;" class="ms-1">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-outline-success" title="Guardar Tópico">
+                                        <i class="far fa-bookmark"></i> @* far para bookmark não preenchido *@
+                                    </button>
+                                </form>
+
+                                @if (loggedInUserProfileId.HasValue && item.CreatedBy == loggedInUserProfileId.Value)
+                                {
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-outline-secondary ms-1" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <form asp-action="Delete" asp-route-id="@item.Id" method="post" style="display:inline;" class="ms-1" onsubmit="return confirm('Tem a certeza que quer eliminar este tópico e TODAS as suas publicações? Esta ação não pode ser desfeita.');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-outline-danger" title="Eliminar">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                }
+                            }
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@* Adicionar Font Awesome se não estiver no _Layout.cshtml *@
+
 @section Styles {
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <style>
-        /* Optional: Ensure buttons in forms align nicely */
-        td .btn-group form button {
-            line-height: 1.3; /* Adjust as needed */
-        }
-
-        td .btn-group form {
-            margin-bottom: 0; /* Remove default form margin */
-        }
-    </style>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+        <style>
+            td .btn-group form button {
+                line-height: 1.3;
+            }
+            td .btn-group form {
+                margin-bottom: 0;
+            }
+        </style>
 }

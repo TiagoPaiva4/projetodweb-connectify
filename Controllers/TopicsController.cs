@@ -33,6 +33,7 @@ namespace projetodweb_connectify.Controllers
                                      .Where(t => !t.IsPersonal)
                                      .OrderByDescending(t => t.CreatedAt)
                                      .ToListAsync();
+
             return View(topics);
         }
 
@@ -61,6 +62,36 @@ namespace projetodweb_connectify.Controllers
             {
                 topic.Posts = topic.Posts.OrderByDescending(p => p.CreatedAt).ToList();
             }
+
+            // --- NOVA LÓGICA PARA VERIFICAR O CRIADOR ---
+            bool isCurrentUserTheCreator = false;
+            int? currentUserProfileId = null; // Para verificar autores de posts
+
+            if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                var email = User.Identity.Name;
+                if (!string.IsNullOrEmpty(email))
+                {
+                    var appUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == email);
+                    if (appUser != null)
+                    {
+                        var userProfile = await _context.Profiles.AsNoTracking() // AsNoTracking aqui é seguro, só estamos a ler
+                                                .FirstOrDefaultAsync(p => p.UserId == appUser.Id);
+                        if (userProfile != null)
+                        {
+                            currentUserProfileId = userProfile.Id; // Guardar o ID do perfil do user logado
+                            if (topic.Creator != null && topic.CreatedBy == userProfile.Id) // CreatedBy é o ProfileId do criador do tópico
+                            {
+                                isCurrentUserTheCreator = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            ViewBag.IsCurrentUserTheCreator = isCurrentUserTheCreator;
+            ViewBag.CurrentUserProfileId = currentUserProfileId; // Passar o ID do perfil do user logado para a view
+                                                                 // --- FIM DA NOVA LÓGICA ---
 
             return View(topic);
         }
