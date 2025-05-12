@@ -2,16 +2,58 @@
 
 @{
     ViewData["Title"] = "O Meu Perfil";
+    // Assuming your layout handles the overall page structure
 }
 
-<h1>O Meu Perfil</h1>
+<h1>@ViewData["Title"]</h1>
 
-<div class="card mt-4">
-    <div class="card-body">
-        <img src="@Model.ProfilePicture" alt="Foto de Perfil" class="img-thumbnail" style="width: 100px; height: 100px;" />
-        <h5 class="card-title">@Model.User.Username</h5>
-        <p class="card-text"><strong>Nome:</strong> @Model.Name</p>
-        <p class="card-text"><strong>Bio:</strong> @Model.Bio</p>
-        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Editar Perfil</a>
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <img src="@(string.IsNullOrEmpty(Model.ProfilePicture) ? "/images/default-profile.png" : Model.ProfilePicture)"
+                     alt="Foto de Perfil"
+                     class="card-img-top"
+                     style="object-fit: cover; max-height: 300px;"
+                     onerror="this.onerror=null; this.src='/images/default-profile.png';" />
+                <div class="card-body">
+                    <h5 class="card-title">@(Model.User?.Username ?? "Utilizador")</h5>
+                    <p class="card-text"><strong>Nome:</strong> @Model.Name</p>
+                    <p class="card-text"><strong>Bio:</strong> @(string.IsNullOrEmpty(Model.Bio) ? "Nenhuma bio definida." : Model.Bio)</p>
+                    <a asp-action="Edit" asp-controller="Profiles" class="btn btn-primary btn-block">Editar Perfil</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <h2>Meus Tópicos Criados</h2>
+            <hr />
+            @if (Model.CreatedTopics != null && Model.CreatedTopics.Any())
+            {
+                <ul class="list-group">
+                    @foreach (var topic in Model.CreatedTopics)
+                    {
+                        <li class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">
+                                    <a asp-controller="Topics" asp-action="Details" asp-route-id="@topic.Id">@topic.Title</a>
+                                </h5>
+                                <small>@topic.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small>
+                            </div>
+                            <p class="mb-1">@Html.Raw(topic.Description?.Length > 150 ? topic.Description.Substring(0, 150) + "..." : topic.Description)</p>
+                            <div class="mt-2">
+                                <a asp-controller="Topics" asp-action="Edit" asp-route-id="@topic.Id" class="btn btn-sm btn-outline-secondary">Editar Tópico</a>
+                                <a asp-controller="Topics" asp-action="Delete" asp-route-id="@topic.Id" class="btn btn-sm btn-outline-danger">Excluir Tópico</a>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <p>Você ainda não criou nenhum tópico público.</p>
+                <p><a asp-controller="Topics" asp-action="Create" class="btn btn-success">Criar Novo Tópico</a></p>
+            }
+        </div>
     </div>
 </div>

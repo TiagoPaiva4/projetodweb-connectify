@@ -7,14 +7,15 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using projetodweb_connectify.Data;
 using projetodweb_connectify.Models;
-
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity; // If you're restricting access
 
 namespace projetodweb_connectify.Controllers
 {
+    [Authorize] // Apply authorization at controller level if most actions require it
     public class ProfilesController : Controller
     {
         private readonly ApplicationDbContext _context;
-        private readonly ILogger<ProfilesController> _logger;
 
         public ProfilesController(ApplicationDbContext context)
         {
@@ -24,49 +25,127 @@ namespace projetodweb_connectify.Controllers
         // GET: Profiles
         public async Task<IActionResult> Index()
         {
-            var email = User.Identity?.Name;
 
-            if (email == null)
+            var userEmail = User.Identity?.Name;
+            if (string.IsNullOrEmpty(userEmail))
+            {
                 return Unauthorized();
+            }
 
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == email);
-
-            if (user == null)
+            // Find the user by email (assuming Username is the email)
+            var appUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == userEmail);
+            if (appUser == null)
+            {
                 return NotFound("Utilizador não encontrado.");
+            }
 
+            // Find the profile associated with this user
             var profile = await _context.Profiles
-                .Include(p => p.User)
-                .FirstOrDefaultAsync(p => p.UserId == user.Id);
-
+                                        .Include(p => p.User)
+                                        .FirstOrDefaultAsync(p => p.UserId == appUser.Id); 
             if (profile == null)
-                return NotFound("Perfil não encontrado.");
+            {
+                return NotFound("Perfil não encontrado. Por favor, crie um perfil.");
+            }
 
-            return View(profile); // envia diretamente o perfil
+            // Fetch topics created by this profile
+            Console.WriteLine($"Fetching topics where Topic.CreatedBy == {profile.Id}");
+
+            // --- QUERY MODIFICATION FOR DEBUGGING ---
+            var topicsQuery = _context.Topics
+                                      .Where(t => t.CreatedBy == profile.Id); // Temporarily remove other filters
+
+            // Log the generated SQL (optional, but very helpful)
+            // var sql = topicsQuery.ToQueryString();
+            // Console.WriteLine($"Generated SQL for topics: {sql}");
+
+            profile.CreatedTopics = await topicsQuery
+                                           .OrderByDescending(t => t.CreatedAt)
+                                           .ToListAsync();
+
+            Console.WriteLine($"Number of topics fetched for Profile ID {profile.Id}: {profile.CreatedTopics.Count}");
+            if (profile.CreatedTopics.Any())
+            {
+                foreach (var topic in profile.CreatedTopics)
+                {
+                    Console.WriteLine($"  - Topic ID: {topic.Id}, Title: {topic.Title}, CreatedBy: {topic.CreatedBy}, IsPersonal: {topic.IsPersonal}, IsPrivate: {topic.IsPrivate}");
+                }
+            }
+            else
+            {
+                Console.WriteLine("No topics found matching the criteria.");
+            }
+
+            Console.WriteLine("--- MyProfile Action Ending ---");
+            return View(profile);
         }
 
 
-        [HttpGet("Profiles/MyProfile")]
+        /* Mudar futuramente a rota para este get em vez de usar o Index*/
+        /* Falta o GET do tópico pessoal*/
+
+        // GET: Profiles/MyProfile
+        [HttpGet("Profiles/MyProfile")] 
         public async Task<IActionResult> MyProfile()
         {
-            var email = User.Identity?.Name;
 
-            if (email == null)
+            var userEmail = User.Identity?.Name;
+            if (string.IsNullOrEmpty(userEmail))
+            {
                 return Unauthorized();
+            }
 
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == email);
-            
-
-            if (user == null)
+            // Find the user by email (assuming Username is the email)
+            var appUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == userEmail);
+            if (appUser == null)
+            {
+                Console.WriteLine($"User with email '{userEmail}' not found in Users table. Returning NotFound.");
                 return NotFound("Utilizador não encontrado.");
+            }
+            Console.WriteLine($"Found User - ID: {appUser.Id}, Username: {appUser.Username}");
 
+            // Find the profile associated with this user
             var profile = await _context.Profiles
-                .Include(p => p.User)
-                .FirstOrDefaultAsync(p => p.UserId == user.Id);
+                                        .Include(p => p.User)
+                                        .FirstOrDefaultAsync(p => p.UserId == appUser.Id); 
 
             if (profile == null)
-                return NotFound("Perfil não encontrado.");
+            {
+                return NotFound("Perfil não encontrado. Por favor, crie um perfil.");
+            }
 
-            return View("Details", profile);
+            // --- QUERY MODIFICATION FOR DEBUGGING ---
+            var topicsQuery = _context.Topics
+                                      .Where(t => t.CreatedBy == profile.Id); 
+
+            // Log the generated SQL (optional, but very helpful)
+            // var sql = topicsQuery.ToQueryString();
+            // Console.WriteLine($"Generated SQL for topics: {sql}");
+
+            profile.CreatedTopics = await topicsQuery
+                                           .OrderByDescending(t => t.CreatedAt)
+                                           .ToListAsync();
+
+            Console.WriteLine($"Number of topics fetched for Profile ID {profile.Id}: {profile.CreatedTopics.Count}");
+            if (profile.CreatedTopics.Any())
+            {
+                foreach (var topic in profile.CreatedTopics)
+                {
+                    Console.WriteLine($"  - Topic ID: {topic.Id}, Title: {topic.Title}, CreatedBy: {topic.CreatedBy}, IsPersonal: {topic.IsPersonal}, IsPrivate: {topic.IsPrivate}");
+                }
+            }
+            else
+            {
+                Console.WriteLine("No topics found matching the criteria.");
+            }
+
+            // Re-apply original filter if needed after debugging
+            // profile.CreatedTopics = profile.CreatedTopics
+            //                                .Where(t => !t.IsPersonal && !t.IsPrivate)
+            //                                .ToList();
+            // Console.WriteLine($"Number of topics after IsPersonal/IsPrivate filter: {profile.CreatedTopics.Count}");
+
+            return View(profile);
         }
 
 

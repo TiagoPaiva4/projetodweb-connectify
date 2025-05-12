@@ -55,5 +55,10 @@ namespace projetodweb_connectify.Models
         /// data e hora de criação do perfil. 
         /// </summary>
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        // This property will NOT be mapped to the database
+        // It's just for carrying data to the view
+        [NotMapped]
+        public List<Topic> CreatedTopics { get; set; } = new List<Topic>();
     }
 }
