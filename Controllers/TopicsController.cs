@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO; // Adicionado para Path, Directory, FileStream
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http; // Adicionado para IFormFile
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -18,7 +18,6 @@ namespace projetodweb_connectify.Controllers
     {
         private readonly ApplicationDbContext _context;
 
-        // Construtor sem IWebHostEnvironment
         public TopicsController(ApplicationDbContext context)
         {
             _context = context;
@@ -29,10 +28,30 @@ namespace projetodweb_connectify.Controllers
         {
             var topics = await _context.Topics
                                      .Include(t => t.Creator)
-                                      .ThenInclude(c => c.User)
+                                        .ThenInclude(c => c.User)
+                                     .Include(t => t.Category) // <<< ADICIONADO: Incluir Categoria
                                      .Where(t => !t.IsPersonal)
                                      .OrderByDescending(t => t.CreatedAt)
                                      .ToListAsync();
+
+            // Lógica para obter o ProfileID do utilizador logado (se estiver logado)
+            if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                var email = User.Identity.Name;
+                if (!string.IsNullOrEmpty(email))
+                {
+                    var appUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == email);
+                    if (appUser != null)
+                    {
+                        var userProfile = await _context.Profiles.AsNoTracking()
+                                                .FirstOrDefaultAsync(p => p.UserId == appUser.Id);
+                        if (userProfile != null)
+                        {
+                            ViewData["CurrentUserProfileId"] = userProfile.Id;
+                        }
+                    }
+                }
+            }
 
             return View(topics);
         }
@@ -51,6 +70,7 @@ namespace projetodweb_connectify.Controllers
                 .Include(t => t.Posts)
                     .ThenInclude(p => p.Profile)
                         .ThenInclude(profile => profile.User)
+                .Include(t => t.Category) // <<< ADICIONADO: Incluir Categoria
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (topic == null)
@@ -63,9 +83,8 @@ namespace projetodweb_connectify.Controllers
                 topic.Posts = topic.Posts.OrderByDescending(p => p.CreatedAt).ToList();
             }
 
-            // --- NOVA LÓGICA PARA VERIFICAR O CRIADOR ---
             bool isCurrentUserTheCreator = false;
-            int? currentUserProfileId = null; // Para verificar autores de posts
+            int? currentUserProfileId = null;
 
             if (User.Identity != null && User.Identity.IsAuthenticated)
             {
@@ -75,12 +94,12 @@ namespace projetodweb_connectify.Controllers
                     var appUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == email);
                     if (appUser != null)
                     {
-                        var userProfile = await _context.Profiles.AsNoTracking() // AsNoTracking aqui é seguro, só estamos a ler
+                        var userProfile = await _context.Profiles.AsNoTracking()
                                                 .FirstOrDefaultAsync(p => p.UserId == appUser.Id);
                         if (userProfile != null)
                         {
-                            currentUserProfileId = userProfile.Id; // Guardar o ID do perfil do user logado
-                            if (topic.Creator != null && topic.CreatedBy == userProfile.Id) // CreatedBy é o ProfileId do criador do tópico
+                            currentUserProfileId = userProfile.Id;
+                            if (topic.Creator != null && topic.CreatedBy == userProfile.Id)
                             {
                                 isCurrentUserTheCreator = true;
                             }
@@ -90,31 +109,29 @@ namespace projetodweb_connectify.Controllers
             }
 
             ViewBag.IsCurrentUserTheCreator = isCurrentUserTheCreator;
-            ViewBag.CurrentUserProfileId = currentUserProfileId; // Passar o ID do perfil do user logado para a view
-                                                                 // --- FIM DA NOVA LÓGICA ---
+            ViewBag.CurrentUserProfileId = currentUserProfileId;
 
             return View(topic);
         }
 
         // GET: Topics/Create
-        [Authorize] // Recomendo autorizar a criação de tópicos
-        public IActionResult Create()
+        [Authorize]
+        public async Task<IActionResult> Create()
         {
-            // ViewData["CreatedBy"] não é mais necessário aqui, pois será definido pelo user logado
+            ViewData["CategoryId"] = new SelectList(await _context.Categories.OrderBy(c => c.Name).ToListAsync(), "Id", "Name");
             return View();
         }
 
         // POST: Topics/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize] // Recomendo autorizar a criação de tópicos
-        public async Task<IActionResult> Create([Bind("IsPrivate,Title,Description")] Topic topic, IFormFile? topicImageFile)
+        [Authorize]
+        // <<< ALTERADO: Adicionado CategoryId ao Bind
+        public async Task<IActionResult> Create([Bind("IsPrivate,Title,Description,CategoryId")] Topic topic, IFormFile? topicImageFile)
         {
-            // Valores automáticos
             topic.IsPersonal = false;
             topic.CreatedAt = DateTime.UtcNow;
 
-            // Obter utilizador logado
             var email = User.Identity?.Name;
             if (string.IsNullOrEmpty(email))
             {
@@ -131,26 +148,22 @@ namespace projetodweb_connectify.Controllers
             if (userProfile == null)
             {
                 TempData["ErrorMessage"] = "Precisa de criar um perfil antes de poder criar tópicos.";
-                return RedirectToAction("MyProfile", "Profiles"); // Ou para a página de criação de perfil
+                return RedirectToAction("MyProfile", "Profiles");
             }
-            topic.CreatedBy = userProfile.Id; // FK para Profile
-            // topic.Creator = userProfile; // O EF Core deve ligar isto automaticamente se CreatedBy for definido
+            topic.CreatedBy = userProfile.Id;
 
-
-            // Remover validações para campos preenchidos pelo sistema ou não vindos do form diretamente
             ModelState.Remove(nameof(Topic.Id));
             ModelState.Remove(nameof(Topic.IsPersonal));
             ModelState.Remove(nameof(Topic.CreatedBy));
-            ModelState.Remove(nameof(Topic.Creator)); // Será inferido pelo EF Core a partir de CreatedBy
+            ModelState.Remove(nameof(Topic.Creator));
             ModelState.Remove(nameof(Topic.CreatedAt));
-            ModelState.Remove(nameof(Topic.TopicImageUrl)); // Será definido pela lógica de upload
+            ModelState.Remove(nameof(Topic.TopicImageUrl));
             ModelState.Remove(nameof(Topic.Posts));
             ModelState.Remove(nameof(Topic.Savers));
-
+            ModelState.Remove(nameof(Topic.Category)); // <<< ADICIONADO: Remover a propriedade de navegação Category da validação explícita
 
             if (ModelState.IsValid)
             {
-                // Lógica de Upload da Imagem do Tópico
                 if (topicImageFile != null && topicImageFile.Length > 0)
                 {
                     string wwwRootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
@@ -175,16 +188,12 @@ namespace projetodweb_connectify.Controllers
                     catch (Exception ex)
                     {
                         Console.WriteLine($"Erro ao carregar a imagem do tópico: {ex.Message}");
-                        // Considerar adicionar um erro ao ModelState ou usar uma imagem padrão em caso de falha
                         ModelState.AddModelError("topicImageFile", $"Erro ao carregar a imagem: {ex.Message}");
-                        topic.TopicImageUrl = "/images/topics/default_topic.jpeg"; // Caminho para a imagem padrão
-                        // Se houver erro no upload mas o resto for válido, pode-se optar por guardar com a imagem padrão
-                        // ou retornar a view com o erro. Aqui, vamos prosseguir com a padrão e logar o erro.
+                        topic.TopicImageUrl = "/images/topics/default_topic.jpeg";
                     }
                 }
                 else
                 {
-                    // Nenhuma imagem enviada, usar a padrão
                     topic.TopicImageUrl = "/images/topics/default_topic.jpeg";
                 }
 
@@ -194,7 +203,8 @@ namespace projetodweb_connectify.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // Log ModelState errors if not valid
+            // <<< ALTERADO: Recarregar ViewData["CategoryId"] se ModelState for inválido
+            ViewData["CategoryId"] = new SelectList(await _context.Categories.OrderBy(c => c.Name).ToListAsync(), "Id", "Name", topic.CategoryId);
             foreach (var key in ModelState.Keys)
             {
                 var state = ModelState[key];
@@ -207,7 +217,6 @@ namespace projetodweb_connectify.Controllers
             return View(topic);
         }
 
-
         // GET: Topics/Edit/5
         [Authorize]
         public async Task<IActionResult> Edit(int? id)
@@ -217,13 +226,13 @@ namespace projetodweb_connectify.Controllers
                 return NotFound();
             }
 
-            var topic = await _context.Topics.FindAsync(id);
+            // <<< ALTERADO: Incluir Categoria ao carregar para edição
+            var topic = await _context.Topics.Include(t => t.Category).FirstOrDefaultAsync(t => t.Id == id);
             if (topic == null)
             {
                 return NotFound();
             }
 
-            // Verificar se o utilizador logado é o criador do tópico
             var email = User.Identity?.Name;
             var appUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == email);
             if (appUser == null) return Unauthorized();
@@ -233,7 +242,8 @@ namespace projetodweb_connectify.Controllers
                 return Forbid("Não tem permissão para editar este tópico.");
             }
 
-            // ViewData["CreatedBy"] não é mais necessário, já que a permissão é verificada
+            // <<< ALTERADO: Carregar ViewData["CategoryId"] para o dropdown
+            ViewData["CategoryId"] = new SelectList(await _context.Categories.OrderBy(c => c.Name).ToListAsync(), "Id", "Name", topic.CategoryId);
             return View(topic);
         }
 
@@ -241,7 +251,8 @@ namespace projetodweb_connectify.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Title,Description,TopicImageUrl,IsPrivate")] Topic updatedTopicViewModel, IFormFile? topicImageFile)
+        // <<< ALTERADO: Adicionado CategoryId ao Bind
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Title,Description,TopicImageUrl,IsPrivate,CategoryId")] Topic updatedTopicViewModel, IFormFile? topicImageFile)
         {
             if (id != updatedTopicViewModel.Id)
             {
@@ -257,91 +268,82 @@ namespace projetodweb_connectify.Controllers
             var userProfile = await _context.Profiles.FirstOrDefaultAsync(p => p.UserId == appUser.Id);
             if (userProfile == null) return Unauthorized("Perfil do utilizador não encontrado.");
 
-            // Carregar o tópico existente da base de dados para verificar o criador e obter valores não editáveis
-            // Usar AsNoTracking() para evitar conflitos de tracking se o ModelState for inválido e retornarmos a view com updatedTopicViewModel
-            var existingTopic = await _context.Topics.AsNoTracking().FirstOrDefaultAsync(t => t.Id == id);
-            if (existingTopic == null)
+            var existingTopicForAuth = await _context.Topics.AsNoTracking().FirstOrDefaultAsync(t => t.Id == id);
+            if (existingTopicForAuth == null)
             {
                 return NotFound("Tópico não encontrado.");
             }
-
-            if (existingTopic.CreatedBy != userProfile.Id)
+            if (existingTopicForAuth.CreatedBy != userProfile.Id)
             {
                 return Forbid("Não tem permissão para editar este tópico.");
             }
 
-            // Atribuir valores não editáveis do tópico existente para o updatedTopicViewModel
-            // para garantir que não são sobrescritos indevidamente e para que o ModelState seja validado corretamente.
-            updatedTopicViewModel.CreatedBy = existingTopic.CreatedBy;
-            updatedTopicViewModel.CreatedAt = existingTopic.CreatedAt;
-            updatedTopicViewModel.IsPersonal = existingTopic.IsPersonal;
-            // TopicImageUrl será tratado pela lógica de upload, mas é bom ter o valor atual no ViewModel se nenhuma nova imagem for enviada.
-            // Se topicImageFile for null, o valor de TopicImageUrl do Bind (do hidden field) será usado.
+            // Atribuir valores não editáveis explicitamente ao ViewModel antes da validação, se necessário
+            // No entanto, para CategoryId, queremos o valor do formulário.
+            // Vamos buscar o tópico real para atualizar depois da validação.
 
             ModelState.Remove(nameof(Topic.Creator));
-            ModelState.Remove(nameof(Topic.CreatedBy)); // Já definido
-            ModelState.Remove(nameof(Topic.CreatedAt)); // Já definido
-            ModelState.Remove(nameof(Topic.IsPersonal)); // Já definido
+            ModelState.Remove(nameof(Topic.CreatedBy));
+            ModelState.Remove(nameof(Topic.CreatedAt));
+            ModelState.Remove(nameof(Topic.IsPersonal));
             ModelState.Remove(nameof(Topic.Posts));
             ModelState.Remove(nameof(Topic.Savers));
-            // Se TopicImageUrl não estivesse no Bind, precisaria remover aqui também. Como está, deixamos.
+            ModelState.Remove(nameof(Topic.Category)); // <<< ADICIONADO: Remover a propriedade de navegação Category
 
             if (ModelState.IsValid)
             {
                 try
                 {
+                    var topicToUpdate = await _context.Topics.FindAsync(id);
+                    if (topicToUpdate == null) return NotFound("Tópico desapareceu durante a edição.");
+
+                    // Lógica de imagem (mantida)
                     string wwwRootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-                    string currentImageUrl = updatedTopicViewModel.TopicImageUrl; // Valor do hidden field ou BD
+                    string currentImageUrlOnDb = topicToUpdate.TopicImageUrl; // Usar o valor da BD para a imagem antiga
 
                     if (topicImageFile != null && topicImageFile.Length > 0)
                     {
-                        // Apagar a imagem antiga se existir e não for a imagem padrão
-                        if (!string.IsNullOrEmpty(currentImageUrl) && currentImageUrl != "/images/default_topic.jpeg")
+                        if (!string.IsNullOrEmpty(currentImageUrlOnDb) && currentImageUrlOnDb != "/images/topics/default_topic.jpeg")
                         {
-                            string oldImagePath = Path.Combine(wwwRootPath, currentImageUrl.TrimStart('/'));
+                            string oldImagePath = Path.Combine(wwwRootPath, currentImageUrlOnDb.TrimStart('/'));
                             if (System.IO.File.Exists(oldImagePath))
                             {
-                                try
-                                {
-                                    System.IO.File.Delete(oldImagePath);
-                                    Console.WriteLine($"Imagem antiga '{oldImagePath}' eliminada.");
-                                }
-                                catch (Exception ex)
-                                {
-                                    Console.WriteLine($"Erro ao eliminar imagem antiga '{oldImagePath}': {ex.Message}");
-                                    // Logar e continuar, não impedir o upload da nova.
-                                }
+                                try { System.IO.File.Delete(oldImagePath); Console.WriteLine($"Imagem antiga '{oldImagePath}' eliminada."); }
+                                catch (Exception ex) { Console.WriteLine($"Erro ao eliminar imagem antiga '{oldImagePath}': {ex.Message}"); }
                             }
                         }
-
-                        // Guardar a nova imagem
-                        string uploadsFolder = Path.Combine(wwwRootPath, "images", "topics"); 
+                        string uploadsFolder = Path.Combine(wwwRootPath, "images", "topics");
                         if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
-
                         string uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(topicImageFile.FileName);
                         string filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-                        using (var fileStream = new FileStream(filePath, FileMode.Create))
-                        {
-                            await topicImageFile.CopyToAsync(fileStream);
-                        }
-                        updatedTopicViewModel.TopicImageUrl = "/images/topics/" + uniqueFileName;
-                        Console.WriteLine($"Nova imagem do tópico guardada: {updatedTopicViewModel.TopicImageUrl}");
+                        using (var fileStream = new FileStream(filePath, FileMode.Create)) { await topicImageFile.CopyToAsync(fileStream); }
+                        topicToUpdate.TopicImageUrl = "/images/topics/" + uniqueFileName;
+                        Console.WriteLine($"Nova imagem do tópico guardada: {topicToUpdate.TopicImageUrl}");
                     }
-                    // else: Nenhuma nova imagem enviada, updatedTopicViewModel.TopicImageUrl já tem o valor do campo hidden.
+                    else if (updatedTopicViewModel.TopicImageUrl != currentImageUrlOnDb) // Se nenhuma nova imagem foi enviada, mas o campo hidden TopicImageUrl mudou (ex: foi limpo intencionalmente)
+                    {
+                        // Esta lógica pode precisar de ajuste se você permitir limpar a imagem para voltar à padrão via formulário
+                        // Por agora, se não há ficheiro novo, mantemos a imagem que já estava ou a que veio no hidden field
+                        // A atribuição abaixo (topicToUpdate.TopicImageUrl = updatedTopicViewModel.TopicImageUrl) lida com isto
+                        // se o campo hidden TopicImageUrl estiver correto.
+                        // No entanto, é mais seguro: se não houver ficheiro, não mudar topicToUpdate.TopicImageUrl aqui,
+                        // e deixar que a atribuição geral abaixo o faça, ou explicitamente:
+                        // topicToUpdate.TopicImageUrl = updatedTopicViewModel.TopicImageUrl;
+                    }
 
-                    // Agora, aplicamos as alterações ao `existingTopic` que será de facto atualizado no contexto.
-                    // Ou, se preferir, pode configurar o `_context.Entry(updatedTopicViewModel).State = EntityState.Modified;`
-                    // mas isso requer que todas as propriedades estejam corretas.
-                    // É mais seguro atualizar o objeto que veio da BD:
-                    var topicToUpdate = await _context.Topics.FindAsync(id); // Re-fetch para atualizar
-                    if (topicToUpdate == null) return NotFound("Tópico desapareceu durante a edição."); // Segurança
 
+                    // Atualizar propriedades do topicToUpdate com os valores do ViewModel
                     topicToUpdate.Title = updatedTopicViewModel.Title;
                     topicToUpdate.Description = updatedTopicViewModel.Description;
-                    topicToUpdate.TopicImageUrl = updatedTopicViewModel.TopicImageUrl; // Pode ser o novo ou o antigo (do hidden)
+                    // TopicImageUrl já foi atualizado acima se um novo ficheiro foi enviado.
+                    // Se nenhum novo ficheiro foi enviado, e o hidden field `TopicImageUrl` tem um valor,
+                    // ele será usado se atribuirmos explicitamente (ou se a propriedade TopicImageUrl no topicToUpdate não for tocada e o ViewModel o tiver):
+                    if (topicImageFile == null) // Se não houve upload de novo ficheiro
+                    {
+                        topicToUpdate.TopicImageUrl = updatedTopicViewModel.TopicImageUrl; // Usar valor do campo hidden
+                    }
                     topicToUpdate.IsPrivate = updatedTopicViewModel.IsPrivate;
-
+                    topicToUpdate.CategoryId = updatedTopicViewModel.CategoryId; // <<< ADICIONADO: Atualizar CategoryId
 
                     _context.Update(topicToUpdate);
                     await _context.SaveChangesAsync();
@@ -349,23 +351,18 @@ namespace projetodweb_connectify.Controllers
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!_context.Topics.Any(t => t.Id == updatedTopicViewModel.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        ModelState.AddModelError(string.Empty, "O tópico foi modificado por outro utilizador. Por favor, recarregue a página.");
-                        // Poderia recarregar os dados e devolver ao user
-                        var currentValues = await _context.Topics.AsNoTracking().FirstOrDefaultAsync(t => t.Id == id);
-                        return View(currentValues); // Devolver os valores atuais da BD
-                    }
+                    if (!_context.Topics.Any(t => t.Id == updatedTopicViewModel.Id)) return NotFound();
+                    ModelState.AddModelError(string.Empty, "O tópico foi modificado. Recarregue a página.");
+                    var currentValues = await _context.Topics.AsNoTracking().Include(t => t.Category).FirstOrDefaultAsync(t => t.Id == id);
+                    ViewData["CategoryId"] = new SelectList(await _context.Categories.OrderBy(c => c.Name).ToListAsync(), "Id", "Name", currentValues?.CategoryId);
+                    return View(currentValues);
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Erro ao editar tópico: {ex.Message}");
-                    ModelState.AddModelError(string.Empty, $"Ocorreu um erro inesperado: {ex.Message}");
-                    return View(updatedTopicViewModel); // Retorna com o modelo que tentou submeter
+                    ModelState.AddModelError(string.Empty, $"Ocorreu um erro: {ex.Message}");
+                    ViewData["CategoryId"] = new SelectList(await _context.Categories.OrderBy(c => c.Name).ToListAsync(), "Id", "Name", updatedTopicViewModel.CategoryId);
+                    return View(updatedTopicViewModel);
                 }
                 return RedirectToAction(nameof(Index));
             }
@@ -374,15 +371,15 @@ namespace projetodweb_connectify.Controllers
             foreach (var key in ModelState.Keys)
             {
                 var state = ModelState[key];
-                if (state.Errors.Any())
-                {
-                    Console.WriteLine($"  - {key}: {string.Join("; ", state.Errors.Select(e => e.ErrorMessage))}");
-                }
+                if (state.Errors.Any()) { Console.WriteLine($"  - {key}: {string.Join("; ", state.Errors.Select(e => e.ErrorMessage))}"); }
             }
-
-            return View(updatedTopicViewModel); // Retorna com o modelo que tentou submeter
+            // <<< ALTERADO: Recarregar ViewData["CategoryId"] se ModelState for inválido
+            ViewData["CategoryId"] = new SelectList(await _context.Categories.OrderBy(c => c.Name).ToListAsync(), "Id", "Name", updatedTopicViewModel.CategoryId);
+            return View(updatedTopicViewModel);
         }
 
+        // Delete, SaveTopic, UnsaveTopic (mantêm-se iguais em relação à categoria, pois não a modificam diretamente)
+        // ... (código restante para Delete, SaveTopic, UnsaveTopic) ...
         // GET: Topics/Delete/5
         [Authorize]
         public async Task<IActionResult> Delete(int? id)
@@ -393,8 +390,9 @@ namespace projetodweb_connectify.Controllers
             }
 
             var topic = await _context.Topics
-                .Include(t => t.Creator) // Para mostrar o nome do criador na view de confirmação
+                .Include(t => t.Creator)
                     .ThenInclude(c => c.User)
+                .Include(t => t.Category) // <<< ADICIONADO: Incluir Categoria para exibição na view de confirmação
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (topic == null)
@@ -402,7 +400,6 @@ namespace projetodweb_connectify.Controllers
                 return NotFound();
             }
 
-            // Verificar se o utilizador logado é o criador do tópico
             var email = User.Identity?.Name;
             var appUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == email);
             if (appUser == null) return Unauthorized();
@@ -413,11 +410,10 @@ namespace projetodweb_connectify.Controllers
                 return Forbid("Não tem permissão para eliminar este tópico.");
             }
 
-            // Bloqueia a eliminação do tópico pessoal do utilizador (se esta lógica ainda for desejada aqui)
-            if (topic.IsPersonal && topic.IsPrivate) // Esta condição define o tópico pessoal no seu ProfilesController
+            if (topic.IsPersonal && topic.IsPrivate)
             {
                 TempData["ErrorMessage"] = "Não pode eliminar o seu tópico de perfil pessoal diretamente.";
-                return RedirectToAction("MyProfile", "Profiles"); // Ou para onde for apropriado
+                return RedirectToAction("MyProfile", "Profiles");
             }
 
             return View(topic);
@@ -457,8 +453,7 @@ namespace projetodweb_connectify.Controllers
 
             try
             {
-                // Lógica para apagar a imagem associada ao tópico (se não for a padrão)
-                if (!string.IsNullOrEmpty(topic.TopicImageUrl) && topic.TopicImageUrl != "/images/default_topic_image.png")
+                if (!string.IsNullOrEmpty(topic.TopicImageUrl) && topic.TopicImageUrl != "/images/topics/default_topic.jpeg") // Verifique o nome da sua imagem padrão
                 {
                     string wwwRootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
                     string imagePath = Path.Combine(wwwRootPath, topic.TopicImageUrl.TrimStart('/'));
@@ -468,22 +463,14 @@ namespace projetodweb_connectify.Controllers
                         Console.WriteLine($"Imagem do tópico '{imagePath}' eliminada.");
                     }
                 }
-
-                // O EF Core deve tratar de eliminar Posts e SavedTopics associados se as relações
-                // estiverem configuradas com `CascadeOnDelete` (o que é comum para FKs não nulas).
-                // Se não estiverem, precisaria remover Posts e SavedTopics manualmente antes de remover o Topic.
-                // Ex: var posts = _context.TopicPosts.Where(p => p.TopicId == id).ToList(); _context.TopicPosts.RemoveRange(posts);
-                // Ex: var savers = _context.SavedTopics.Where(s => s.TopicId == id).ToList(); _context.SavedTopics.RemoveRange(savers);
-
                 _context.Topics.Remove(topic);
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Tópico eliminado com sucesso!";
             }
-            catch (DbUpdateException ex) // Captura erros de FK se o cascade delete não estiver configurado
+            catch (DbUpdateException ex)
             {
                 Console.WriteLine($"Erro ao eliminar tópico (DbUpdateException): {ex.InnerException?.Message ?? ex.Message}");
                 TempData["ErrorMessage"] = "Não foi possível eliminar o tópico. Pode ter publicações ou outras dependências.";
-                // Redirecionar para a página de detalhes do tópico ou para o index
                 return RedirectToAction(nameof(Details), new { id = id });
             }
             catch (Exception ex)
@@ -492,8 +479,6 @@ namespace projetodweb_connectify.Controllers
                 TempData["ErrorMessage"] = "Ocorreu um erro ao tentar eliminar o tópico.";
                 return RedirectToAction(nameof(Details), new { id = id });
             }
-
-
             return RedirectToAction(nameof(Index));
         }
 
@@ -549,23 +534,22 @@ namespace projetodweb_connectify.Controllers
                 TempData["InfoMessage"] = "Este tópico já está na sua lista de guardados.";
             }
 
-            // Tentar redirecionar para a página anterior, se possível
             string? returnUrl = Request.Headers["Referer"].ToString();
-            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl)) // Segurança: verificar se é URL local
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
                 return Redirect(returnUrl);
             }
-            return RedirectToAction(nameof(Index)); // Fallback
+            return RedirectToAction(nameof(Index));
         }
 
 
         // POST: Topics/UnsaveTopic/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize] // Adicionar Authorize aqui também
-        public async Task<IActionResult> UnsaveTopic(int id) // id is TopicId
+        [Authorize]
+        public async Task<IActionResult> UnsaveTopic(int id)
         {
-            var userEmail = User.Identity?.Name; // Usar o mesmo método para obter o identificador do user
+            var userEmail = User.Identity?.Name;
             if (string.IsNullOrEmpty(userEmail))
             {
                 return Unauthorized("Utilizador não identificado.");
@@ -580,7 +564,6 @@ namespace projetodweb_connectify.Controllers
             var userProfile = await _context.Profiles.FirstOrDefaultAsync(p => p.UserId == appUser.Id);
             if (userProfile == null)
             {
-                // Embora raro se o user está autenticado e SaveTopic funciona, é uma verificação de segurança
                 return NotFound("Perfil do utilizador não encontrado.");
             }
             int profileId = userProfile.Id;
@@ -604,8 +587,8 @@ namespace projetodweb_connectify.Controllers
             {
                 return Redirect(returnUrl);
             }
-            // Fallback mais sensato pode ser a página de perfil onde os tópicos guardados são listados
             return RedirectToAction("MyProfile", "Profiles");
         }
+
     }
 }
