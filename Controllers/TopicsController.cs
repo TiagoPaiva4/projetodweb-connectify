@@ -138,6 +138,7 @@ namespace projetodweb_connectify.Controllers
         public async Task<IActionResult> Create([Bind("IsPrivate,Title,Description,CategoryId")] Topic topic, IFormFile? topicImageFile)
         {
             topic.IsPersonal = false;
+            topic.IsPrivate = false;
             topic.CreatedAt = DateTime.UtcNow;
 
             var email = User.Identity?.Name;
