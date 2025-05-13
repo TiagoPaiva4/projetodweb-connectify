@@ -47,6 +47,12 @@ namespace projetodweb_connectify.Models
         public string Content { get; set; } = string.Empty;
 
         /// <summary>
+        /// URL ou caminho da imagem associada à publicação, caso exista.
+        /// </summary>
+        [Display(Name = "Imagem da Publicação")]
+        public string? PostImageUrl { get; set; } // Anulável, pois a imagem é opcional
+
+        /// <summary>
         /// data e hora em que a publicação foi criada.
         /// </summary>
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
