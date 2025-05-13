@@ -1,49 +1,57 @@
 ﻿@model projetodweb_connectify.Models.TopicPost
 
 @{
-    ViewData["Title"] = "Edit";
+    ViewData["Title"] = "Editar Publicação";
+    var topicTitle = ViewBag.TopicTitle ?? "Tópico";
+    string defaultPostImage = ""; // Não temos uma imagem padrão específica para posts aqui, apenas para mostrar se não houver URL
+    string currentImageUrl = string.IsNullOrEmpty(Model.PostImageUrl) ? defaultPostImage : Url.Content(Model.PostImageUrl);
 }
 
-<h1>Edit</h1>
+<h1>Editar Publicação em "@topicTitle"</h1>
 
-<h4>TopicPost</h4>
 <hr />
 <div class="row">
-    <div class="col-md-4">
-        <form asp-action="Edit">
+    <div class="col-md-8">
+        <form asp-action="Edit" method="post" enctype="multipart/form-data">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <input type="hidden" asp-for="Id" />
-            <div class="form-group">
-                <label asp-for="TopicId" class="control-label"></label>
-                <select asp-for="TopicId" class="form-control" asp-items="ViewBag.TopicId"></select>
-                <span asp-validation-for="TopicId" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="ProfileId" class="control-label"></label>
-                <select asp-for="ProfileId" class="form-control" asp-items="ViewBag.ProfileId"></select>
-                <span asp-validation-for="ProfileId" class="text-danger"></span>
-            </div>
-            <div class="form-group">
+            <input type="hidden" asp-for="TopicId" />
+            <input type="hidden" asp-for="PostImageUrl" /> @* Preserva o URL atual se não houver novo upload *@
+
+            <div class="form-group mb-3">
                 <label asp-for="Content" class="control-label"></label>
-                <input asp-for="Content" class="form-control" />
+                <textarea asp-for="Content" class="form-control" rows="6"></textarea>
                 <span asp-validation-for="Content" class="text-danger"></span>
             </div>
-            <div class="form-group">
-                <label asp-for="CreatedAt" class="control-label"></label>
-                <input asp-for="CreatedAt" class="form-control" />
-                <span asp-validation-for="CreatedAt" class="text-danger"></span>
+
+            <div class="form-group mb-3">
+                <label class="control-label">Imagem Atual</label>
+                @if (!string.IsNullOrEmpty(currentImageUrl))
+                {
+                    <div>
+                        <img src="@currentImageUrl" alt="Imagem atual da Publicação" class="img-thumbnail mb-2" style="max-width: 300px; max-height: 300px; display: block;" />
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted"><small>Nenhuma imagem associada.</small></p>
+                }
+                <label asp-for="PostImageUrl" class="control-label">Alterar Imagem (opcional)</label>
+                <input type="file" name="postImageFile" class="form-control" accept="image/png, image/jpeg, image/gif" />
+                <span asp-validation-for="PostImageUrl" class="text-danger"></span>
+                @* Adicionar opção para remover imagem? *@
             </div>
+
             <div class="form-group">
-                <input type="submit" value="Save" class="btn btn-primary" />
+                <input type="submit" value="Guardar Alterações" class="btn btn-primary" />
+                <a asp-controller="Topics" asp-action="Details" asp-route-id="@Model.TopicId" class="btn btn-secondary ms-2">Cancelar</a>
             </div>
         </form>
     </div>
 </div>
 
-<div>
-    <a asp-action="Index">Back to List</a>
-</div>
-
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }

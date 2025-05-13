@@ -1,34 +1,61 @@
 ﻿@model projetodweb_connectify.Models.TopicPost
 
 @{
-    ViewData["Title"] = "Create";
+    ViewData["Title"] = "Create Post"; // Changed title to be more specific
+    // Obter título do tópico do ViewBag
+    var topicTitle = ViewBag.TopicTitle ?? "Tópico";
 }
 
-<h1>Create Post</h1>
-
-<h4>TopicPost</h4>
-<h1>Criar Publicação no Tópico: @ViewBag.TopicTitle</h1>
+<h1>Criar Publicação no Tópico: @topicTitle</h1> @* Use the variable directly *@
 <hr />
 <div class="row">
-    <div class="col-md-4">
-        <form asp-action="Create" asp-route-topicId="@Model.TopicId">
+    <div class="col-md-6">
+        @* Maybe a bit wider for better layout *@
+        @*
+            IMPORTANT CHANGE HERE:
+            Added enctype="multipart/form-data" to the form tag.
+            Also, ensure the asp-route-topicId is correctly passed if it's not part of the model bind
+            (though it is, via the hidden field, so this specific route param in the form tag might be redundant
+            if the hidden field is correctly populated and bound in the controller).
+            However, your controller GET expects topicId, so it's good practice to ensure it's passed
+            if the form submission itself needs it.
+            Your POST controller action binds TopicId from the form body, which is correct.
+        *@
+        <form asp-action="Create" method="post" enctype="multipart/form-data">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            @* This hidden field correctly sends TopicId to the controller *@
             <input type="hidden" asp-for="TopicId" />
 
-            <div class="form-group">
+            <div class="form-group mb-3">
+                @* Added mb-3 for spacing *@
                 <label asp-for="Content" class="control-label"></label>
                 <textarea asp-for="Content" class="form-control" rows="5"></textarea>
                 <span asp-validation-for="Content" class="text-danger"></span>
             </div>
+
+            <div class="form-group mb-3">
+                <label for="postImageFile" class="control-label">Imagem da Publicação (Opcional)</label> @* Changed label to be more user-friendly and point to the input's ID/Name *@
+                <input type="file" name="postImageFile" id="postImageFile" class="form-control" accept="image/png, image/jpeg, image/gif" />
+                @*
+                   The asp-validation-for="PostImageUrl" might not show errors directly tied to "postImageFile"
+                   if you add ModelState errors using the key "postImageFile".
+                   If you add errors with key nameof(Model.PostImageUrl) in controller, it will show up here.
+                   Alternatively, use a validation summary or a specific span for "postImageFile".
+                *@
+                <span asp-validation-for="PostImageUrl" class="text-danger"></span>
+                <small class="form-text text-muted">Adicione uma imagem à sua publicação (PNG, JPG, GIF).</small>
+            </div>
+
             <div class="form-group mt-2">
-                <input type="submit" value="Create" class="btn btn-primary" />
+                <input type="submit" value="Criar Publicação" class="btn btn-primary" />
             </div>
         </form>
     </div>
 </div>
 
 <div>
-    <a asp-controller="Topics" asp-action="Details" asp-route-id="@Model.TopicId">Back to Topic</a>
+    <a asp-controller="Topics" asp-action="Details" asp-route-id="@Model.TopicId">Voltar ao Tópico</a>
 </div>
 
 @section Scripts {
