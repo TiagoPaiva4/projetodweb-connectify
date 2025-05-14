@@ -7,8 +7,6 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <!-- <link rel="stylesheet" href="~/projetodweb_connectify.styles.css" asp-append-version="true" />-->
-    
-    
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
@@ -26,17 +24,27 @@
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Profiles" asp-action="Index">Perfil</a>
+                            @* Modificado para apontar para MyProfile se a lógica no ProfilesController/Index for essa *@
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Profiles" asp-action="MyProfile">Meu Perfil</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Topics" asp-action="Index">Tópicos</a>
                         </li>
+                        @* Removido "Publicar no Tópico" e "Categorias" pois parecem mais ações do que páginas principais de navegação.
+                           Você pode adicioná-los de volta se fizerem sentido como links de navegação principais.
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="TopicPosts" asp-action="Index">Publicar no Tópico</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Categories" asp-action="Index">Categorias</a>
                         </li>
+                        *@
+
+                        <!-- NOVO ITEM DE MENU -->
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Profiles" asp-action="BrowseUsers">Procurar Utilizadores</a>
+                        </li>
+                        <!-- FIM DO NOVO ITEM DE MENU -->
                     </ul>
                     <partial name="_LoginPartial" />
                 </div>
@@ -51,12 +59,12 @@
 
     <footer class="border-top footer text-muted">
         <div class="container">
-            &copy; 2025 - projetodweb_connectify - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            © @DateTime.Now.Year - projetodweb_connectify - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
         </div>
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    @* <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script> *@ @* Removido Bootstrap duplicado *@
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

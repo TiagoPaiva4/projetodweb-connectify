@@ -1,0 +1,507 @@
+﻿@model projetodweb_connectify.Controllers.ProfilesController.UserProfileViewModel
+@{
+    ViewData["Title"] = (Model.Profile.Name ?? Model.Profile.User?.Username) + " - Perfil";
+}
+
+@if (Model.Profile != null)
+{
+    <div class="container mt-4">
+        <!-- Profile Details Section (Similar a MyProfile, mas sem botão de editar se !IsOwnProfile) -->
+        <div class="row justify-content-center mb-4">
+            <div class="col-md-10 col-lg-8">
+                <div class="d-flex align-items-start">
+                    <div class="flex-shrink-0 me-4">
+                        <img src="@(string.IsNullOrEmpty(Model.Profile.ProfilePicture) ? "/images/defaultuser.png" : Model.Profile.ProfilePicture)"
+                             alt="Foto de Perfil de @(Model.Profile.Name ?? Model.Profile.User?.Username)"
+                             class="rounded-circle img-thumbnail"
+                             style="width: 150px; height: 150px; object-fit: cover;"
+                             onerror="this.onerror=null; this.src='/images/defaultuser.png';" />
+                    </div>
+                    <div class="flex-grow-1 text-start">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h2 class="display-6 mb-1">@(Model.Profile.Name ?? Model.Profile.User?.Username ?? "Utilizador")</h2>
+                                @if (!string.IsNullOrEmpty(Model.Profile.Name) && !string.IsNullOrEmpty(Model.Profile.User?.Username) && Model.Profile.Name != Model.Profile.User.Username)
+                                {
+                                    <p class="lead text-muted mb-0">@@@(Model.Profile.User.Username)</p>
+                                }
+                            </div>
+                            <div>
+                                @if (Model.IsOwnProfile)
+                                {
+                                    <a asp-controller="Profiles" asp-action="Edit" asp-route-id="@Model.Profile.Id" class="btn btn-primary btn-sm mt-1">
+                                        <i class="fas fa-user-edit me-1"></i> Editar
+                                    </a>
+                                }
+                                else if (Model.LoggedInUserId.HasValue) // Só mostra botões de amizade se houver um utilizador logado
+                                {
+                                    <!-- Placeholder para botões de amizade -->
+                                    <div id="friendship-controls-placeholder" data-target-user-id="@Model.Profile.User.Id">
+                                        <button id="friendship-action-button" class="btn btn-secondary btn-sm mt-1">Carregando...</button>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                        <p class="mb-1">@(string.IsNullOrWhiteSpace(Model.Profile.Bio) ? Html.Raw("<i>Nenhuma bio definida.</i>") : Html.Raw(Model.Profile.Bio))</p>
+                        <p class="text-muted mb-0"><small>Membro desde: @Model.Profile.CreatedAt.ToString("dd/MM/yyyy")</small></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Navigation & Content (Pode mostrar apenas posts públicos e tópicos públicos) -->
+        <div class="row">
+            <div class="col-12">
+                <ul class="nav nav-tabs justify-content-center mb-3" id="profileTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="posts-tab" data-bs-toggle="tab" data-bs-target="#posts-content" type="button" role="tab" aria-controls="posts-content" aria-selected="true">
+                            <i class="fas fa-paste me-1"></i> Posts
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="created-topics-tab" data-bs-toggle="tab" data-bs-target="#created-topics-content" type="button" role="tab" aria-controls="created-topics-content" aria-selected="false">
+                            <i class="fas fa-folder me-1"></i> Tópicos Criados
+                        </button>
+                    </li>
+                    @if (Model.IsOwnProfile) // Aba "Guardados" só para o próprio perfil
+                    {
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="saved-topics-tab" data-bs-toggle="tab" data-bs-target="#saved-topics-content" type="button" role="tab" aria-controls="saved-topics-content" aria-selected="false">
+                                <i class="fas fa-bookmark me-1"></i> Guardados
+                            </button>
+                        </li>
+                    }
+                </ul>
+
+                <div class="tab-content" id="profileTabContent">
+                    <!-- Posts Content Pane -->
+                    <div class="tab-pane fade show active" id="posts-content" role="tabpanel" aria-labelledby="posts-tab">
+                        @if (Model.Profile.PersonalTopic != null && Model.Profile.PersonalTopicPosts.Any())
+                        {
+                            <h4>Posts no Perfil de @(Model.Profile.Name ?? Model.Profile.User.Username)</h4>
+                            <div class="row g-1 profile-posts-grid">
+                                @foreach (var topicPost in Model.Profile.PersonalTopicPosts)
+                                {
+                                    <div class="col-4">
+                                        <a href="@Url.Action("Details", "Topics", new { id = topicPost.TopicId, postId = topicPost.Id })" class="post-grid-item-link">
+                                            <div class="post-grid-item">
+                                                @if (!string.IsNullOrEmpty(topicPost.PostImageUrl))
+                                                {
+                                                    <img src="@topicPost.PostImageUrl" alt="Post" class="post-grid-image" />
+                                                    <div class="post-grid-overlay"><i class="fas fa-image"></i></div>
+                                                }
+                                                else
+                                                {
+                                                    <div class="post-grid-text-content"><p>@TruncateText(topicPost.Content, 100)</p></div>
+                                                    <div class="post-grid-overlay"><i class="fas fa-align-left"></i></div>
+                                                }
+                                            </div>
+                                        </a>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-light text-center" role="alert">
+                                <i class="fas fa-info-circle me-1"></i> @(Model.Profile.Name ?? Model.Profile.User.Username) ainda não tem posts públicos no seu perfil.
+                            </div>
+                        }
+                    </div>
+
+                    @{
+                        string TruncateText(string text, int maxLength)
+                        {
+                            if (string.IsNullOrEmpty(text)) return text;
+                            return text.Length <= maxLength ? text : text.Substring(0, maxLength) + "...";
+                        }
+                    }
+
+                    <!-- Created Topics Content Pane (Apenas tópicos públicos) -->
+                    <div class="tab-pane fade" id="created-topics-content" role="tabpanel" aria-labelledby="created-topics-tab">
+                        <h4>Tópicos Criados por @(Model.Profile.Name ?? Model.Profile.User.Username)</h4>
+                        <hr />
+                        @if (Model.Profile.CreatedTopics != null && Model.Profile.CreatedTopics.Any())
+                        {
+                            <ul class="list-group list-group-flush">
+                                @foreach (var topic in Model.Profile.CreatedTopics)
+                                {
+                                    <li class="list-group-item mb-3 border rounded p-3 shadow-sm">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h5 class="mb-1"><a asp-controller="Topics" asp-action="Details" asp-route-id="@topic.Id">@topic.Title</a></h5>
+                                            <small class="text-muted">@topic.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small>
+                                        </div>
+                                        <p class="mb-1">@Html.Raw(topic.Description?.Length > 150 ? topic.Description.Substring(0, 150) + "..." : topic.Description ?? "Sem descrição.")</p>
+                                        @* Links para editar/excluir/adicionar post não fazem sentido aqui para perfil de OUTRO user *@
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <div class="alert alert-light text-center" role="alert">
+                                <i class="fas fa-info-circle me-1"></i> @(Model.Profile.Name ?? Model.Profile.User.Username) ainda não criou tópicos públicos.
+                            </div>
+                        }
+                    </div>
+
+                    @if (Model.IsOwnProfile) // Aba "Guardados" só para o próprio perfil
+                    {
+                        <div class="tab-pane fade" id="saved-topics-content" role="tabpanel" aria-labelledby="saved-topics-tab">
+                            @*  Copie a secção de Tópicos Guardados da sua MyProfile View aqui,
+                                pois esta View UserProfileView também pode ser usada para o próprio perfil
+                                se você decidir não redirecionar na action UserProfile.
+                                Se você SEMPRE redireciona para MyProfile, esta secção aqui pode ser omitida.
+                            *@
+                            <h4>Meus Tópicos Guardados</h4>
+                            <hr />
+                            @if (Model.Profile.DisplaySavedTopics != null && Model.Profile.DisplaySavedTopics.Any())
+                            {
+                                <ul class="list-group list-group-flush mb-4">
+                                    @foreach (var savedTopic in Model.Profile.DisplaySavedTopics)
+                                    {
+                                        <li class="list-group-item mb-3 border rounded p-3 shadow-sm">
+                                            <div class="d-flex w-100 justify-content-between">
+                                                <h5 class="mb-1">
+                                                    <a asp-controller="Topics" asp-action="Details" asp-route-id="@savedTopic.Id">@savedTopic.Title</a>
+                                                    @if (savedTopic.IsPrivate)
+                                                    {
+                                                        <span class="badge bg-secondary ms-2"><i class="fas fa-lock"></i> Privado</span>
+                                                    }
+                                                </h5>
+                                                <small class="text-muted" title="Data de criação do tópico">Criado em: @savedTopic.CreatedAt.ToString("dd/MM/yyyy")</small>
+                                            </div>
+                                            <p class="mb-1">@Html.Raw(savedTopic.Description?.Length > 150 ? savedTopic.Description.Substring(0, 150) + "..." : savedTopic.Description ?? "Sem descrição.")</p>
+                                            <p class="mb-1"><small class="text-muted">Criado por: @(savedTopic.Creator?.Name ?? savedTopic.Creator?.User?.Username ?? "Desconhecido")</small></p>
+
+                                            <div class="mt-2 text-end">
+                                                <form asp-controller="Topics" asp-action="UnsaveTopic" asp-route-id="@savedTopic.Id" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja remover este tópico dos seus guardados?');">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="returnUrl" value="@Url.Action("UserProfile", "Profiles", new { identifier = Model.Profile.User.Username })" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-warning" title="Remover dos Guardados">
+                                                        <i class="fas fa-bookmark"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </li>
+                                    }
+                                </ul>
+                            }
+                            else
+                            {
+                                <div class="alert alert-light text-center" role="alert">
+                                    <i class="fas fa-info-circle me-1"></i> Você ainda não guardou nenhum tópico.
+                                </div>
+                            }
+                        </div>
+                    }
+
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="container mt-4">
+        <div class="alert alert-danger w-100 text-center" role="alert">
+            <i class="fas fa-exclamation-triangle me-1"></i> Não foi possível carregar os dados do perfil.
+        </div>
+    </div>
+}
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    @if (!Model.IsOwnProfile && Model.LoggedInUserId.HasValue) // Só incluir script de amizade se não for o próprio perfil e estiver logado
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const controlsPlaceholder = document.getElementById('friendship-controls-placeholder');
+                if (!controlsPlaceholder) return; // Sai se o placeholder não existir (e.g. utilizador não logado)
+
+                const targetUserId = controlsPlaceholder.getAttribute('data-target-user-id');
+                let actionButton = document.getElementById('friendship-action-button'); // O botão inicial
+
+                if (!targetUserId) {
+                    console.error("targetUserId não encontrado.");
+                    if(actionButton) actionButton.textContent = "Erro";
+                    return;
+                }
+
+                async function updateFriendshipStatus() {
+                    if (!actionButton && controlsPlaceholder) { // Recria o botão se foi substituído por aceitar/rejeitar
+                        controlsPlaceholder.innerHTML = '<button id="friendship-action-button" class="btn btn-secondary btn-sm mt-1">Carregando...</button>';
+                        actionButton = document.getElementById('friendship-action-button');
+                    }
+                    if (!actionButton) return;
+
+                    actionButton.disabled = true;
+                    actionButton.textContent = "Carregando...";
+
+                    try {
+                        const response = await fetch(`/api/friendships/status/${targetUserId}`);
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            console.error('Erro ao buscar status:', response.status, errorData.message);
+                            actionButton.textContent = "Erro";
+                            return;
+                        }
+                        const data = await response.json();
+                        console.log("Status recebido:", data);
+                        setButtonState(data.status, data.friendshipId, data.message);
+                    } catch (error) {
+                        console.error('Falha na requisição de status:', error);
+                        actionButton.textContent = "Erro de Conexão";
+                    }
+                }
+
+                function setButtonState(status, friendshipId, message) {
+                     if (!actionButton && controlsPlaceholder) { // Garante que o botão existe
+                        controlsPlaceholder.innerHTML = '<button id="friendship-action-button" class="btn btn-secondary btn-sm mt-1">Aguarde...</button>';
+                        actionButton = document.getElementById('friendship-action-button');
+                    }
+                    if (!actionButton) return;
+
+                    actionButton.textContent = "Aguarde...";
+                    actionButton.className = 'btn btn-sm mt-1'; // Reset class
+                    actionButton.onclick = null;
+                    actionButton.disabled = false;
+                    controlsPlaceholder.innerHTML = ''; // Limpa o placeholder para recriar o(s) botão(ões)
+
+                    switch (status) {
+                        case 'not_friends':
+                            actionButton.textContent = 'Adicionar Amigo';
+                            actionButton.classList.add('btn-success');
+                            actionButton.onclick = () => sendFriendRequest(targetUserId);
+                            controlsPlaceholder.appendChild(actionButton);
+                            break;
+                        case 'pending_sent':
+                            actionButton.textContent = 'Cancelar Pedido';
+                            actionButton.classList.add('btn-warning');
+                            actionButton.onclick = () => cancelFriendRequest(targetUserId); // targetUserId é o receiverId
+                            controlsPlaceholder.appendChild(actionButton);
+                            break;
+                        case 'pending_received':
+                            // Criar dois botões: Aceitar e Rejeitar
+                            const acceptBtn = document.createElement('button');
+                            acceptBtn.textContent = "Aceitar";
+                            acceptBtn.className = "btn btn-success btn-sm mt-1 me-2";
+                            acceptBtn.onclick = () => acceptFriendRequest(targetUserId); // targetUserId é o requesterId
+
+                            const rejectBtn = document.createElement('button');
+                            rejectBtn.textContent = "Rejeitar";
+                            rejectBtn.className = "btn btn-danger btn-sm mt-1";
+                            rejectBtn.onclick = () => rejectFriendRequest(targetUserId); // targetUserId é o requesterId
+
+                            controlsPlaceholder.appendChild(acceptBtn);
+                            controlsPlaceholder.appendChild(rejectBtn);
+                            actionButton = null; // O 'actionButton' original não é mais usado diretamente
+                            break;
+                        case 'friends':
+                            actionButton.textContent = 'Desfazer Amizade';
+                            actionButton.classList.add('btn-danger');
+                            actionButton.onclick = () => unfriend(targetUserId);
+                            controlsPlaceholder.appendChild(actionButton);
+                            break;
+                        case 'rejected_sent':
+                        case 'rejected_received':
+                            actionButton.textContent = message || 'Pedido Rejeitado';
+                            actionButton.classList.add('btn-secondary');
+                            actionButton.disabled = true;
+                            controlsPlaceholder.appendChild(actionButton);
+                            break;
+                        case 'user_not_found':
+                            actionButton.textContent = message || 'Utilizador não encontrado';
+                            actionButton.classList.add('btn-light');
+                            actionButton.disabled = true;
+                            controlsPlaceholder.appendChild(actionButton);
+                            break;
+                        default: // unknown, self (embora 'self' seja tratado pelo Model.IsOwnProfile)
+                            actionButton.textContent = message || 'Indisponível';
+                            actionButton.classList.add('btn-light');
+                            actionButton.disabled = true;
+                            controlsPlaceholder.appendChild(actionButton);
+                    }
+                }
+
+                async function handleFriendshipAction(url, method = 'POST', successMessage) {
+                    const currentActiveElement = document.activeElement;
+                    if(currentActiveElement && typeof currentActiveElement.blur === 'function') {
+                        currentActiveElement.blur(); // Remove focus para evitar duplo clique enquanto desabilitado
+                    }
+
+                    // Desabilitar todos os botões dentro do placeholder
+                    const buttonsInPlaceholder = controlsPlaceholder.querySelectorAll('button');
+                    buttonsInPlaceholder.forEach(btn => btn.disabled = true);
+
+                    // Se o 'actionButton' é um dos botões, atualiza o texto dele
+                    if (actionButton && Array.from(buttonsInPlaceholder).includes(actionButton)) {
+                         actionButton.textContent = "Processando...";
+                    } else if (buttonsInPlaceholder.length > 0) {
+                        // Se há múltiplos botões (Aceitar/Rejeitar), não muda o texto deles individualmente
+                        // Poderia adicionar um spinner global ou algo assim
+                    }
+
+
+                    try {
+                        const response = await fetch(url, {
+                            method: method,
+                            headers: {
+                                // 'X-CSRF-TOKEN': 'seu_token_aqui_se_necessario_para_POST_em_paginas_nao_API'
+                            }
+                        });
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            console.error('Erro na ação:', response.status, errorData);
+                            alert(`Erro: ${errorData.message || response.statusText}`);
+                        } else {
+                            const result = await response.json();
+                            console.log(successMessage, result);
+                            if(successMessage) alert(successMessage);
+                        }
+                    } catch (error) {
+                        console.error('Falha na requisição de ação:', error);
+                        alert('Ocorreu um erro de conexão.');
+                    } finally {
+                        updateFriendshipStatus(); // Sempre atualiza o estado para refletir a mudança ou reverter em caso de erro
+                    }
+                }
+
+                // As funções de ação agora são mais genéricas
+                function sendFriendRequest(id) { handleFriendshipAction(`/api/friendships/request/${id}`, 'POST', 'Pedido de amizade enviado!'); }
+                function cancelFriendRequest(id) { handleFriendshipAction(`/api/friendships/cancel/${id}`, 'POST', 'Pedido de amizade cancelado!'); }
+                function acceptFriendRequest(id) { handleFriendshipAction(`/api/friendships/accept/${id}`, 'POST', 'Pedido de amizade aceite!'); }
+                function rejectFriendRequest(id) { handleFriendshipAction(`/api/friendships/reject/${id}`, 'POST', 'Pedido de amizade rejeitado.'); }
+                function unfriend(id) {
+                    if (confirm("Tem a certeza que quer desfazer esta amizade?")) {
+                        handleFriendshipAction(`/api/friendships/unfriend/${id}`, 'POST', 'Amizade desfeita.');
+                    } else {
+                         // Se cancelar, não faz nada, o updateFriendshipStatus no finally do handle vai reverter
+                    }
+                }
+
+                // Carregar o estado inicial se o placeholder existir (significa que é perfil de outro e user logado)
+                if (controlsPlaceholder) {
+                   updateFriendshipStatus();
+                }
+            });
+        </script>
+    }
+}
+
+@section Styles {
+@* Reutilize os estilos da sua página MyProfile ou adicione específicos aqui *@
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <style>
+        /* ... (copie os estilos relevantes da sua MyProfile View) ... */
+        .list-group-item {
+            background-color: #fff;
+            border: 1px solid rgba(0,0,0,.125);
+        }
+
+        .nav-tabs .nav-link.active {
+            font-weight: bold;
+        }
+
+        .tab-content > .tab-pane {
+            padding-top: 1rem;
+        }
+
+        .btn i.fas {
+            width: 1.2em;
+            text-align: center;
+        }
+
+        .profile-posts-grid .col-4 { /* ... */
+        }
+
+        .post-grid-item-link {
+            display: block;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .post-grid-item {
+            position: relative;
+            width: 100%;
+            padding-bottom: 100%;
+            overflow: hidden;
+            background-color: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .post-grid-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+        }
+
+        .post-grid-text-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            overflow: hidden;
+            font-size: 0.8rem;
+            line-height: 1.3;
+            color: #333;
+        }
+
+            .post-grid-text-content p {
+                margin: 0;
+                max-height: 90%;
+                overflow: hidden;
+            }
+
+        .post-grid-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.3);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+            pointer-events: none;
+        }
+
+        .post-grid-item-link:hover .post-grid-overlay {
+            opacity: 1;
+        }
+
+        .post-grid-item-link:hover .post-grid-image {
+            opacity: 0.7;
+        }
+
+        /* Estilo para o container dos botões de amizade */
+        #friendship-controls-placeholder button {
+            margin-left: 0.25rem; /* Pequeno espaçamento entre botões se houver mais de um */
+        }
+
+            #friendship-controls-placeholder button:first-child {
+                margin-left: 0;
+            }
+
+    </style>
+}

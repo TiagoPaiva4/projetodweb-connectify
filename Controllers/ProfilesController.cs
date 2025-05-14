@@ -27,6 +27,41 @@ namespace projetodweb_connectify.Controllers
             return RedirectToAction(nameof(MyProfile));
         }
 
+        // GET: Profiles/Browse
+        [HttpGet("Profiles/Browse")]
+        public async Task<IActionResult> BrowseUsers(string searchQuery) // Adiciona searchQuery para pesquisa
+        {
+            var loggedInUserEmail = User.Identity?.Name;
+            Users? loggedInAppUser = null;
+
+            if (!string.IsNullOrEmpty(loggedInUserEmail))
+            {
+                loggedInAppUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == loggedInUserEmail);
+            }
+
+            IQueryable<Users> query = _context.Users
+                                              .Include(u => u.Profile) // Incluir perfil para mostrar nome e foto
+                                              .OrderBy(u => u.Username); // Ordenar por nome de utilizador
+
+            if (loggedInAppUser != null)
+            {
+                // Excluir o próprio utilizador logado da lista de "outros utilizadores"
+                query = query.Where(u => u.Id != loggedInAppUser.Id);
+            }
+
+            // Filtro de pesquisa (simples, pelo Username ou Nome do Perfil)
+            if (!string.IsNullOrEmpty(searchQuery))
+            {
+                query = query.Where(u => u.Username.Contains(searchQuery) ||
+                                         (u.Profile != null && u.Profile.Name.Contains(searchQuery)));
+            }
+
+            var users = await query.ToListAsync();
+
+            ViewData["CurrentFilter"] = searchQuery; // Para manter o valor na caixa de pesquisa
+            return View("BrowseUsersView", users); // Uma nova view para listar os utilizadores
+        }
+
         // GET: Profiles/MyProfile
         [HttpGet("Profiles/MyProfile")]
         public async Task<IActionResult> MyProfile()
@@ -464,6 +499,122 @@ namespace projetodweb_connectify.Controllers
             }
         }
 
+        // GET: Profiles/User/{usernameOrId}
+        [HttpGet("Profiles/User/{identifier}")] // Rota mais descritiva
+        public async Task<IActionResult> UserProfile(string identifier)
+        {
+            if (string.IsNullOrEmpty(identifier))
+            {
+                return BadRequest("Identificador do utilizador não fornecido.");
+            }
+
+            Users? targetAppUser = null;
+
+            // Tentar encontrar por ID numérico primeiro
+            if (int.TryParse(identifier, out int userId))
+            {
+                targetAppUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            }
+
+            // Se não encontrou por ID ou não era um ID numérico, tentar por Username
+            if (targetAppUser == null)
+            {
+                targetAppUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == identifier);
+            }
+
+            if (targetAppUser == null)
+            {
+                return NotFound("Utilizador não encontrado.");
+            }
+
+            // --- Obter o utilizador LOGADO (para verificar se é o próprio perfil ou para o status de amizade) ---
+            var loggedInUserEmail = User.Identity?.Name; // Username do utilizador logado
+            Users? loggedInAppUser = null;
+            bool isOwnProfile = false;
+
+            if (!string.IsNullOrEmpty(loggedInUserEmail))
+            {
+                loggedInAppUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == loggedInUserEmail);
+                if (loggedInAppUser != null && loggedInAppUser.Id == targetAppUser.Id)
+                {
+                    isOwnProfile = true;
+                }
+            }
+
+            // Se for o próprio perfil, podemos redirecionar para MyProfile para consistência de UI
+            // ou simplesmente continuar e adaptar a View para mostrar/esconder botões.
+            // Redirecionar pode ser mais limpo para evitar duplicar muita lógica de "dono do perfil".
+            if (isOwnProfile)
+            {
+                // Opcional: Redirecionar para a experiência de "MyProfile"
+                // return RedirectToAction("MyProfile");
+                // Ou continuar e a View terá que lidar com isso. Para este exemplo, vamos continuar.
+            }
+
+
+            var profile = await _context.Profiles
+                .Where(p => p.UserId == targetAppUser.Id)
+                .Include(p => p.User) // Inclui o Users dono do Profile
+                                      // Não precisamos de 'SavedTopics' do *targetUser* para mostrar ao *loggedInUser*
+                                      // A menos que queira mostrar "Tópicos guardados por este utilizador" (se forem públicos)
+                .FirstOrDefaultAsync();
+
+            if (profile == null)
+            {
+                // Mesmo que o utilizador exista, pode não ter um perfil criado.
+                // Você pode querer mostrar uma página básica com o username e uma mensagem.
+                // Ou criar um perfil 'vazio' on-the-fly para visualização (menos comum).
+                // Por agora, retornamos NotFound se o Profile específico não existir.
+                return NotFound($"Perfil para {targetAppUser.Username} não encontrado.");
+            }
+
+            // --- Popular Tópicos Criados (Públicos) pelo targetUser ---
+            // Apenas tópicos que não são privados E não são o tópico pessoal (a menos que queira mostrar posts do perfil)
+            profile.CreatedTopics = await _context.Topics
+                                       .Where(t => t.CreatedBy == profile.Id && !t.IsPersonal && !t.IsPrivate) // Só públicos e não pessoais
+                                       .OrderByDescending(t => t.CreatedAt)
+                                       .ToListAsync();
+
+            // --- Popular Posts do Tópico Pessoal (se quiser mostrá-los) ---
+            // Considere se os posts no tópico pessoal devem ser visíveis para outros.
+            // Se sim, certifique-se que o tópico pessoal não é `IsPrivate`.
+            profile.PersonalTopic = await _context.Topics
+                .Include(t => t.Posts.OrderByDescending(post => post.CreatedAt)) // Ordenar posts aqui
+                    .ThenInclude(tp => tp.Profile) // Profile do criador do Post (que será o dono do perfil)
+                .FirstOrDefaultAsync(t => t.CreatedBy == profile.Id && t.IsPersonal && !t.IsPrivate); // Apenas se o tópico pessoal for público
+
+            if (profile.PersonalTopic != null)
+            {
+                profile.PersonalTopicPosts = profile.PersonalTopic.Posts.ToList();
+            }
+            else
+            {
+                profile.PersonalTopicPosts = new List<TopicPost>();
+            }
+
+            // Passar um ViewModel se precisar de mais dados (como o status da amizade)
+            var viewModel = new UserProfileViewModel
+            {
+                Profile = profile,
+                IsOwnProfile = isOwnProfile,
+                LoggedInUserId = loggedInAppUser?.Id // Passa o ID do utilizador logado para o JavaScript
+                                                     // FriendshipStatus será carregado por JavaScript
+            };
+
+            return View("UserProfileView", viewModel); // Usar uma nova View
+        }
+
+        // ViewModel para a página de perfil de outro utilizador
+        public class UserProfileViewModel
+        {
+            public Profile Profile { get; set; } = null!;
+            public bool IsOwnProfile { get; set; }
+            public int? LoggedInUserId { get; set; }
+            // Não vamos pré-carregar o FriendshipStatus aqui, deixaremos para o JavaScript
+            // para manter o carregamento inicial da página rápido e a lógica centralizada no FriendshipsController.
+        }
+
+
         // Helper to log ModelState errors
         private void LogModelStateErrors(Microsoft.AspNetCore.Mvc.ModelBinding.ModelStateDictionary modelState)
         {
@@ -476,5 +627,7 @@ namespace projetodweb_connectify.Controllers
                 }
             }
         }
+
+
     }
 }
