@@ -78,19 +78,39 @@ public class ApplicationDbContext : IdentityDbContext
     {
         base.OnModelCreating(modelBuilder); // Chama a configuração base para IdentityDbContext
 
-        // Configurar o relacionamento entre User e Friendship para User1Id
-        modelBuilder.Entity<Friendship>()
-            .HasOne(f => f.User1)
-            .WithMany(u => u.FriendshipsInitiated)
+        // Configure the relationship for FriendshipsInitiated
+        // A User (User1) can initiate many friendships
+        // A Friendship has one User1
+        modelBuilder.Entity<Users>()
+            .HasMany(u => u.FriendshipsInitiated)
+            .WithOne(f => f.User1)
             .HasForeignKey(f => f.User1Id)
-            .OnDelete(DeleteBehavior.Restrict); // Impede que as amizades sejam excluídas se o User1 for excluído
+            .OnDelete(DeleteBehavior.Restrict); // Or .Cascade if you want deleting a user to delete their initiated friendships.
+                                                // Restrict is safer to prevent accidental data loss.
 
-        // Configurar o relacionamento entre User e Friendship para User2Id
-        modelBuilder.Entity<Friendship>()
-            .HasOne(f => f.User2)
-            .WithMany(u => u.FriendshipsReceived)
+        // Configure the relationship for FriendshipsReceived
+        // A User (User2) can receive many friendships
+        // A Friendship has one User2
+        modelBuilder.Entity<Users>()
+            .HasMany(u => u.FriendshipsReceived)
+            .WithOne(f => f.User2)
             .HasForeignKey(f => f.User2Id)
-            .OnDelete(DeleteBehavior.Restrict); // Impede que as amizades sejam excluídas se o User2 for excluído
+            .OnDelete(DeleteBehavior.Restrict); // Or .Cascade.
+
+        // Optional: Add a unique constraint to prevent duplicate pending requests
+        // or duplicate accepted friendships between the same two users.
+        // This ensures UserA can't send multiple requests to UserB while one is pending,
+        // or that they can't be "friends" twice.
+        // You might want to handle this in application logic for more complex scenarios
+        // (e.g., if a rejected request can be re-sent later).
+        // For now, a basic unique constraint on the pair:
+        modelBuilder.Entity<Friendship>()
+            .HasIndex(f => new { f.User1Id, f.User2Id })
+            .IsUnique();
+        // Note: This simple unique index means (User1Id=1, User2Id=2) is different from (User1Id=2, User2Id=1).
+        // Your application logic will need to decide if User1Id is always the requester,
+        // or if you need to check for existing friendships in both directions (e.g., User1Id=A, User2Id=B OR User1Id=B, User2Id=A).
+        // For a request system (User1 sends to User2), this index is fine.
 
         // Definir chave primária composta para MessageRecipient
         modelBuilder.Entity<MessageRecipient>()
