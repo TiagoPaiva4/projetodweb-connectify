@@ -1,65 +1,144 @@
 ﻿@model IEnumerable<projetodweb_connectify.Models.Friendship>
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Minhas Conexões";
+    var currentUserId = (int)ViewData["CurrentUserId"]; // Obtém o ID do utilizador logado
+
+    // Filtrar os dados aqui na View
+    var pendingRequests = Model.Where(f => f.User2Id == currentUserId && f.Status == FriendshipStatus.Pending).ToList();
+    var currentFriends = Model.Where(f => f.Status == FriendshipStatus.Accepted).ToList();
 }
 
-<h1>Index</h1>
+<div class="container mt-4">
+    <h1>@ViewData["Title"]</h1>
+    <hr />
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Id)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.User1)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.User2)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Status)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.RequestDate)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.AcceptanceDate)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Id)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.User1.Username)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.User2.Username)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Status)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.RequestDate)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.AcceptanceDate)
-            </td>
-            <td>
-                @Html.ActionLink("Edit", "Edit", new { /* id=item.PrimaryKey */ }) |
-                @Html.ActionLink("Details", "Details", new { /* id=item.PrimaryKey */ }) |
-                @Html.ActionLink("Delete", "Delete", new { /* id=item.PrimaryKey */ })
-            </td>
-        </tr>
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Secção de Pedidos Pendentes -->
+    <section id="pending-requests" class="mb-5">
+        <h2><i class="fas fa-user-plus me-2"></i>Pedidos de Amizade Pendentes (@pendingRequests.Count)</h2>
+        @if (pendingRequests.Any())
+        {
+            <ul class="list-group">
+                @foreach (var request in pendingRequests)
+                {
+                    var requester = request.User1; // User1 é quem enviou o pedido
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <img src="@(requester.Profile?.ProfilePicture ?? "/images/defaultuser.png")" alt="Foto de @requester.Username" class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;" />
+                            <div>
+                                <a asp-controller="Profiles" asp-action="UserProfile" asp-route-identifier="@requester.Username" class="fw-bold text-decoration-none">
+                                    @(requester.Profile?.Name ?? requester.Username)
+                                </a>
+                                <div class="text-muted small">Pedido enviado em: @request.RequestDate.ToString("dd/MM/yyyy 'às' HH:mm")</div>
+                            </div>
+                        </div>
+                        <div>
+                            <form asp-action="AcceptFriendRequestFromPage" method="post" style="display: inline;">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="friendshipId" value="@request.Id" />
+                                <button type="submit" class="btn btn-success btn-sm me-2" title="Aceitar Pedido">
+                                    <i class="fas fa-check"></i> Aceitar
+                                </button>
+                            </form>
+                            <form asp-action="RejectFriendRequestFromPage" method="post" style="display: inline;">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="friendshipId" value="@request.Id" />
+                                <button type="submit" class="btn btn-danger btn-sm" title="Rejeitar Pedido">
+                                    <i class="fas fa-times"></i> Rejeitar
+                                </button>
+                            </form>
+                        </div>
+                    </li>
+                }
+            </ul>
+        }
+        else
+        {
+            <div class="alert alert-info" role="alert">
+                <i class="fas fa-info-circle me-1"></i> Você não tem pedidos de amizade pendentes no momento.
+            </div>
+        }
+    </section>
+
+    <!-- Secção de Amigos Atuais -->
+    <section id="current-friends">
+        <h2><i class="fas fa-users me-2"></i>Meus Amigos (@currentFriends.Count)</h2>
+        @if (currentFriends.Any())
+        {
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4">
+                @foreach (var friendship in currentFriends)
+                {
+                    // Determinar quem é o amigo nesta relação
+                    var friendUser = (friendship.User1Id == currentUserId) ? friendship.User2 : friendship.User1;
+
+                    <div class="col">
+                        <div class="card h-100 shadow-sm">
+                            <a asp-controller="Profiles" asp-action="UserProfile" asp-route-identifier="@friendUser.Username" class="text-decoration-none text-dark">
+                                <img src="@(friendUser.Profile?.ProfilePicture ?? "/images/defaultuser.png")" class="card-img-top" alt="Foto de @(friendUser.Profile?.Name ?? friendUser.Username)" style="height: 180px; object-fit: cover;">
+                            </a>
+                            <div class="card-body text-center">
+                                <h5 class="card-title">
+                                    <a asp-controller="Profiles" asp-action="UserProfile" asp-route-identifier="@friendUser.Username" class="text-decoration-none">
+                                        @(friendUser.Profile?.Name ?? friendUser.Username)
+                                    </a>
+                                </h5>
+                                @if (friendship.AcceptanceDate.HasValue)
+                                {
+                                    <p class="card-text"><small class="text-muted">Amigos desde: @friendship.AcceptanceDate.Value.ToString("dd/MM/yyyy")</small></p>
+                                }
+                            </div>
+                            <div class="card-footer text-center">
+                                <form asp-action="RemoveFriendFromPage" method="post" onsubmit="return confirm('Tem a certeza que quer remover esta amizade?');">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="friendshipId" value="@friendship.Id" />
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                                        <i class="fas fa-user-minus"></i> Remover Amigo
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-info" role="alert">
+                <i class="fas fa-info-circle me-1"></i> Você ainda não tem amigos. <a asp-controller="Profiles" asp-action="BrowseUsers" class="alert-link">Procure utilizadores</a> para conectar!
+            </div>
+        }
+    </section>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <style>
+        .card-img-top {
+            border-bottom: 1px solid #eee;
+        }
+
+        .card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+
+            .card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15) !important;
+            }
+    </style>
 }
-    </tbody>
-</table>
