@@ -72,23 +72,25 @@ namespace projetodweb_connectify.Controllers
                 return Unauthorized();
             }
 
-            var appUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == userEmail);
+            // É crucial incluir FriendshipsInitiated e FriendshipsReceived para obter os amigos
+            var appUser = await _context.Users
+                .Include(u => u.FriendshipsInitiated) // Amizades que este user iniciou
+                    .ThenInclude(fi => fi.User2)      // O amigo (User2) nestas amizades
+                        .ThenInclude(u2 => u2.Profile) // O perfil do amigo (User2)
+                .Include(u => u.FriendshipsReceived) // Amizades que este user recebeu
+                    .ThenInclude(fr => fr.User1)      // O amigo (User1) nestas amizades
+                        .ThenInclude(u1 => u1.Profile) // O perfil do amigo (User1)
+                .FirstOrDefaultAsync(u => u.Username == userEmail);
+
             if (appUser == null)
             {
                 return NotFound("Utilizador não encontrado.");
             }
 
-            Console.WriteLine($"User found: ID={appUser.Id}, Username={appUser.Username}");
-
-            // --- Fetch Profile with Eager Loading ---
             var profile = await _context.Profiles
                 .Where(p => p.UserId == appUser.Id)
-                .Include(p => p.User)
-                // --- Load Saved Topics ---
-                .Include(p => p.SavedTopics)        // Include the SavedTopic join entities
-                    .ThenInclude(st => st.Topic)    // For each SavedTopic, include the actual Topic
-                    .ThenInclude(t => t.Creator)    // Include the creator of the saved topic (optional, but good to have)
-                    .ThenInclude(c => c.User)       // Include the User object for the creator (optional)
+                .Include(p => p.User) // O User já foi parcialmente carregado acima, mas isto garante consistência
+                .Include(p => p.SavedTopics).ThenInclude(st => st.Topic).ThenInclude(t => t.Creator).ThenInclude(c => c.User)
                 .FirstOrDefaultAsync();
 
             if (profile == null)
@@ -96,51 +98,50 @@ namespace projetodweb_connectify.Controllers
                 return NotFound("Perfil não encontrado. Por favor, crie ou complete o seu perfil.");
             }
 
-            Console.WriteLine($"Profile found: ID={profile.Id}, Name={profile.Name}");
-
-            // --- Populate DisplaySavedTopics ---
+            // --- Popular DisplaySavedTopics (como antes) ---
             if (profile.SavedTopics != null)
             {
-                // Order by WHEN the topic was SAVED (using SavedTopic.SavedAt)
                 profile.DisplaySavedTopics = profile.SavedTopics
-                    .OrderByDescending(st => st.SavedAt) // Order by the save date
-                    .Select(st => st.Topic)            // Select the Topic object itself
-                    .ToList();                         // Materialize the list
-                Console.WriteLine($"Loaded {profile.DisplaySavedTopics.Count} saved topics for display (ordered by save date).");
-            }
-            else
-            {
-                profile.DisplaySavedTopics = new List<Topic>();
+                    .OrderByDescending(st => st.SavedAt)
+                    .Select(st => st.Topic)
+                    .ToList();
             }
 
-            // --- Fetch Personal Topic and its Posts (Remains the same) ---
+            // --- Fetch Personal Topic and its Posts (como antes) ---
             profile.PersonalTopic = await _context.Topics
-                .Include(t => t.Posts)
+                .Include(t => t.Posts.OrderByDescending(p => p.CreatedAt))
                     .ThenInclude(tp => tp.Profile)
                 .FirstOrDefaultAsync(t => t.CreatedBy == profile.Id && t.IsPersonal);
 
             if (profile.PersonalTopic != null)
             {
-                profile.PersonalTopicPosts = profile.PersonalTopic.Posts
-                                                   .OrderByDescending(tp => tp.CreatedAt)
-                                                   .ToList();
-                Console.WriteLine($"Loaded {profile.PersonalTopicPosts.Count} personal topic posts.");
-            }
-            else
-            {
-                profile.PersonalTopicPosts = new List<TopicPost>();
-                Console.WriteLine("Personal topic not found or has no posts.");
+                profile.PersonalTopicPosts = profile.PersonalTopic.Posts.ToList();
             }
 
-            // --- Fetch OTHER Created Topics (Remains the same) ---
+            // --- Fetch OTHER Created Topics (como antes) ---
             profile.CreatedTopics = await _context.Topics
-                                           .Where(t => t.CreatedBy == profile.Id && !t.IsPersonal) // Removed the !IsPrivate check here, show all non-personal created ones
-                                           .OrderByDescending(t => t.CreatedAt)
-                                           .ToListAsync();
-            Console.WriteLine($"Loaded {profile.CreatedTopics.Count} other created topics.");
+                .Where(t => t.CreatedBy == profile.Id && !t.IsPersonal)
+                .OrderByDescending(t => t.CreatedAt)
+                .ToListAsync();
 
-            // --- Return the View ---
-            return View("Index", profile); // Pass the profile WITH DisplaySavedTopics populated
+            // --- CARREGAR AMIGOS ---
+            var friendsList = new List<Users>();
+            // Amigos de amizades iniciadas pelo utilizador atual
+            friendsList.AddRange(appUser.FriendshipsInitiated
+                .Where(f => f.Status == FriendshipStatus.Accepted)
+                .Select(f => f.User2)); // User2 é o amigo
+
+            // Amigos de amizades recebidas pelo utilizador atual
+            friendsList.AddRange(appUser.FriendshipsReceived
+                .Where(f => f.Status == FriendshipStatus.Accepted)
+                .Select(f => f.User1)); // User1 é o amigo
+
+            // Garantir que não há duplicados e ordenar (opcional)
+            profile.Friends = friendsList.DistinctBy(u => u.Id).OrderBy(u => u.Username).ToList();
+
+            Console.WriteLine($"Loaded {profile.Friends.Count} friends for display.");
+
+            return View("Index", profile); // Ou o nome da sua view MyProfile
         }
 
         // GET: Profiles/Details/5

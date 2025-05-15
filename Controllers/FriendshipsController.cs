@@ -90,7 +90,7 @@ namespace projetodweb_connectify.Controllers
             if (currentUser == null) return Challenge();
 
             var friendship = await _context.Friendships
-                .Include(f => f.User1) // Para a mensagem de feedback
+                .Include(f => f.User1) 
                 .FirstOrDefaultAsync(f => f.Id == friendshipId && f.User2Id == currentUser.Id && f.Status == FriendshipStatus.Pending);
 
             if (friendship == null)
@@ -118,8 +118,8 @@ namespace projetodweb_connectify.Controllers
             if (currentUser == null) return Challenge();
 
             var friendship = await _context.Friendships
-                .Include(f => f.User1) // Para a mensagem de feedback
-                .Include(f => f.User2) // Para a mensagem de feedback
+                .Include(f => f.User1) // <<----- NECESSÁRIO
+                .Include(f => f.User2) // <<----- NECESSÁRIO
                 .FirstOrDefaultAsync(f => f.Id == friendshipId &&
                                              f.Status == FriendshipStatus.Accepted &&
                                              (f.User1Id == currentUser.Id || f.User2Id == currentUser.Id));
