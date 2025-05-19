@@ -88,6 +88,11 @@
                             <i class="fas fa-bookmark me-1"></i> Guardados
                         </button>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="friends-tab" data-bs-toggle="tab" data-bs-target="#friends-content" type="button" role="tab" aria-controls="friends-content" aria-selected="false">
+                            <i class="fas fa-users me-1"></i> Amigos (@Model.Friends.Count)
+                        </button>
+                    </li>
                 </ul>
 
                 <div class="tab-content" id="profileTabContent">
@@ -330,6 +335,67 @@
                         }
                     </div>
 
+                    <!-- ============================= -->
+                    <!--     Friends Content Pane      -->
+                    <!-- ============================= -->
+                    <div class="tab-pane fade" id="friends-content" role="tabpanel" aria-labelledby="friends-tab">
+                        <h4>Meus Amigos</h4>
+                        <hr />
+                        @if (Model.Friends != null && Model.Friends.Any())
+                        {
+                            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+                                @foreach (var friend in Model.Friends)
+                                {
+                                    <div class="col">
+                                        <div class="card h-100 shadow-sm">
+                                            <a asp-controller="Profiles" asp-action="UserProfile" asp-route-identifier="@friend.Username" class="text-decoration-none text-dark">
+                                                <img src="@(friend.Profile?.ProfilePicture ?? "/images/defaultuser.png")"
+                                                     class="card-img-top"
+                                                     alt="Foto de @(friend.Profile?.Name ?? friend.Username)"
+                                                     style="height: 180px; object-fit: cover;"
+                                                     onerror="this.onerror=null; this.src='/images/defaultuser.png';">
+                                                <div class="card-body text-center">
+                                                    <h5 class="card-title mb-0">@(friend.Profile?.Name ?? friend.Username)</h5>
+                                                    @if (!string.IsNullOrEmpty(friend.Profile?.Name) && friend.Profile.Name != friend.Username)
+                                                    {
+                                                        <p class="card-text text-muted small">@@@friend.Username</p>
+                                                    }
+                                                </div>
+                                            </a>
+                                            <div class="card-footer text-center bg-transparent border-top-0 pb-3">
+                                                @* Botão para ir para a página de amizades, onde pode haver opção de remover amigo *@
+                                                @* Ou, se quiser um botão de remover direto aqui, precisará de um formulário e uma action
+                                                   similar ao RemoveFriendFromPage, mas talvez com retorno AJAX ou recarregamento.
+                                                   Para simplificar, vamos apenas linkar para o perfil do amigo.
+                                                *@
+                                                <a asp-controller="Profiles" asp-action="UserProfile" asp-route-identifier="@friend.Username" class="btn btn-sm btn-outline-primary">
+                                                    Ver Perfil
+                                                </a>
+                                                @*
+                                                // Se quiser um botão de remover amigo direto aqui (exemplo):
+                                                <form asp-controller="Friendships" asp-action="RemoveFriendFromPage" method="post" style="display:inline-block; margin-left:5px;"
+                                                      onsubmit="return confirm('Tem a certeza que quer remover @(friend.Profile?.Name ?? friend.Username) da sua lista de amigos?');">
+                                                    @Html.AntiForgeryToken()
+                                                    // Precisaria do FriendshipId aqui. A forma como carregamos os amigos (List<Users>) não o tem diretamente.
+                                                    // Para ter o FriendshipId, a lista de Friends no ViewModel precisaria ser uma lista de FriendViewModel (como na página Friendships/Index)
+                                                    // ou você faria uma nova consulta para encontrar o FriendshipId baseado no Model.User.Id e friend.Id.
+                                                    // Por simplicidade, esta versão não inclui o botão de remover direto aqui.
+                                                </form>
+                                                *@
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-light text-center" role="alert">
+                                <i class="fas fa-info-circle me-1"></i> Você ainda não tem amigos. Que tal <a asp-controller="Profiles" asp-action="BrowseUsers" class="alert-link">procurar alguns</a>?
+                            </div>
+                        }
+                    </div>
+
                 </div> 
             </div>
         </div> 
@@ -493,6 +559,7 @@ else
         }
 
 
+
         .topic-card {
             transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
             display: flex;
@@ -595,6 +662,22 @@ else
             .topic-actions .btn-group .btn,
             .topic-actions > form > .btn { /* Target direct form button as well */
                 padding: 0.25rem 0.5rem;
+            }
+
+
+        /* Adicione estilos para os cards de amigos se necessário,
+                   pode reutilizar os da BrowseUsersView se forem similares */
+        .card-img-top {
+            border-bottom: 1px solid #eee;
+        }
+
+        .card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+
+            .card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15) !important;
             }
 
     </style>

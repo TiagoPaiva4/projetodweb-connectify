@@ -77,18 +77,23 @@ namespace projetodweb_connectify.Models
         [NotMapped] 
         public ICollection<TopicPost> PersonalTopicPosts { get; set; } = new List<TopicPost>();
 
-        // --- NEW NAVIGATION PROPERTY for Saved Topics ---
         /// <summary>
-        /// Collection navigation property for the topics saved by this profile.
+        /// Propriedade de navegação de coleção para os tópicos salvos por este perfil.
         /// </summary>
         public virtual ICollection<SavedTopic> SavedTopics { get; set; } = new List<SavedTopic>();
 
-        // --- NEW NotMapped property for easy display ---
         /// <summary>
-        /// List of Topics that this profile has saved.
-        /// Populated in the controller, not mapped to DB.
+        /// Lista de tópicos que este perfil salvou.
+        /// Preenchido no controlador, não mapeado para o banco de dados.
         /// </summary>
         [NotMapped]
         public List<Topic> DisplaySavedTopics { get; set; } = new List<Topic>();
+
+        /// <summary>
+        /// Lista de amigos associados a este perfil (utilizador).
+        /// Não é mapeada para a base de dados, populada no controller para a view MyProfile.
+        /// </summary>
+        [NotMapped]
+        public List<Users> Friends { get; set; } = new List<Users>();
     }
 }

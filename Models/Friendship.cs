@@ -3,47 +3,63 @@ using System.ComponentModel.DataAnnotations;
 
 namespace projetodweb_connectify.Models
 {
+    public enum FriendshipStatus
+    {
+        Pending,   // Request sent, awaiting response
+        Accepted,  // Friendship is active
+        Rejected,  // Request was declined
+        Blocked    // One user has blocked the other (optional, could be a separate system)
+    }
     /// <summary>
     /// representa a relação de amizade entre dois utilizadores na rede social.
     /// contém os identificadores dos utilizadores e o estado da amizade.
     /// </summary>
     public class Friendship
     {
-        /// <summary>
-        // chaves estrangeiras representando os dois utilizadores na amizade
-        /// </summary>
-        [ForeignKey("User1")]
-        public int User1Id { get; set; }
-
-        [ForeignKey("User2")]
-        public int User2Id { get; set; }
+        [Key]
+        public int Id { get; set; }
 
         /// <summary>
-        // propriedades de navegação para os utilizadores
+        /// Id do utilizador que enviou o pedido de amizade.
+        /// Corresponde a User1Id no seu modelo Users para FriendshipsInitiated.
         /// </summary>
-        
-        /// <summary>
-        /// Utilizador que iniciou a amizade.
-        /// </summary>
-        [ForeignKey(nameof(User1Id))]
-        public Users User1 { get; set; } = null!;
-        /// <summary>
-        /// Utilizador que recebeu a amizade.
-        /// </summary>
-        [ForeignKey(nameof(User2Id))]
-        public Users User2 { get; set; } = null!;
+        [Required]
+        public int User1Id { get; set; } // The ID of the user who sent the request
+
 
         /// <summary>
-        // data de criação da amizade
+        /// Utilizador que enviou o pedido de amizade.
         /// </summary>
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        [ForeignKey("User1Id")]
+        public virtual Users User1 { get; set; } = null!;
 
         /// <summary>
-        /// Valida se os utilizadores são diferentes.
+        /// Id do utilizador que recebeu o pedido de amizade.
+        /// Corresponde a User2Id no seu modelo Users para FriendshipsReceived.
         /// </summary>
-        public static bool IsValidFriendship(int user1Id, int user2Id)
-        {
-            return user1Id != user2Id;
-        }
+        [Required]
+        public int User2Id { get; set; } // The ID of the user who received the request
+
+        /// <summary>
+        /// Utilizador que recebeu o pedido de amizade.
+        /// </summary>
+        [ForeignKey("User2Id")]
+        public virtual Users User2 { get; set; } = null!;
+
+        /// <summary>
+        /// Estado atual da amizade (ex: Pendente, Aceite, Rejeitada).
+        /// </summary>
+        [Required]
+        public FriendshipStatus Status { get; set; } = FriendshipStatus.Pending;
+
+        /// <summary>
+        /// Data e hora em que o pedido de amizade foi enviado.
+        /// </summary>
+        public DateTime RequestDate { get; set; } = DateTime.UtcNow;
+
+        /// <summary>
+        /// Data e hora em que o pedido de amizade foi aceite (nullable).
+        /// </summary>
+        public DateTime? AcceptanceDate { get; set; }
     }
 }
