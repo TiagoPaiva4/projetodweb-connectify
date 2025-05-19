@@ -1,39 +1,86 @@
 ﻿@model projetodweb_connectify.Models.Topic
 
 @{
-    ViewData["Title"] = "Edit";
+    ViewData["Title"] = "Editar Tópico: " + Model.Title;
 }
 
-<h1>Edit</h1>
+<h1>@ViewData["Title"]</h1>
 
-<h4>Topic</h4>
+<h4>Tópico</h4>
 <hr />
 <div class="row">
-    <div class="col-md-4">
-        <form asp-action="Edit">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="col-md-6">
+        @* Increased col width for more space *@
+        <form asp-action="Edit" method="post" enctype="multipart/form-data">
+            @* Added method="post" and enctype for file upload *@
+            <div asp-validation-summary="All" class="text-danger"></div>
             <input type="hidden" asp-for="Id" />
-            <div class="form-group">
+            @* Important: Keep hidden fields for properties not directly edited on the form but needed by the backend or to maintain state *@
+            <input type="hidden" asp-for="CreatedBy" />
+            <input type="hidden" asp-for="CreatedAt" />
+            <input type="hidden" asp-for="IsPersonal" />
+            <input type="hidden" asp-for="TopicImageUrl" /> @* To retain current image if none is uploaded *@
+            @* IsPrivate is intentionally omitted as per previous request to keep it always false for non-personal topics *@
+
+
+            <div class="form-group mb-3">
                 <label asp-for="Title" class="control-label"></label>
                 <input asp-for="Title" class="form-control" />
                 <span asp-validation-for="Title" class="text-danger"></span>
             </div>
-            <div class="form-group">
+
+            @* CAMPO PARA CATEGORIA *@
+            <div class="form-group mb-3">
+                <label asp-for="CategoryId" class="control-label"></label>
+                <select asp-for="CategoryId" class="form-select" asp-items="ViewBag.CategoryId">
+                    <option value="">-- Selecione uma Categoria --</option>
+                </select>
+                <span asp-validation-for="CategoryId" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
                 <label asp-for="Description" class="control-label"></label>
-                <input asp-for="Description" class="form-control" />
+                <textarea asp-for="Description" class="form-control" rows="5"></textarea> @* Changed to textarea for better editing *@
                 <span asp-validation-for="Description" class="text-danger"></span>
             </div>
-            <div class="form-group">
-                <input type="submit" value="Save" class="btn btn-primary" />
+
+            @* CAMPO PARA IMAGEM DO TÓPICO *@
+            <div class="form-group mb-3">
+                <label for="topicImageFile" class="control-label">Alterar Imagem do Tópico (Opcional)</label>
+                <input type="file" id="topicImageFile" name="topicImageFile" class="form-control" accept="image/png, image/jpeg, image/gif" />
+                <span asp-validation-for="TopicImageUrl" class="text-danger"></span>
+                @if (!string.IsNullOrEmpty(Model.TopicImageUrl) && Model.TopicImageUrl != "/images/topics/default_topic.jpeg")
+                {
+                    <div class="mt-2">
+                        <small>Imagem Atual:</small><br />
+                        <img src="@Url.Content(Model.TopicImageUrl)" alt="Imagem atual do tópico: @Model.Title" style="max-width: 200px; max-height: 150px; object-fit: cover;" class="img-thumbnail" />
+                    </div>
+                }
+                else
+                {
+                    <div class="mt-2">
+                        <small>Nenhuma imagem específica definida (usará a padrão).</small>
+                    </div>
+                }
+            </div>
+
+            @* IsPrivate is intentionally not shown/editable for regular topics *@
+
+            <div class="form-group mt-4">
+                @* Added mt-4 for spacing *@
+                <input type="submit" value="Guardar Alterações" class="btn btn-primary" />
+                <a asp-action="Index" class="btn btn-secondary ms-2">Cancelar</a>
             </div>
         </form>
     </div>
 </div>
 
-<div>
-    <a asp-action="Index">Back to List</a>
+<div class="mt-3">
+    <a asp-action="Index">Voltar à Lista de Tópicos</a>
 </div>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }

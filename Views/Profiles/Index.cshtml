@@ -178,37 +178,72 @@
                             <h4>Meus Tópicos Criados</h4>
                             <a asp-controller="Topics" asp-action="Create" class="btn btn-success btn-sm"><i class="fas fa-plus-circle"></i> Criar Novo Tópico</a>
                         </div>
-                        <hr />
+                        @* Removed <hr /> as cards will provide visual separation *@
 
                         @if (Model.CreatedTopics != null && Model.CreatedTopics.Any())
                         {
-                            <ul class="list-group list-group-flush">
-                                @foreach (var topic in Model.CreatedTopics)
+                            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+                                @* Responsive Grid: 1, 2, then 3 cols in tabs. g-3 for gutters *@
+                                @foreach (var topic in Model.CreatedTopics.OrderByDescending(t => t.CreatedAt))
                                 {
-                                    <li class="list-group-item mb-3 border rounded p-3 shadow-sm">
-                                        <div class="d-flex w-100 justify-content-between">
-                                            <h5 class="mb-1">
-                                                <a asp-controller="Topics" asp-action="Details" asp-route-id="@topic.Id">@topic.Title</a>
-                                                @if (topic.IsPrivate)
-                                                {
-                                                    <span class="badge bg-secondary ms-2"><i class="fas fa-lock"></i> Privado</span>
+                                    <div class="col">
+                                        <div class="card h-100 topic-card shadow-sm">
+                                            @* Reusing .topic-card styles *@
+                                            <a asp-controller="Topics" asp-action="Details" asp-route-id="@topic.Id" class="topic-card-image-link">
+                                                @{
+                                                    string defaultTopicImage = Url.Content("~/images/topics/default_topic_image.png");
+                                                    string topicImageUrl = string.IsNullOrEmpty(topic.TopicImageUrl) ? defaultTopicImage : Url.Content(topic.TopicImageUrl);
                                                 }
-                                            </h5>
-                                            <small class="text-muted">@topic.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small>
+                                                <div class="topic-card-image-wrapper">
+                                                    <img src="@topicImageUrl" alt="Imagem do Tópico: @topic.Title" class="card-img-top" onerror="this.onerror=null; this.src='@defaultTopicImage';" />
+                                                    @if (topic.IsPrivate)
+                                                    {
+                                                        <span class="badge bg-warning text-dark private-topic-badge" title="Tópico Privado"><i class="fas fa-lock"></i></span>
+                                                    }
+                                                </div>
+                                            </a>
+                                            <div class="card-body d-flex flex-column">
+                                                <h5 class="card-title topic-title mb-1">
+                                                    <a asp-controller="Topics" asp-action="Details" asp-route-id="@topic.Id" class="text-decoration-none">
+                                                        @topic.Title
+                                                    </a>
+                                                </h5>
+                                                @if (topic.Category != null)
+                                                {
+                                                    <small class="text-muted mb-2 topic-category">
+                                                        <a asp-controller="Categories" asp-action="Details" asp-route-id="@topic.CategoryId" class="text-decoration-none">
+                                                            @topic.Category.Name
+                                                        </a>
+                                                    </small>
+                                                }
+                                                else
+                                                {
+                                                    <small class="text-muted mb-2 topic-category">(Sem Categoria)</small>
+                                                }
+
+                                                <p class="card-text topic-description flex-grow-1">
+                                                    @Html.Raw(TruncateText(topic.Description, 60)) @* Using TruncateText helper *@
+                                                </p>
+
+                                                <div class="mt-auto d-flex justify-content-between align-items-center topic-actions">
+                                                    <small class="text-muted" title="@topic.CreatedAt.ToString("F")">
+                                                        @topic.CreatedAt.ToString("dd/MM/yy")
+                                                    </small>
+                                                    <div class="btn-group btn-group-sm">
+                                                        <a asp-controller="Topics" asp-action="Edit" asp-route-id="@topic.Id" class="btn btn-outline-secondary" title="Editar Tópico"><i class="fas fa-edit"></i></a>
+                                                        <form asp-controller="Topics" asp-action="Delete" asp-route-id="@topic.Id" method="post" class="d-inline" onsubmit="return confirm('Tem certeza que deseja excluir este TÓPICO e todos os seus posts? Esta ação não pode ser desfeita.');">
+                                                            @Html.AntiForgeryToken()
+                                                            <input type="hidden" name="returnUrl" value="@Url.Action("MyProfile", "Profiles")" />
+                                                            <button type="submit" class="btn btn-outline-danger" title="Excluir Tópico"><i class="fas fa-trash"></i></button>
+                                                        </form>
+                                                        <a asp-controller="TopicPosts" asp-action="Create" asp-route-topicId="@topic.Id" class="btn btn-outline-info" title="Adicionar Post"><i class="fas fa-plus"></i></a>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <p class="mb-1">@Html.Raw(topic.Description?.Length > 150 ? topic.Description.Substring(0, 150) + "..." : topic.Description ?? "Sem descrição.")</p>
-                                        <div class="mt-2 text-end">
-                                            <a asp-controller="Topics" asp-action="Edit" asp-route-id="@topic.Id" class="btn btn-sm btn-outline-secondary me-1" title="Editar Tópico"><i class="fas fa-edit"></i></a>
-                                            <form asp-controller="Topics" asp-action="Delete" asp-route-id="@topic.Id" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir este TÓPICO e todos os seus posts? Esta ação não pode ser desfeita.');">
-                                                @Html.AntiForgeryToken()
-                                                <input type="hidden" name="returnUrl" value="@Url.Action("MyProfile", "Profiles")" />
-                                                <button type="submit" class="btn btn-sm btn-outline-danger me-1" title="Excluir Tópico"><i class="fas fa-trash"></i></button>
-                                            </form>
-                                            <a asp-controller="TopicPosts" asp-action="Create" asp-route-topicId="@topic.Id" class="btn btn-sm btn-outline-info ms-1" title="Adicionar Post ao Tópico"><i class="fas fa-plus"></i></a>
-                                        </div>
-                                    </li>
+                                    </div>
                                 }
-                            </ul>
+                            </div>
                         }
                         else
                         {
@@ -222,39 +257,75 @@
                     <!--  Saved Topics Content Pane    -->
                     <!-- ============================= -->
                     <div class="tab-pane fade" id="saved-topics-content" role="tabpanel" aria-labelledby="saved-topics-tab">
-                        <h4>Tópicos Guardados</h4>
-                        <hr />
+                        <div class="mb-3 d-flex justify-content-between align-items-center">
+                            <h4>Tópicos Guardados</h4>
+                            @* No "Create New" button here as these are saved, not created by user here *@
+                        </div>
+                        @* Removed <hr /> *@
+
                         @if (Model.DisplaySavedTopics != null && Model.DisplaySavedTopics.Any())
                         {
-                            <ul class="list-group list-group-flush mb-4">
-                                @foreach (var savedTopic in Model.DisplaySavedTopics)
+                            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+                                @* Responsive Grid *@
+                                @foreach (var savedTopic in Model.DisplaySavedTopics.OrderByDescending(t => t.CreatedAt)) @* Assuming DisplaySavedTopics is a list of Topic *@
                                 {
-                                    <li class="list-group-item mb-3 border rounded p-3 shadow-sm">
-                                        <div class="d-flex w-100 justify-content-between">
-                                            <h5 class="mb-1">
-                                                <a asp-controller="Topics" asp-action="Details" asp-route-id="@savedTopic.Id">@savedTopic.Title</a>
-                                                @if (savedTopic.IsPrivate)
-                                                {
-                                                    <span class="badge bg-secondary ms-2"><i class="fas fa-lock"></i> Privado</span>
+                                    <div class="col">
+                                        <div class="card h-100 topic-card shadow-sm">
+                                            @* Reusing .topic-card styles *@
+                                            <a asp-controller="Topics" asp-action="Details" asp-route-id="@savedTopic.Id" class="topic-card-image-link">
+                                                @{
+                                                    string defaultTopicImage = Url.Content("~/images/topics/default_topic_image.png");
+                                                    string topicImageUrl = string.IsNullOrEmpty(savedTopic.TopicImageUrl) ? defaultTopicImage : Url.Content(savedTopic.TopicImageUrl);
                                                 }
-                                            </h5>
-                                            <small class="text-muted" title="Data de criação do tópico">Criado em: @savedTopic.CreatedAt.ToString("dd/MM/yyyy")</small>
-                                        </div>
-                                        <p class="mb-1">@Html.Raw(savedTopic.Description?.Length > 150 ? savedTopic.Description.Substring(0, 150) + "..." : savedTopic.Description ?? "Sem descrição.")</p>
-                                        <p class="mb-1"><small class="text-muted">Criado por: @(savedTopic.Creator?.Name ?? savedTopic.Creator?.User?.Username ?? "Desconhecido")</small></p>
+                                                <div class="topic-card-image-wrapper">
+                                                    <img src="@topicImageUrl" alt="Imagem do Tópico: @savedTopic.Title" class="card-img-top" onerror="this.onerror=null; this.src='@defaultTopicImage';" />
+                                                    @if (savedTopic.IsPrivate)
+                                                    {
+                                                        <span class="badge bg-warning text-dark private-topic-badge" title="Tópico Privado"><i class="fas fa-lock"></i></span>
+                                                    }
+                                                </div>
+                                            </a>
+                                            <div class="card-body d-flex flex-column">
+                                                <h5 class="card-title topic-title mb-1">
+                                                    <a asp-controller="Topics" asp-action="Details" asp-route-id="@savedTopic.Id" class="text-decoration-none">
+                                                        @savedTopic.Title
+                                                    </a>
+                                                </h5>
+                                                @if (savedTopic.Category != null)
+                                                {
+                                                    <small class="text-muted mb-2 topic-category">
+                                                        <a asp-controller="Categories" asp-action="Details" asp-route-id="@savedTopic.CategoryId" class="text-decoration-none">
+                                                            @savedTopic.Category.Name
+                                                        </a>
+                                                    </small>
+                                                }
+                                                else
+                                                {
+                                                    <small class="text-muted mb-2 topic-category">(Sem Categoria)</small>
+                                                }
 
-                                        <div class="mt-2 text-end">
-                                            <form asp-controller="Topics" asp-action="UnsaveTopic" asp-route-id="@savedTopic.Id" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja remover este tópico dos seus guardados?');">
-                                                @Html.AntiForgeryToken()
-                                                <input type="hidden" name="returnUrl" value="@Url.Action("MyProfile", "Profiles")" />
-                                                <button type="submit" class="btn btn-sm btn-outline-warning" title="Remover dos Guardados">
-                                                    <i class="fas fa-bookmark"></i>
-                                                </button>
-                                            </form>
+                                                <p class="card-text topic-description flex-grow-1">
+                                                    @Html.Raw(TruncateText(savedTopic.Description, 60))
+                                                </p>
+                                                <small class="text-muted mb-2 d-block"><em>Criado por: @(savedTopic.Creator?.Name ?? savedTopic.Creator?.User?.Username ?? "Desconhecido")</em></small>
+
+                                                <div class="mt-auto d-flex justify-content-between align-items-center topic-actions">
+                                                    <small class="text-muted" title="Data de criação do tópico: @savedTopic.CreatedAt.ToString("F")">
+                                                        @savedTopic.CreatedAt.ToString("dd/MM/yy")
+                                                    </small>
+                                                    <form asp-controller="Topics" asp-action="UnsaveTopic" asp-route-id="@savedTopic.Id" method="post" class="d-inline" onsubmit="return confirm('Tem certeza que deseja remover este tópico dos seus guardados?');">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="returnUrl" value="@Url.Action("MyProfile", "Profiles")" />
+                                                        <button type="submit" class="btn btn-sm btn-outline-warning" title="Remover dos Guardados">
+                                                            <i class="fas fa-bookmark"></i> <span class="d-none d-md-inline">Remover</span>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </li>
+                                    </div>
                                 }
-                            </ul>
+                            </div>
                         }
                         else
                         {
@@ -487,6 +558,113 @@ else
             opacity: 0.7;
         }
 
+
+
+        .topic-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #e9ecef; /* Added a subtle border */
+        }
+
+            .topic-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 8px 16px rgba(0,0,0,0.1) !important;
+            }
+
+        .topic-card-image-link {
+            display: block;
+        }
+
+        .topic-card-image-wrapper {
+            width: 100%;
+            padding-top: 75%; /* Aspect ratio 4:3 for image container - adjust as needed */
+            /* For square images (1:1): padding-top: 100%; */
+            position: relative;
+            overflow: hidden;
+            background-color: #eee;
+        }
+
+            .topic-card-image-wrapper .card-img-top { /* Ensure this applies to card-img-top within the wrapper */
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+
+        .private-topic-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            font-size: 0.75rem;
+            padding: 0.3em 0.5em;
+        }
+
+        .topic-card .card-body {
+            padding: 0.8rem;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        .topic-title a {
+            color: #212529;
+            font-weight: 600;
+            font-size: 1rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.3;
+            height: 2.6em;
+        }
+
+            .topic-title a:hover {
+                color: #0056b3;
+            }
+
+        .topic-category a {
+            font-size: 0.75rem;
+            color: #6c757d;
+            background-color: #f8f9fa;
+            padding: 0.2em 0.5em;
+            border-radius: 0.2rem;
+            text-decoration: none;
+        }
+
+            .topic-category a:hover {
+                background-color: #e9ecef;
+            }
+
+        .topic-description {
+            font-size: 0.85rem;
+            color: #495057;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2; /* Reduced to 2 lines for profile cards */
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 0.5rem;
+            min-height: 2.8em; /* Approx 2 lines for description */
+            flex-grow: 1; /* Allow description to take up space if title/category are short */
+        }
+
+        .topic-actions {
+            border-top: 1px solid #f0f0f0;
+            padding-top: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+            .topic-actions .btn-group .btn,
+            .topic-actions > form > .btn { /* Target direct form button as well */
+                padding: 0.25rem 0.5rem;
+            }
+
+
         /* Adicione estilos para os cards de amigos se necessário,
                    pode reutilizar os da BrowseUsersView se forem similares */
         .card-img-top {
@@ -501,5 +679,6 @@ else
                 transform: translateY(-5px);
                 box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15) !important;
             }
+
     </style>
 }
