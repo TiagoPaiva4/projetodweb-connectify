@@ -95,6 +95,16 @@ namespace projetodweb_connectify.Areas.Identity.Pages.Account
                 if (result.Succeeded)
                 {
                     _logger.LogInformation($"User '{user.UserName}' logged in."); // Log with actual username
+
+                    if (user != null && await _userManager.IsInRoleAsync(user, "admin")) // Verifique a role "admin" (case-sensitive)
+                    {
+                        _logger.LogInformation("Admin user logged in. Redirecting to Admin Dashboard.");
+                        // Use RedirectToAction para MVC Controllers em Areas
+                        return RedirectToAction("Index", "Dashboard", new { area = "Admin" });
+                        // Alternativamente, um redirect direto se você preferir a URL hardcoded:
+                        // return LocalRedirect("/Admin/Dashboard/Index");
+                    }
+
                     return LocalRedirect(returnUrl);
                 }
                 if (result.RequiresTwoFactor)
