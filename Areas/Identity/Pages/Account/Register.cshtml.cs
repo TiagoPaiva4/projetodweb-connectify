@@ -122,6 +122,7 @@ namespace projetodweb_connectify.Areas.Identity.Pages.Account
             /// Incorporação dos dados de um Utilizador
             /// no formulário de Registo
             /// </summary>
+            [Required]
             public Users User { get; set; }
         }
 
@@ -143,116 +144,102 @@ namespace projetodweb_connectify.Areas.Identity.Pages.Account
         /// <returns></returns>
         public async Task<IActionResult> OnPostAsync(string returnUrl = null)
         {
-            // se o 'returnUrl' for nulo, é-lhe atribuído o valor da 'raiz' da aplicação
             returnUrl ??= Url.Content("~/");
+            // ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList(); // Usually for GET
 
-            //Para métodos alternativos de REGISTO e LOGIN
-            //ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
-
-            // O ModelState avalia o estado do objeto da classe interna 'InputModel'
             if (ModelState.IsValid)
             {
-                var user = CreateUser();
+                var identityUser = CreateUser(); // This is an IdentityUser
 
-   
+                // Correctly set UserName for AspNetUsers from the form's Username field
+                // Use _userStore for SetUserNameAsync
+                await _userStore.SetUserNameAsync(identityUser, Input.User.Username, CancellationToken.None);
+                // Correctly set Email for AspNetUsers from the form's Email field
+                await _emailStore.SetEmailAsync(identityUser, Input.Email, CancellationToken.None);
 
-                // atribuir ao objeto 'user' o email e o username
-                await _emailStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
-                await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
-                // guardar os dados do 'user' na BD, juntando-lhe a password
-                var result = await _userManager.CreateAsync(user, Input.Password);
+                var result = await _userManager.CreateAsync(identityUser, Input.Password);
 
                 if (result.Succeeded)
                 {
-                    // se chegar aqui, consegui escrever os dados do novo utilizador na
-                    // tabela AspNetUsers
+                    _logger.LogInformation("User created a new account with password.");
 
-                    /* ++++++++++++++++++++++++++++++++++++ */
-                    // guardar os dados do Utilizador na BD
-                    /* ++++++++++++++++++++++++++++++++++++ */
+                    // Populate your custom Users table
+                    // Input.User.Username is already set from form binding.
+                    // Input.User.Phone is already set from form binding.
 
-                    // var auxiliar
-                    bool haErro = false;
+                    // ***** CORRECTLY POPULATE EMAIL FOR YOUR CUSTOM USERS TABLE *****
+                    Input.User.Email = Input.Email;
 
-                    // atribuir o UserName do utilizador AspNetUser criado 
-                    // ao objeto Utilizador
-                    Input.User.Username = Input.Email;
+                    // The PasswordHash should NOT be set here manually if you removed it from Users.cs
+                    // Input.User.PasswordHash = "somehash"; // DO NOT DO THIS if Identity handles passwords
+
+                    // Ensure CreatedAt is set (though it has a default)
+                    Input.User.CreatedAt = DateTime.UtcNow;
+
                     try
                     {
-                        _context.Add(Input.User);
-                        await _context.SaveChangesAsync();
+                        _context.Add(Input.User); // Input.User now has Username, Email, Phone
+                        await _context.SaveChangesAsync(); // This will generate Input.User.Id
 
-                        
-                        // *** Obter o ID do User que acabou de ser guardado ***
                         int registeredUserId = Input.User.Id;
 
-                        // *** Criar e guardar o Profile ***
                         var newProfile = new Profile
                         {
                             UserId = registeredUserId,
-                            Name = "", // Ou outra lógica para o nome
-                            Type = "Pessoal", // Ou outro valor padrão
+                            Name = Input.User.Username, // Use username for initial profile name, or make it empty
+                            Type = "Pessoal",
                             CreatedAt = DateTime.UtcNow
                         };
                         _context.Profiles.Add(newProfile);
-                        await _context.SaveChangesAsync();
+                        await _context.SaveChangesAsync(); // This will generate newProfile.Id
 
-                        
                         var personalTopic = new Topic
                         {
                             Title = "Publicações Pessoais",
                             Description = "Tópico privado para o utilizador.",
-                            CreatedBy = newProfile.Id,
+                            CreatedBy = newProfile.Id, // Use the ID of the just-created profile
                             IsPersonal = true,
                             IsPrivate = true,
                             CreatedAt = DateTime.UtcNow
                         };
                         _context.Topics.Add(personalTopic);
                         await _context.SaveChangesAsync();
-                        
-                    }
-                    catch (Exception)
-                    {
-                        haErro = true;
-                        throw;
-                    }
 
-                    if (!haErro)
-                    {
-                        // Obter o ID do novo utilizador
-                        var userId = await _userManager.GetUserIdAsync(user);
-                        // obter o Código a ser enviado para o email do novo utilizador
-                        // para validar o email, e codificá-lo em UTF8
-                        var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                        // Email confirmation logic
+                        var userId = await _userManager.GetUserIdAsync(identityUser);
+                        var code = await _userManager.GenerateEmailConfirmationTokenAsync(identityUser);
                         code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-
-                        // cria o link a ser enviado para o email, que há-de possibilitar a
-                        // validação do email
                         var callbackUrl = Url.Page(
                             "/Account/ConfirmEmail",
                             pageHandler: null,
                             values: new { area = "Identity", userId = userId, code = code, returnUrl = returnUrl },
                             protocol: Request.Scheme);
 
-                        // criar o email e enviá-lo
-                        //await _emailSender.SendEmailAsync(Input.Email, "Confirm your email",
-                        //    $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+                        // Use Input.Email for sending the confirmation, and Input.User.Username for display
                         await _emailSender.SendEmailAsync(Input.Email, Input.User.Username ?? Input.Email, callbackUrl);
-                        
-                        // Se tiver sido definido que o Registo deve ser seguido de validação do
-                        // email, redireciona para a página de Confirmação de Registo de um novo Utilizador
-                        // este parâmetro está escrito no ficheiro 'Program.cs'
+
                         if (_userManager.Options.SignIn.RequireConfirmedAccount)
                         {
                             return RedirectToPage("RegisterConfirmation", new { email = Input.Email, returnUrl = returnUrl });
                         }
                         else
                         {
-                            await _signInManager.SignInAsync(user, isPersistent: false);
+                            await _signInManager.SignInAsync(identityUser, isPersistent: false);
                             return LocalRedirect(returnUrl);
                         }
                     }
-                    // se há erros, mostra-os na página de Registo
+                    catch (Exception ex)
+                    {
+                        // Log the detailed error
+                        _logger.LogError(ex, "Error saving custom user data, profile, or topic.");
+                        // Potentially roll back Identity user creation or mark it for cleanup
+                        await _userManager.DeleteAsync(identityUser); // Basic rollback
+                        ModelState.AddModelError(string.Empty, "Ocorreu um erro ao guardar os dados do utilizador. Tente novamente.");
+                        // return Page(); // Or rethrow if you want a generic error page
+                    }
+                }
+                else // if result for _userManager.CreateAsync did not succeed
+                {
                     foreach (var error in result.Errors)
                     {
                         ModelState.AddModelError(string.Empty, error.Description);

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using projetodweb_connectify.Data;
 
@@ -11,9 +12,11 @@ using projetodweb_connectify.Data;
 namespace projetodweb_connectify.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250519163904_AdjustedUserRegistrationModels")]
+    partial class AdjustedUserRegistrationModels
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -538,6 +541,14 @@ namespace projetodweb_connectify.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("IdentityUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Phone")
                         .HasMaxLength(18)
                         .HasColumnType("nvarchar(18)");
@@ -548,6 +559,8 @@ namespace projetodweb_connectify.Data.Migrations
                         .HasColumnType("nvarchar(50)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("IdentityUserId");
 
                     b.ToTable("Users");
                 });
@@ -747,6 +760,17 @@ namespace projetodweb_connectify.Data.Migrations
                     b.Navigation("Profile");
 
                     b.Navigation("Topic");
+                });
+
+            modelBuilder.Entity("projetodweb_connectify.Models.Users", b =>
+                {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", "IdentityUser")
+                        .WithMany()
+                        .HasForeignKey("IdentityUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("IdentityUser");
                 });
 
             modelBuilder.Entity("projetodweb_connectify.Models.Category", b =>
