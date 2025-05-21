@@ -1,86 +1,54 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
+﻿// Areas/Identity/Pages/Account/Login.cshtml.cs
 #nullable disable
 
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Threading.Tasks; // Added for Task
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
 
 namespace projetodweb_connectify.Areas.Identity.Pages.Account
 {
+    [AllowAnonymous] // Ensure this page is accessible without login
     public class LoginModel : PageModel
     {
+        private readonly UserManager<IdentityUser> _userManager; // Added UserManager
         private readonly SignInManager<IdentityUser> _signInManager;
         private readonly ILogger<LoginModel> _logger;
 
-        public LoginModel(SignInManager<IdentityUser> signInManager, ILogger<LoginModel> logger)
+        public LoginModel(SignInManager<IdentityUser> signInManager,
+                          ILogger<LoginModel> logger,
+                          UserManager<IdentityUser> userManager) // Added UserManager
         {
+            _userManager = userManager; // Added UserManager
             _signInManager = signInManager;
             _logger = logger;
         }
 
-        /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
-        /// </summary>
         [BindProperty]
         public InputModel Input { get; set; }
 
-        /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
-        /// </summary>
         public IList<AuthenticationScheme> ExternalLogins { get; set; }
 
-        /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
-        /// </summary>
         public string ReturnUrl { get; set; }
 
-        /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
-        /// </summary>
         [TempData]
         public string ErrorMessage { get; set; }
 
-        /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
-        /// </summary>
         public class InputModel
         {
-            /// <summary>
-            ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-            ///     directly from your code. This API may change or be removed in future releases.
-            /// </summary>
-            [Required]
-            [EmailAddress]
-            public string Email { get; set; }
+            [Required(ErrorMessage = "O campo Email é obrigatório.")]
+            [EmailAddress(ErrorMessage = "O Email não é um endereço de email válido.")]
+            public string Email { get; set; } // This will be used to FIND the user
 
-            /// <summary>
-            ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-            ///     directly from your code. This API may change or be removed in future releases.
-            /// </summary>
-            [Required]
+            [Required(ErrorMessage = "O campo Password é obrigatório.")]
             [DataType(DataType.Password)]
             public string Password { get; set; }
 
-            /// <summary>
-            ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-            ///     directly from your code. This API may change or be removed in future releases.
-            /// </summary>
-            [Display(Name = "Remember me?")]
+            [Display(Name = "Lembrar-me?")]
             public bool RememberMe { get; set; }
         }
 
@@ -97,24 +65,46 @@ namespace projetodweb_connectify.Areas.Identity.Pages.Account
             await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
 
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
-
             ReturnUrl = returnUrl;
         }
 
         public async Task<IActionResult> OnPostAsync(string returnUrl = null)
         {
             returnUrl ??= Url.Content("~/");
-
-            ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+            ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList(); // Populate for redisplay if needed
 
             if (ModelState.IsValid)
             {
-                // This doesn't count login failures towards account lockout
-                // To enable password failures to trigger account lockout, set lockoutOnFailure: true
-                var result = await _signInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+                // *** THIS IS THE KEY CHANGE ***
+                // Attempt to find the user by their email address first.
+                var user = await _userManager.FindByEmailAsync(Input.Email);
+
+                if (user == null)
+                {
+                    // User not found by email, this is an invalid attempt.
+                    // Don't reveal that the user does not exist or is not confirmed.
+                    ModelState.AddModelError(string.Empty, "Tentativa de login inválida.");
+                    return Page();
+                }
+
+                // Now, use the user's actual UserName (which you set during registration) for PasswordSignInAsync.
+                // The 'Input.Email' from the form is only used to find the user.
+                // The 'user.UserName' is what Identity stored in the UserName column.
+                var result = await _signInManager.PasswordSignInAsync(user.UserName, Input.Password, Input.RememberMe, lockoutOnFailure: true);
+
                 if (result.Succeeded)
                 {
-                    _logger.LogInformation("User logged in.");
+                    _logger.LogInformation($"User '{user.UserName}' logged in."); // Log with actual username
+
+                    if (user != null && await _userManager.IsInRoleAsync(user, "admin")) // Verifique a role "admin" (case-sensitive)
+                    {
+                        _logger.LogInformation("Admin user logged in. Redirecting to Admin Dashboard.");
+                        // Use RedirectToAction para MVC Controllers em Areas
+                        return RedirectToAction("Index", "Dashboard", new { area = "Admin" });
+                        // Alternativamente, um redirect direto se você preferir a URL hardcoded:
+                        // return LocalRedirect("/Admin/Dashboard/Index");
+                    }
+
                     return LocalRedirect(returnUrl);
                 }
                 if (result.RequiresTwoFactor)
@@ -123,12 +113,22 @@ namespace projetodweb_connectify.Areas.Identity.Pages.Account
                 }
                 if (result.IsLockedOut)
                 {
-                    _logger.LogWarning("User account locked out.");
+                    _logger.LogWarning($"User account '{user.UserName}' locked out.");
                     return RedirectToPage("./Lockout");
+                }
+                if (result.IsNotAllowed) // This can happen if email is not confirmed and RequireConfirmedAccount is true
+                {
+                    _logger.LogWarning($"User '{user.UserName}' login not allowed. Email confirmed: {user.EmailConfirmed}");
+                    ModelState.AddModelError(string.Empty, "Tentativa de login inválida. Verifique se o seu email foi confirmado.");
+                    // You could also add logic here to resend confirmation if you want.
+                    // For example, redirect to a page that explains email needs confirmation
+                    // and offers to resend the link.
+                    // return RedirectToPage("./ResendEmailConfirmation", new { Email = Input.Email });
+                    return Page();
                 }
                 else
                 {
-                    ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+                    ModelState.AddModelError(string.Empty, "Tentativa de login inválida.");
                     return Page();
                 }
             }

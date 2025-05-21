@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using projetodweb_connectify.Data;
 
@@ -11,9 +12,11 @@ using projetodweb_connectify.Data;
 namespace projetodweb_connectify.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250519152215_AddedRolesSupportToIdentity")]
+    partial class AddedRolesSupportToIdentity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -47,15 +50,6 @@ namespace projetodweb_connectify.Data.Migrations
                         .HasFilter("[NormalizedName] IS NOT NULL");
 
                     b.ToTable("AspNetRoles", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = "a",
-                            ConcurrencyStamp = "a3b119ca-fe9a-494f-8bd9-c5caaf1da86e",
-                            Name = "admin",
-                            NormalizedName = "ADMIN"
-                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -146,24 +140,6 @@ namespace projetodweb_connectify.Data.Migrations
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
                     b.ToTable("AspNetUsers", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = "admin",
-                            AccessFailedCount = 0,
-                            ConcurrencyStamp = "7dbcba99-e2c9-4d11-9201-c5ea145390a6",
-                            Email = "admin@mail.pt",
-                            EmailConfirmed = true,
-                            LockoutEnabled = false,
-                            NormalizedEmail = "ADMIN@MAIL.PT",
-                            NormalizedUserName = "ADMIN@MAIL.PT",
-                            PasswordHash = "AQAAAAIAAYagAAAAEG5hJ1YL6QmZ7oVAlyNveu2uR/8ACXhBxT6yg7+8DHJxccaJ9ouU+mR76QbnmD84hA==",
-                            PhoneNumberConfirmed = false,
-                            SecurityStamp = "bcc7416e-d54c-4d04-8264-98f427d04861",
-                            TwoFactorEnabled = false,
-                            UserName = "admin@mail.pt"
-                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
@@ -228,13 +204,6 @@ namespace projetodweb_connectify.Data.Migrations
                     b.HasIndex("RoleId");
 
                     b.ToTable("AspNetUserRoles", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            UserId = "admin",
-                            RoleId = "a"
-                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
@@ -569,6 +538,10 @@ namespace projetodweb_connectify.Data.Migrations
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 

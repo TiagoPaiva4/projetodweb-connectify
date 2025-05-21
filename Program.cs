@@ -18,6 +18,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
+    .AddRoles<IdentityRole>() 
     .AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddControllersWithViews();
 
@@ -31,8 +32,6 @@ builder.Services.AddSession(options => {
 builder.Services.AddDistributedMemoryCache();
 
 //Builder da confirmação de email
-//builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
-//builder.Services.AddScoped<IEmailSender, EmailSender>();
 builder.Services.AddTransient<ICustomEmailSender, EmailSender>();
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 
@@ -60,6 +59,13 @@ app.UseRouting();
 
 app.UseAuthorization();
 
+
+// Route for the Admin Area
+app.MapControllerRoute(
+    name: "AdminArea",
+    pattern: "{area:exists}/{controller=Dashboard}/{action=Index}/{id?}");
+
+// Default route for the main application
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");

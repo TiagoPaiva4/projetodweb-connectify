@@ -41,10 +41,6 @@ namespace projetodweb_connectify.Models
          *  (([+]|00)[0-9]{1,5})?[1-9][0-9]{5,10}  -->  nºs telefone internacionais
         */
 
-        /// <summary>
-        /// hash da password do utilizador para garantir segurança.
-        /// </summary>
-        public string PasswordHash { get; set; } = string.Empty;
 
         /// <summary>
         /// data e hora de criação do utilizador. 

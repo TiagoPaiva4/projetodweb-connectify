@@ -1,0 +1,36 @@
+﻿@{
+    ViewData["Title"] = "Painel Administrativo";
+    Layout = "_AdminLayout"; 
+}
+
+<h1>@ViewData["Title"]</h1>
+<hr />
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Usuários Registrados (Identity)</h5>
+                <p class="card-text display-4">@ViewBag.UserCount</p>
+                <a asp-action="ManageUsers" asp-controller="Dashboard" asp-area="Admin" class="btn btn-primary">Gerenciar Usuários</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Roles Definidas</h5>
+                <p class="card-text display-4">@ViewBag.RoleCount</p>
+                @* <a asp-action="ManageRoles" asp-controller="Dashboard" asp-area="Admin" class="btn btn-primary">Gerenciar Roles</a> *@
+                <p><small>(Funcionalidade de gerenciamento de roles pode ser adicionada aqui)</small></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Se você tiver scripts específicos para esta página, pode adicioná-los aqui *@
+@section Scripts {
+    <script>
+        // console.log("Dashboard Index page scripts loaded!");
+    </script>
+}

@@ -1,44 +1,50 @@
 ﻿@page
 @model RegisterModel
 @{
-    ViewData["Title"] = "Register";
+    ViewData["Title"] = "Registar"; // Changed to Portuguese
 }
 
-<div class="row">
-    <div class="col-md-4">
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        @* Adjusted column for better centering on larger screens *@
         <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post">
-            <h2>Create a new account.</h2>
+            <h2>Criar nova conta.</h2>
             <hr />
             <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+
             <div class="form-floating mb-3">
                 <input asp-for="Input.User.Username" class="form-control" autocomplete="username" aria-required="true" placeholder="Nome de utilizador" />
-                <label asp-for="Input.User.Username"></label>
+                <label asp-for="Input.User.Username">Nome de Utilizador</label> @* Matched with Users.cs Display Name *@
                 <span asp-validation-for="Input.User.Username" class="text-danger"></span>
             </div>
+
             <div class="form-floating mb-3">
-                <input asp-for="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                <input asp-for="Input.Email" class="form-control" autocomplete="email" aria-required="true" placeholder="name@example.com" /> @* Changed autocomplete to "email" *@
                 <label asp-for="Input.Email">Email</label>
                 <span asp-validation-for="Input.Email" class="text-danger"></span>
             </div>
+
             <div class="form-floating mb-3">
-                <input asp-for="Input.User.Phone" class="form-control" autocomplete="username" aria-required="true" placeholder="Telemóvel" />
-                <label asp-for="Input.User.Phone"></label>
+                <input asp-for="Input.User.Phone" class="form-control" autocomplete="tel" aria-required="false" placeholder="Telemóvel" /> @* Changed autocomplete to "tel", aria-required to false as Phone is nullable *@
+                <label asp-for="Input.User.Phone">Telemóvel</label>  @* Matched with Users.cs Display Name *@
                 <span asp-validation-for="Input.User.Phone" class="text-danger"></span>
             </div>
+
             <div class="form-floating mb-3">
                 <input asp-for="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="Password" />
                 <label asp-for="Input.Password">Password</label>
                 <span asp-validation-for="Input.Password" class="text-danger"></span>
             </div>
+
             <div class="form-floating mb-3">
-                <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="Password" />
-                <label asp-for="Input.ConfirmPassword">Confirm Password</label>
+                <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="Confirmar Password" /> @* Changed placeholder *@
+                <label asp-for="Input.ConfirmPassword">Confirmar Password</label>
                 <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
             </div>
-            <button id="registerSubmit" type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
+
+            <button id="registerSubmit" type="submit" class="w-100 btn btn-lg btn-primary">Registar</button>
         </form>
     </div>
-    
 </div>
 
 @section Scripts {

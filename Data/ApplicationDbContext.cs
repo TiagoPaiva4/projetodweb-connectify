@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using projetodweb_connectify.Models;
 
@@ -76,7 +77,41 @@ public class ApplicationDbContext : IdentityDbContext
     /// </summary>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // 'importa' todo o comportamento do método, 
+        // aquando da sua definição na SuperClasse
         base.OnModelCreating(modelBuilder); // Chama a configuração base para IdentityDbContext
+
+        // --- Identity Seeding ---
+        modelBuilder.Entity<IdentityRole>().HasData(
+            new IdentityRole { Id = "a", Name = "admin", NormalizedName = "ADMIN", ConcurrencyStamp = Guid.NewGuid().ToString() } // Added ConcurrencyStamp
+        );
+
+        // criar um utilizador para funcionar como ADMIN
+        // função para codificar a password
+        var hasher = new PasswordHasher<IdentityUser>();
+
+
+        // criação do utilizador
+        modelBuilder.Entity<IdentityUser>().HasData(
+            new IdentityUser
+            {
+                Id = "admin", // This should be a GUID string if not customized
+                UserName = "admin@mail.pt",
+                NormalizedUserName = "ADMIN@MAIL.PT",
+                Email = "admin@mail.pt",
+                NormalizedEmail = "ADMIN@MAIL.PT",
+                EmailConfirmed = true,
+                PasswordHash = hasher.HashPassword(null, "Aa0_aa"),
+                SecurityStamp = Guid.NewGuid().ToString(), // Ensure these are consistent if data is re-seeded or use fixed values
+                ConcurrencyStamp = Guid.NewGuid().ToString()
+            }
+        );
+
+
+        // Associar este utilizador à role ADMIN
+        modelBuilder.Entity<IdentityUserRole<string>>().HasData(
+            new IdentityUserRole<string> { UserId = "admin", RoleId = "a" });
+
 
         // Configure the relationship for FriendshipsInitiated
         // A User (User1) can initiate many friendships
