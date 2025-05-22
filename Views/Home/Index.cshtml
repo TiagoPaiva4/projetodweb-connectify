@@ -1,8 +1,99 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@model projetodweb_connectify.Models.Feed
+@{
+    ViewData["Title"] = "Feed Principal";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="container mt-4">
+    @if (!Model.IsUserAuthenticated)
+    {
+        <div class="alert alert-info text-center">
+            <h4>Bem-vindo ao Connectify!</h4>
+            <p>Faça <a asp-area="Identity" asp-page="/Account/Login">login</a> ou <a asp-area="Identity" asp-page="/Account/Register">registe-se</a> para ver posts de amigos e interagir com a comunidade.</p>
+        </div>
+    }
+
+    <!-- Abas de Navegação -->
+    <ul class="nav nav-tabs mb-3" id="feedTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="general-feed-tab" data-bs-toggle="tab" data-bs-target="#general-feed" type="button" role="tab" aria-controls="general-feed" aria-selected="true">Para Você</button>
+        </li>
+        @if (Model.IsUserAuthenticated)
+        {
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="friends-feed-tab" data-bs-toggle="tab" data-bs-target="#friends-feed" type="button" role="tab" aria-controls="friends-feed" aria-selected="false">Amigos</button>
+            </li>
+        }
+    </ul>
+
+    <!-- Conteúdo das Abas -->
+    <div class="tab-content" id="feedTabsContent">
+        <!-- Aba "Para Você" (Posts Gerais) -->
+        <div class="tab-pane fade show active" id="general-feed" role="tabpanel" aria-labelledby="general-feed-tab">
+            <h3 class="mb-3">Para Você</h3>
+            @if (Model.GeneralPosts.Any())
+            {
+                foreach (var post in Model.GeneralPosts)
+                {
+                    @await Html.PartialAsync("_TopicPostCard", post)
+                }
+            }
+            else
+            {
+                <div class="text-center p-5">
+                    <i class="fas fa-newspaper fa-3x text-muted mb-3"></i>
+                    <p class="lead text-muted">Ainda não há publicações gerais para mostrar.</p>
+                    @if (Model.IsUserAuthenticated)
+                    {
+                        <p><a asp-controller="Topics" asp-action="Index" class="btn btn-primary">Explorar Tópicos</a></p>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Aba "Amigos" -->
+        @if (Model.IsUserAuthenticated)
+        {
+            <div class="tab-pane fade" id="friends-feed" role="tabpanel" aria-labelledby="friends-feed-tab">
+                <h3 class="mb-3">Atividade dos Amigos</h3>
+                @if (Model.CurrentUserProfileId == null)
+                {
+                    <div class="alert alert-warning">
+                        Para ver os posts dos seus amigos, primeiro precisa de <a asp-controller="Profiles" asp-action="Create">criar o seu perfil</a>.
+                    </div>
+                }
+                else if (!Model.UserHasFriends)
+                {
+                    <div class="text-center p-5">
+                        <i class="fas fa-user-friends fa-3x text-muted mb-3"></i>
+                        <p class="lead text-muted">Você ainda não tem amigos.</p>
+                        <p><a asp-controller="Profiles" asp-action="BrowseUsers" class="btn btn-info">Encontrar Amigos</a></p>
+                    </div>
+                }
+                else if (Model.FriendsPosts.Any())
+                {
+                    foreach (var post in Model.FriendsPosts)
+                    {
+                        @await Html.PartialAsync("_TopicPostCard", post)
+                    }
+                }
+                else
+                {
+                    <div class="text-center p-5">
+                        <i class="fas fa-couch fa-3x text-muted mb-3"></i>
+                        <p class="lead text-muted">Os seus amigos ainda não publicaram nada ou as suas publicações não são visíveis aqui.</p>
+                    </div>
+                }
+            </div>
+        }
+    </div>
 </div>
+
+@* Se estiver a usar FontAwesome para os ícones, certifique-se que está incluído no _Layout.cshtml *@
+@* Exemplo: <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" /> *@
+
+@section Scripts {
+    <script>
+        // O Bootstrap JS deve cuidar da funcionalidade das abas automaticamente
+        // se estiver incluído corretamente no seu _Layout.cshtml
+    </script>
+}
