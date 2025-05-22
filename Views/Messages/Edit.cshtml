@@ -1,0 +1,59 @@
+﻿@model projetodweb_connectify.Models.Message
+
+@{
+    ViewData["Title"] = "Edit";
+}
+
+<h1>Edit</h1>
+
+<h4>Message</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Id" />
+            <div class="form-group">
+                <label asp-for="ConversationId" class="control-label"></label>
+                <select asp-for="ConversationId" class="form-control" asp-items="ViewBag.ConversationId"></select>
+                <span asp-validation-for="ConversationId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="SenderId" class="control-label"></label>
+                <select asp-for="SenderId" class="form-control" asp-items="ViewBag.SenderId"></select>
+                <span asp-validation-for="SenderId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="RecipientId" class="control-label"></label>
+                <select asp-for="RecipientId" class="form-control" asp-items="ViewBag.RecipientId"></select>
+                <span asp-validation-for="RecipientId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Content" class="control-label"></label>
+                <input asp-for="Content" class="form-control" />
+                <span asp-validation-for="Content" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="SentAt" class="control-label"></label>
+                <input asp-for="SentAt" class="form-control" />
+                <span asp-validation-for="SentAt" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="ReadAt" class="control-label"></label>
+                <input asp-for="ReadAt" class="form-control" />
+                <span asp-validation-for="ReadAt" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Save" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
