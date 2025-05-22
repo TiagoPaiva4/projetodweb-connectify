@@ -10,5 +10,6 @@ namespace projetodweb_connectify.Models
         public int? CurrentUserProfileId { get; set; }
         public bool IsUserAuthenticated { get; set; }
         public bool UserHasFriends { get; set; }
+        public List<Profile> FriendshipSuggestions { get; set; } = new List<Profile>();
     }
 }
