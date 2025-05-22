@@ -1,11 +1,10 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using projetodweb_connectify.Models; // Para Feed, ErrorViewModel, etc.
-using projetodweb_connectify.Data;    // Para ApplicationDbContext
-using Microsoft.EntityFrameworkCore;    // Para ToListAsync, Include, etc.
-using System.Linq;                      // Para LINQ queries
-using System.Threading.Tasks;           // Para Task
-// Microsoft.AspNetCore.Identity já não é necessário aqui para UserManager
+using projetodweb_connectify.Models;
+using projetodweb_connectify.Data;    
+using Microsoft.EntityFrameworkCore;    
+using System.Linq;                      
+using System.Threading.Tasks;           
 
 namespace projetodweb_connectify.Controllers
 {
@@ -13,9 +12,8 @@ namespace projetodweb_connectify.Controllers
     {
         private readonly ILogger<HomeController> _logger;
         private readonly ApplicationDbContext _context;
-        // private readonly UserManager<Users> _userManager; // REMOVIDO
 
-        // Construtor modificado
+
         public HomeController(ILogger<HomeController> logger, ApplicationDbContext context)
         {
             _logger = logger;
@@ -26,6 +24,18 @@ namespace projetodweb_connectify.Controllers
         {
             var viewModel = new Feed();
             viewModel.IsUserAuthenticated = User.Identity?.IsAuthenticated ?? false;
+
+            // --- Tópicos Recomendados ---
+            // Pegar alguns tópicos públicos, não pessoais, ordenados por data de criação
+            // ou por alguma métrica de popularidade se você tiver.
+            viewModel.RecommendedTopics = await _context.Topics
+                .Include(t => t.Category) // Para mostrar a categoria se desejar
+                .Include(t => t.Creator).ThenInclude(c => c.User) // Para mostrar o criador
+                .Where(t => !t.IsPrivate && !t.IsPersonal)
+                .OrderByDescending(t => t.CreatedAt) // Mais recentes primeiro
+                                                     // .OrderByDescending(t => t.Posts.Count()) // Mais populares (se a relação Posts estiver carregada e for performático)
+                .Take(5) // Quantidade de tópicos recomendados
+                .ToListAsync();
 
             // --- Posts Gerais ("Para Você") ---
             viewModel.GeneralPosts = await _context.TopicPosts

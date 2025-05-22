@@ -4,7 +4,6 @@
 }
 
 <div class="container mt-4">
-    @* <- Pode ser container ou container-fluid dependendo do seu layout geral *@
     @if (!Model.IsUserAuthenticated)
     {
         <div class="alert alert-info text-center">
@@ -14,12 +13,47 @@
     }
 
     <div class="row">
-        @*  NOVO: Envolver o conteúdo principal e as sugestões numa linha Bootstrap *@
-
         <!-- Coluna Principal do Feed (Esquerda/Centro) -->
         <div class="col-lg-8 col-md-12">
-            @* <- Coluna para o feed *@
 
+            <!-- Secção de Tópicos Recomendados -->
+            @if (Model.RecommendedTopics.Any())
+            {
+                <div class="recommended-topics-section mb-4">
+                    <h4 class="mb-3">Tópicos Recomendados</h4>
+                    <div class="d-flex flex-row flex-nowrap overflow-auto pb-2">
+                        @* Para scroll horizontal *@
+                        @foreach (var topic in Model.RecommendedTopics)
+                        {
+                            <div class="card me-3 shadow-sm" style="min-width: 250px; max-width: 300px;">
+                                <a asp-controller="Topics" asp-action="Details" asp-route-id="@topic.Id" class="text-decoration-none text-dark">
+                                    @if (!string.IsNullOrEmpty(topic.TopicImageUrl))
+                                    {
+                                        <img src="@topic.TopicImageUrl" class="card-img-top" alt="@topic.Title" style="height: 120px; object-fit: cover;">
+                                    }
+                                    else
+                                    {
+                                        <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" style="height: 120px;">
+                                            <i class="fas fa-comments fa-3x text-light"></i> @* Ícone padrão *@
+                                        </div>
+                                    }
+                                    <div class="card-body p-2">
+                                        <h6 class="card-title mb-1 text-truncate">@topic.Title</h6>
+                                        @if (topic.Category != null)
+                                        {
+                                            <span class="badge bg-info text-dark">@topic.Category.Name</span>
+                                        }
+                                        <p class="card-text small text-muted text-truncate mt-1">
+                                            Criado por @(topic.Creator?.Name ?? topic.Creator?.User?.Username ?? "Desconhecido")
+                                        </p>
+                                    </div>
+                                </a>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+            <!-- Fim da Secção de Tópicos Recomendados -->
             <!-- Abas de Navegação -->
             <ul class="nav nav-tabs mb-3" id="feedTabs" role="tablist">
                 <li class="nav-item" role="presentation">
@@ -37,7 +71,6 @@
             <div class="tab-content" id="feedTabsContent">
                 <!-- Aba "Para Você" (Posts Gerais) -->
                 <div class="tab-pane fade show active" id="general-feed" role="tabpanel" aria-labelledby="general-feed-tab">
-                    <h3 class="mb-3">Para Você</h3>
                     @if (Model.GeneralPosts.Any())
                     {
                         foreach (var post in Model.GeneralPosts)
@@ -62,7 +95,7 @@
                 @if (Model.IsUserAuthenticated)
                 {
                     <div class="tab-pane fade" id="friends-feed" role="tabpanel" aria-labelledby="friends-feed-tab">
-                        <h3 class="mb-3">Atividade dos Amigos</h3>
+                        @* <h3 class="mb-3">Atividade dos Amigos</h3> *@
                         @if (Model.CurrentUserProfileId == null)
                         {
                             <div class="alert alert-warning">
@@ -93,18 +126,13 @@
                         }
                     </div>
                 }
-            </div> @* Fim do tab-content *@
-
-        </div> @* Fim da col-lg-8 (coluna do feed) *@
-
-
-        <!-- Coluna de Sugestões (Direita) -->
+            </div> <!-- Fim do tab-content -->
+        </div> <!-- Fim da col-lg-8 (coluna do feed) -->
+        <!-- Coluna de Sugestões de Amizade (Direita) -->
         @if (Model.IsUserAuthenticated && Model.FriendshipSuggestions.Any())
         {
             <div class="col-lg-4 d-none d-lg-block">
-                @* <- Coluna para as sugestões *@
                 <div class="suggestions-sidebar p-3 bg-light rounded shadow-sm" style="position: sticky; top: 70px;">
-                    @* Ajuste o 'top' conforme a altura da sua navbar/abas *@
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="mb-0 text-muted">Sugestões para ti</h5>
                         <a asp-controller="Profiles" asp-action="BrowseUsers" class="small text-decoration-none">Ver todas</a>
@@ -131,11 +159,8 @@
                 </div>
             </div>
         }
-
-    </div> @* Fim do .row *@
-</div> @* Fim do .container *@
-
-
+    </div> <!-- Fim do .row -->
+</div> <!-- Fim do .container -->
 @section Scripts {
     <script>
         $(document).ready(function () {
@@ -167,3 +192,24 @@
         });
     </script>
 }
+
+<style>
+    .recommended-topics-section .overflow-auto::-webkit-scrollbar {
+        height: 8px;
+    }
+
+    .recommended-topics-section .overflow-auto::-webkit-scrollbar-thumb {
+        background: #ced4da;
+        border-radius: 4px;
+    }
+
+        .recommended-topics-section .overflow-auto::-webkit-scrollbar-thumb:hover {
+            background: #adb5bd;
+        }
+
+    .text-truncate { /* Para garantir que o text-truncate funcione como esperado */
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+</style>
