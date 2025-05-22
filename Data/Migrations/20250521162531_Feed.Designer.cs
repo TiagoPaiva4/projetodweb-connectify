@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using projetodweb_connectify.Data;
 
@@ -11,9 +12,11 @@ using projetodweb_connectify.Data;
 namespace projetodweb_connectify.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250521162531_Feed")]
+    partial class Feed
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -52,7 +55,7 @@ namespace projetodweb_connectify.Data.Migrations
                         new
                         {
                             Id = "a",
-                            ConcurrencyStamp = "4a068588-d502-4361-9986-c499514bc5b1",
+                            ConcurrencyStamp = "d6a7c6c7-b3fd-4334-a67f-d1e072e4089a",
                             Name = "admin",
                             NormalizedName = "ADMIN"
                         });
@@ -152,15 +155,15 @@ namespace projetodweb_connectify.Data.Migrations
                         {
                             Id = "admin",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "66ca4fdd-5bbf-4abb-a819-a1409bc17832",
+                            ConcurrencyStamp = "8a6917c2-75fb-4363-a55b-6047c7dacda7",
                             Email = "admin@mail.pt",
                             EmailConfirmed = true,
                             LockoutEnabled = false,
                             NormalizedEmail = "ADMIN@MAIL.PT",
                             NormalizedUserName = "ADMIN@MAIL.PT",
-                            PasswordHash = "AQAAAAIAAYagAAAAEGUWKwUP+/TPZEa23cS50fsXPnXEOP0k3LHx3gzoKvN4m0LR1xqc5Zy3Eg2QUDmBnA==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEIz5BfA8KqAJripMAzmoPmZDQZM4OEpPfOuicp5hmoulGN9oyIck2ckAAsuqWEq9kg==",
                             PhoneNumberConfirmed = false,
-                            SecurityStamp = "825d75a6-d414-4ec0-a1c2-5e60b32d5ee2",
+                            SecurityStamp = "d7285f36-a229-41b7-a3f0-2420d3293428",
                             TwoFactorEnabled = false,
                             UserName = "admin@mail.pt"
                         });

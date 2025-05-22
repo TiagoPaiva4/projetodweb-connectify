@@ -1,0 +1,45 @@
+﻿@* Views/Shared/_TopicPostCard.cshtml ou Views/Home/_TopicPostCard.cshtml *@
+@model projetodweb_connectify.Models.TopicPost
+
+<div class="card mb-3 shadow-sm topic-post-card">
+    <div class="card-header bg-light py-2">
+        <div class="d-flex align-items-center">
+            <a asp-controller="Profiles" asp-action="UserProfile" asp-route-identifier="@Model.Profile?.User?.Username" class="text-decoration-none">
+                <img src="@(Model.Profile?.ProfilePicture ?? "/images/defaultuser.png")" alt="Foto de @Model.Profile?.Name" class="rounded-circle me-2" style="width: 40px; height: 40px; object-fit: cover;">
+            </a>
+            <div>
+                <a asp-controller="Profiles" asp-action="UserProfile" asp-route-identifier="@Model.Profile?.User?.Username" class="fw-bold text-dark text-decoration-none">
+                    @(Model.Profile?.Name ?? Model.Profile?.User?.Username ?? "Utilizador Desconhecido")
+                </a>
+                <small class="text-muted d-block">
+                    Publicado em <a asp-controller="Topics" asp-action="Details" asp-route-id="@Model.TopicId" class="text-decoration-none">@Model.Topic?.Title</a>
+                    @if (Model.Topic?.Category != null)
+                    {
+                        <span class="badge bg-secondary">@Model.Topic.Category.Name</span>
+                    }
+                    · @Model.CreatedAt.ToString("dd MMM yyyy 'às' HH:mm")
+                </small>
+            </div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.PostImageUrl))
+    {
+        <img src="@Model.PostImageUrl" class="card-img-top" alt="Imagem do post" style="max-height: 400px; object-fit: cover;">
+    }
+    <div class="card-body">
+        <p class="card-text">@Html.Raw(Model.Content?.Replace("\n", "<br />"))</p>
+    </div>
+    <div class="card-footer bg-light py-2">
+        <a asp-controller="Topics" asp-action="Details" asp-route-id="@Model.TopicId" class="btn btn-sm btn-outline-primary">Ver Post & Comentários</a>
+        @* Adicionar botões de Like, etc. aqui no futuro *@
+    </div>
+</div>
+<style>
+    .topic-post-card .card-header, .topic-post-card .card-footer {
+        border-top: 1px solid rgba(0,0,0,.125);
+    }
+    .topic-post-card .card-text {
+        white-space: pre-wrap; /* Para respeitar quebras de linha e espaços do conteúdo */
+    }
+</style>

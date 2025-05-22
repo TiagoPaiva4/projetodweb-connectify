@@ -3,70 +3,328 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - projetodweb_connectify</title>
+    <title>@ViewData["Title"] - Connectify</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0v4LLanw2qksYuRlEzO+tcaEPQogQ0KaoGN26/zrn20ImR1DfuLWnOo7aBA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <!-- <link rel="stylesheet" href="~/projetodweb_connectify.styles.css" asp-append-version="true" />-->
     @await RenderSectionAsync("Styles", required: false)
+    <style>
+        body {
+            padding-left: 260px; /* Ajuste conforme a largura da sidebar + espaçamento */
+            background-color: #f8f9fa; /* Cor de fundo clara padrão do Bootstrap ou #fff */
+            color: #212529; /* Cor de texto escura padrão do Bootstrap */
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 240px; /* Largura da sidebar */
+            height: 100vh;
+            background-color: #ffffff; /* Fundo branco para a sidebar */
+            border-right: 1px solid #dee2e6; /* Borda padrão do Bootstrap */
+            padding: 20px 12px;
+            display: flex;
+            flex-direction: column;
+            z-index: 1030;
+            transition: width 0.3s ease;
+        }
+
+        .sidebar-logo {
+            font-size: 28px;
+            color: #212529; /* Cor do logo para tema claro */
+            padding: 12px 12px 36px 12px;
+            text-decoration: none;
+        }
+
+            .sidebar-logo:hover {
+                color: #0d6efd; /* Cor do link ao passar o mouse */
+            }
+
+
+        .sidebar-nav {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            flex-grow: 1;
+        }
+
+        .sidebar-nav-item {
+            margin-bottom: 8px;
+        }
+
+        .sidebar-nav-link {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border-radius: 8px;
+            color: #495057; /* Cor de texto do link (cinza escuro) */
+            text-decoration: none;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+            .sidebar-nav-link:hover,
+            .sidebar-nav-link.active {
+                background-color: #e9ecef; /* Fundo claro ao passar o mouse/ativo */
+                color: #0d6efd; /* Cor do link Bootstrap primário */
+            }
+
+            .sidebar-nav-link.active {
+                font-weight: bold;
+                color: #000; /* Ou #212529 para texto mais escuro no ativo */
+            }
+
+                .sidebar-nav-link.active i {
+                    color: #000; /* Ícone preto no ativo */
+                }
+
+
+            .sidebar-nav-link i {
+                font-size: 20px;
+                margin-right: 16px;
+                width: 24px;
+                text-align: center;
+                color: #6c757d; /* Cor do ícone (cinza) */
+            }
+
+            .sidebar-nav-link:hover i {
+                color: #0d6efd; /* Cor do ícone ao passar o mouse */
+            }
+
+
+        .sidebar-nav-text {
+            font-size: 16px;
+        }
+
+        .sidebar-bottom {
+            margin-top: auto;
+        }
+
+        .main-content {
+            padding-top: 20px;
+            padding-right: 20px; /* Adicione padding à direita para não colar na borda */
+            padding-bottom: 60px;
+        }
+
+        .footer {
+            position: fixed;
+            left: 240px; /* Ajuste conforme a largura da sidebar */
+            bottom: 0;
+            width: calc(100% - 240px); /* Largura restante */
+            background-color: #f8f9fa; /* Cor de fundo clara */
+            color: #6c757d; /* Cor de texto do footer */
+            border-top: 1px solid #dee2e6;
+            z-index: 1020;
+            padding: 1rem 0; /* Adiciona padding ao footer */
+        }
+
+            .footer a {
+                color: #0d6efd; /* Cor dos links no footer */
+            }
+
+        /* Ajustes para _LoginPartial na sidebar (tema claro) */
+        .sidebar .dropdown-menu {
+            background-color: #ffffff;
+            border: 1px solid #dee2e6;
+        }
+
+        .sidebar .dropdown-item {
+            color: #212529;
+        }
+
+            .sidebar .dropdown-item:hover {
+                background-color: #e9ecef;
+                color: #000;
+            }
+
+        .sidebar .btn-link {
+            color: #495057;
+            text-decoration: none;
+            padding: 12px;
+            display: block;
+            width: 100%;
+            text-align: left;
+        }
+
+            .sidebar .btn-link:hover {
+                background-color: #e9ecef;
+                color: #0d6efd;
+            }
+
+        .sidebar form {
+            margin-bottom: 8px;
+        }
+
+        /* Se quiser que o conteúdo principal use o container padrão do Bootstrap para centralizar */
+        .main-content.container {
+            max-width: 1140px; /* Ou outro valor do Bootstrap para lg/xl */
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Lobster+Two:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">projetodweb_connectify</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            @* Modificado para apontar para MyProfile se a lógica no ProfilesController/Index for essa *@
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Profiles" asp-action="MyProfile">Meu Perfil</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Topics" asp-action="Index">Tópicos</a>
-                        </li>
-                        @* Removido "Publicar no Tópico" e "Categorias" pois parecem mais ações do que páginas principais de navegação.
-                           Você pode adicioná-los de volta se fizerem sentido como links de navegação principais.
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="TopicPosts" asp-action="Index">Publicar no Tópico</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Categories" asp-action="Index">Categorias</a>
-                        </li>
-                        *@
+    <div class="sidebar">
+        <a class="sidebar-logo" asp-area="" asp-controller="Home" asp-action="Index">
+            Connectify
+        </a>
 
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Profiles" asp-action="BrowseUsers">Procurar Utilizadores</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Friendships" asp-action="Index">Minhas Conexões</a>
-                        </li>
-                    </ul>
-                    <partial name="_LoginPartial" />
-                </div>
+        <ul class="sidebar-nav">
+            <li class="sidebar-nav-item">
+                <a class="sidebar-nav-link" asp-area="" asp-controller="Home" asp-action="Index">
+                    <i class="fas fa-home"></i>
+                    <span class="sidebar-nav-text">Página inicial</span>
+                </a>
+            </li>
+            <li class="sidebar-nav-item">
+                <a class="sidebar-nav-link" asp-area="" asp-controller="Profiles" asp-action="BrowseUsers">
+                    <i class="fas fa-search"></i>
+                    <span class="sidebar-nav-text">Pesquisa</span>
+                </a>
+            </li>
+            <li class="sidebar-nav-item">
+                <a class="sidebar-nav-link" asp-area="" asp-controller="Topics" asp-action="Index">
+                    <i class="far fa-compass"></i>
+                    <span class="sidebar-nav-text">Explorar Tópicos</span>
+                </a>
+            </li>
+            <li class="sidebar-nav-item">
+                <a class="sidebar-nav-link" asp-area="" asp-controller="Friendships" asp-action="Index">
+                    <i class="far fa-paper-plane"></i>
+                    <span class="sidebar-nav-text">Mensagens/Conexões</span>
+                </a>
+            </li>
+            <li class="sidebar-nav-item">
+                <a class="sidebar-nav-link" href="#">
+                    <i class="far fa-heart"></i>
+                    <span class="sidebar-nav-text">Notificações</span>
+                </a>
+            </li>
+            <li class="sidebar-nav-item">
+                <a class="sidebar-nav-link" asp-area="" asp-controller="Topics" asp-action="Create">
+                    <i class="far fa-plus-square"></i>
+                    <span class="sidebar-nav-text">Criar Tópico</span>
+                </a>
+            </li>
+            <li class="sidebar-nav-item">
+                <a class="sidebar-nav-link" asp-area="" asp-controller="Profiles" asp-action="MyProfile">
+                    <i class="far fa-user-circle"></i>
+                    <span class="sidebar-nav-text">Perfil</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="sidebar-bottom">
+            <partial name="_LoginPartial" />
+
+            <div class="sidebar-nav-item dropdown">
+                <a class="sidebar-nav-link dropdown-toggle" href="#" id="moreDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-bars"></i>
+                    <span class="sidebar-nav-text">Mais</span>
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="moreDropdown">
+                    @* Removido dropdown-menu-dark *@
+                    <li><a class="dropdown-item" href="#">Configurações</a></li>
+                    <li><a class="dropdown-item" href="#">Sua atividade</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        @* Espaço para logout se não estiver no _LoginPartial *@
+                    </li>
+                </ul>
             </div>
-        </nav>
-    </header>
-    <div class="container">
+        </div>
+    </div>
+
+    @* Alterado para main-content container para centralizar o conteúdo *@
+    <div class="main-content container">
         <main role="main" class="pb-3">
+            @* Incluir o _AlertsPartial aqui se você o tiver *@
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["SuccessMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @TempData["ErrorMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+            @if (TempData["InfoMessage"] != null)
+            {
+                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                    @TempData["InfoMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
             @RenderBody()
         </main>
     </div>
 
     <footer class="border-top footer text-muted">
         <div class="container">
-            © @DateTime.Now.Year - projetodweb_connectify - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            @* Mantido container para o footer centralizado *@
+            © @DateTime.Now.Year - Connectify - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
         </div>
     </footer>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    @* <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script> *@ @* Removido Bootstrap duplicado *@
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
+
+    <script>
+        // Script para adicionar a classe 'active' ao link da página atual
+        $(function () {
+            var currentPath = location.pathname;
+            var currentSearch = location.search; // Para considerar query strings se necessário
+
+            $('.sidebar-nav-link').each(function () {
+                var $this = $(this);
+                var linkHref = $this.attr('href');
+
+                // Remove trailing slash from currentPath if it's not just "/"
+                var normalizedCurrentPath = currentPath;
+                if (normalizedCurrentPath !== '/' && normalizedCurrentPath.endsWith('/')) {
+                    normalizedCurrentPath = normalizedCurrentPath.slice(0, -1);
+                }
+                // Remove trailing slash from linkHref if it's not just "/"
+                var normalizedLinkHref = linkHref;
+                 if (normalizedLinkHref !== '/' && normalizedLinkHref.endsWith('/')) {
+                    normalizedLinkHref = normalizedLinkHref.slice(0, -1);
+                }
+
+
+                // Lógica para link ativo
+                // 1. Home exato
+                if (normalizedLinkHref === "/" && (normalizedCurrentPath === "/" || normalizedCurrentPath.toLowerCase().endsWith("/home") || normalizedCurrentPath.toLowerCase().endsWith("/home/index")) ) {
+                     $this.addClass('active');
+                     return; // Sair do loop se encontrou o link exato da home
+                }
+                // 2. Outros links (não home)
+                if (normalizedLinkHref !== "/" && normalizedCurrentPath.toLowerCase().startsWith(normalizedLinkHref.toLowerCase())) {
+                     // Para ser mais preciso, verifique se é um match exato ou se é uma sub-página
+                     if (normalizedCurrentPath.toLowerCase() === normalizedLinkHref.toLowerCase() ||
+                         normalizedCurrentPath.toLowerCase().startsWith(normalizedLinkHref.toLowerCase() + '/') ||
+                         (normalizedCurrentPath.toLowerCase() + '/').startsWith(normalizedLinkHref.toLowerCase() + '/index/') ) { // Para casos como /Controller e /Controller/Index
+                        $this.addClass('active');
+                    }
+                }
+            });
+
+            // Se nenhum link ativo foi encontrado e estamos na raiz, ativar o link da Página Inicial
+            if (currentPath === '/' && !$('.sidebar-nav-link.active').length) {
+                 $('.sidebar-nav-link').filter(function() {
+                    return $(this).find('.fa-home').length > 0;
+                }).addClass('active');
+            }
+        });
+    </script>
 </body>
 </html>
