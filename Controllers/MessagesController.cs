@@ -1,15 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿// Controllers/MessagesController.cs
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using projetodweb_connectify.Data;
 using projetodweb_connectify.Models;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Collections.Generic; // Para List
 
 namespace projetodweb_connectify.Controllers
 {
+    [Authorize]
     public class MessagesController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -19,158 +21,148 @@ namespace projetodweb_connectify.Controllers
             _context = context;
         }
 
-        // GET: Messages
+        // Helper para obter o utilizador atual
+        private async Task<Users?> GetCurrentUserAsync()
+        {
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username)) return null;
+            // Incluir Profile para mostrar foto e nome
+            return await _context.Users.Include(u => u.Profile)
+                                 .FirstOrDefaultAsync(u => u.Username == username);
+        }
+
+        // GET: Messages  (ou Messages/Index)
+        // Lista as conversas do utilizador atual
         public async Task<IActionResult> Index()
         {
-            var applicationDbContext = _context.Messages.Include(m => m.Conversation).Include(m => m.Recipient).Include(m => m.Sender);
-            return View(await applicationDbContext.ToListAsync());
+            var currentUser = await GetCurrentUserAsync();
+            if (currentUser == null) return Challenge(); // Ou redirecionar para Login
+
+            var conversations = await _context.Conversations
+                .Where(c => c.Participant1Id == currentUser.Id || c.Participant2Id == currentUser.Id)
+                .Include(c => c.Participant1).ThenInclude(p => p.Profile) // Incluir perfil do participante 1
+                .Include(c => c.Participant2).ThenInclude(p => p.Profile) // Incluir perfil do participante 2
+                .Include(c => c.Messages.OrderByDescending(m => m.SentAt).Take(1)) // Para pegar a última mensagem
+                .OrderByDescending(c => c.LastMessageAt)
+                .ToListAsync();
+
+            ViewBag.CurrentUserId = currentUser.Id;
+            return View(conversations);
         }
 
-        // GET: Messages/Details/5
-        public async Task<IActionResult> Details(int? id)
+
+        // GET: Messages/Chat/{otherUserId}
+        // Mostra a conversa com um utilizador específico
+        public async Task<IActionResult> Chat(int otherUserId)
         {
-            if (id == null)
+            var currentUser = await GetCurrentUserAsync();
+            if (currentUser == null) return Challenge();
+
+            if (currentUser.Id == otherUserId)
             {
-                return NotFound();
-            }
-
-            var message = await _context.Messages
-                .Include(m => m.Conversation)
-                .Include(m => m.Recipient)
-                .Include(m => m.Sender)
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (message == null)
-            {
-                return NotFound();
-            }
-
-            return View(message);
-        }
-
-        // GET: Messages/Create
-        public IActionResult Create()
-        {
-            ViewData["ConversationId"] = new SelectList(_context.Conversations, "Id", "Id");
-            ViewData["RecipientId"] = new SelectList(_context.Users, "Id", "Username");
-            ViewData["SenderId"] = new SelectList(_context.Users, "Id", "Username");
-            return View();
-        }
-
-        // POST: Messages/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,ConversationId,SenderId,RecipientId,Content,SentAt,ReadAt")] Message message)
-        {
-            if (ModelState.IsValid)
-            {
-                _context.Add(message);
-                await _context.SaveChangesAsync();
+                TempData["ErrorMessage"] = "Não pode conversar consigo mesmo.";
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["ConversationId"] = new SelectList(_context.Conversations, "Id", "Id", message.ConversationId);
-            ViewData["RecipientId"] = new SelectList(_context.Users, "Id", "Username", message.RecipientId);
-            ViewData["SenderId"] = new SelectList(_context.Users, "Id", "Username", message.SenderId);
-            return View(message);
-        }
 
-        // GET: Messages/Edit/5
-        public async Task<IActionResult> Edit(int? id)
-        {
-            if (id == null)
+            var otherUser = await _context.Users.Include(u => u.Profile).FirstOrDefaultAsync(u => u.Id == otherUserId);
+            if (otherUser == null)
             {
-                return NotFound();
+                TempData["ErrorMessage"] = "Utilizador não encontrado.";
+                return RedirectToAction(nameof(Index));
             }
 
-            var message = await _context.Messages.FindAsync(id);
-            if (message == null)
-            {
-                return NotFound();
-            }
-            ViewData["ConversationId"] = new SelectList(_context.Conversations, "Id", "Id", message.ConversationId);
-            ViewData["RecipientId"] = new SelectList(_context.Users, "Id", "Username", message.RecipientId);
-            ViewData["SenderId"] = new SelectList(_context.Users, "Id", "Username", message.SenderId);
-            return View(message);
-        }
+            // Determinar Participant1Id e Participant2Id (convenção: menor ID primeiro)
+            int p1Id = Math.Min(currentUser.Id, otherUserId);
+            int p2Id = Math.Max(currentUser.Id, otherUserId);
 
-        // POST: Messages/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,ConversationId,SenderId,RecipientId,Content,SentAt,ReadAt")] Message message)
-        {
-            if (id != message.Id)
-            {
-                return NotFound();
-            }
+            var conversation = await _context.Conversations
+                .Include(c => c.Messages.OrderBy(m => m.SentAt)) // Ordenar mensagens pela data de envio
+                    .ThenInclude(m => m.Sender) // Para saber quem enviou cada mensagem
+                        .ThenInclude(s => s.Profile) // Para foto do remetente na mensagem
+                .FirstOrDefaultAsync(c => c.Participant1Id == p1Id && c.Participant2Id == p2Id);
 
-            if (ModelState.IsValid)
+            if (conversation == null)
             {
-                try
+                // Criar uma nova conversa se não existir
+                conversation = new Conversation
                 {
-                    _context.Update(message);
+                    Participant1Id = p1Id,
+                    Participant2Id = p2Id,
+                    CreatedAt = DateTime.UtcNow,
+                    LastMessageAt = DateTime.UtcNow // Pode ser a data de criação inicialmente
+                };
+                _context.Conversations.Add(conversation);
+                await _context.SaveChangesAsync(); // Salvar para obter o Conversation.Id
+            }
+            else
+            {
+                // Marcar mensagens como lidas pelo currentUser nesta conversa
+                var unreadMessages = conversation.Messages
+                    .Where(m => m.RecipientId == currentUser.Id && m.ReadAt == null)
+                    .ToList();
+
+                foreach (var msg in unreadMessages)
+                {
+                    msg.ReadAt = DateTime.UtcNow;
+                }
+                if (unreadMessages.Any())
+                {
                     await _context.SaveChangesAsync();
                 }
-                catch (DbUpdateConcurrencyException)
+            }
+
+            ViewBag.OtherUser = otherUser;
+            ViewBag.CurrentUserId = currentUser.Id;
+            return View(conversation); // Passar o objeto Conversation para a View
+        }
+
+        // POST: Messages/SendMessage
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SendMessage(int conversationId, int recipientUserId, string messageContent)
+        {
+            if (string.IsNullOrWhiteSpace(messageContent) || messageContent.Length > 2000)
+            {
+                TempData["ErrorMessage"] = "A mensagem não pode estar vazia ou exceder 2000 caracteres.";
+                // Precisamos do otherUserId para redirecionar de volta para o chat correto
+                var convForRedirect = await _context.Conversations.FindAsync(conversationId);
+                if (convForRedirect != null)
                 {
-                    if (!MessageExists(message.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    var currentUserSenderId = (await GetCurrentUserAsync())?.Id;
+                    var otherIdForRedirect = convForRedirect.Participant1Id == currentUserSenderId ? convForRedirect.Participant2Id : convForRedirect.Participant1Id;
+                    return RedirectToAction(nameof(Chat), new { otherUserId = otherIdForRedirect });
                 }
+                return RedirectToAction(nameof(Index)); // Fallback
+            }
+
+            var currentUser = await GetCurrentUserAsync();
+            if (currentUser == null) return Challenge();
+
+            var conversation = await _context.Conversations
+                                    .FirstOrDefaultAsync(c => c.Id == conversationId &&
+                                                               (c.Participant1Id == currentUser.Id || c.Participant2Id == currentUser.Id));
+
+            if (conversation == null)
+            {
+                TempData["ErrorMessage"] = "Conversa não encontrada ou não tem permissão.";
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["ConversationId"] = new SelectList(_context.Conversations, "Id", "Id", message.ConversationId);
-            ViewData["RecipientId"] = new SelectList(_context.Users, "Id", "Username", message.RecipientId);
-            ViewData["SenderId"] = new SelectList(_context.Users, "Id", "Username", message.SenderId);
-            return View(message);
-        }
 
-        // GET: Messages/Delete/5
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null)
+            var message = new Message
             {
-                return NotFound();
-            }
+                ConversationId = conversationId,
+                SenderId = currentUser.Id,
+                RecipientId = recipientUserId,
+                Content = messageContent,
+                SentAt = DateTime.UtcNow
+            };
 
-            var message = await _context.Messages
-                .Include(m => m.Conversation)
-                .Include(m => m.Recipient)
-                .Include(m => m.Sender)
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (message == null)
-            {
-                return NotFound();
-            }
-
-            return View(message);
-        }
-
-        // POST: Messages/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            var message = await _context.Messages.FindAsync(id);
-            if (message != null)
-            {
-                _context.Messages.Remove(message);
-            }
+            _context.Messages.Add(message);
+            conversation.LastMessageAt = message.SentAt; // Atualizar LastMessageAt na conversa
 
             await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
-        }
 
-        private bool MessageExists(int id)
-        {
-            return _context.Messages.Any(e => e.Id == id);
+            return RedirectToAction(nameof(Chat), new { otherUserId = recipientUserId });
         }
     }
 }

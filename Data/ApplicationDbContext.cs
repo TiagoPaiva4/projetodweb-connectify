@@ -156,27 +156,32 @@ public class ApplicationDbContext : IdentityDbContext
 
         // Configuração para Conversation
         modelBuilder.Entity<Conversation>()
-            .HasOne(c => c.User1)
-            .WithMany() // Users não precisa de uma coleção de Conversations aqui
-            .HasForeignKey(c => c.User1Id)
-            .OnDelete(DeleteBehavior.Restrict); // Ou .Cascade se fizer sentido
+            .HasOne(c => c.Participant1)
+            .WithMany() // Users não precisa ter uma coleção de Conversations diretamente
+            .HasForeignKey(c => c.Participant1Id)
+            .OnDelete(DeleteBehavior.Restrict); // Evita que um utilizador seja apagado se tiver conversas
 
         modelBuilder.Entity<Conversation>()
-            .HasOne(c => c.User2)
+            .HasOne(c => c.Participant2)
             .WithMany()
-            .HasForeignKey(c => c.User2Id)
+            .HasForeignKey(c => c.Participant2Id)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Adicionar um índice para buscar conversas rapidamente
+        modelBuilder.Entity<Conversation>()
+            .HasIndex(c => new { c.Participant1Id, c.Participant2Id }).IsUnique();
+
 
         // Configuração para Message
         modelBuilder.Entity<Message>()
             .HasOne(m => m.Sender)
-            .WithMany() // Users não precisa de coleção de SentMessages
+            .WithMany() // Users não precisa ter uma coleção de SentMessages
             .HasForeignKey(m => m.SenderId)
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Message>()
             .HasOne(m => m.Recipient)
-            .WithMany() // Users não precisa de coleção de ReceivedMessages
+            .WithMany() // Users não precisa ter uma coleção de ReceivedMessages
             .HasForeignKey(m => m.RecipientId)
             .OnDelete(DeleteBehavior.Restrict);
 
