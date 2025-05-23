@@ -1,88 +1,328 @@
 ﻿@model IEnumerable<projetodweb_connectify.Models.Conversation>
 @{
-    ViewData["Title"] = "Minhas Mensagens";
-    var currentUserId = ViewBag.CurrentUserId as int?; // Convertendo para int? para segurança
+    ViewData["Title"] = "Mensagens"; // Título mais genérico para a página
+    var currentUserId = ViewBag.CurrentUserId as int?;
+    var initialChatOtherUserId = ViewBag.InitialChatOtherUserId as int?; // Para carregar uma conversa específica inicialmente
 }
 
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        @* Adicionado mb-4 para espaçamento *@
-        <h2>@ViewData["Title"]</h2>
-        <a asp-controller="Profiles" asp-action="BrowseUsers" class="btn btn-primary">
-            <i class="fas fa-plus-circle"></i> Nova Conversa
-        </a>
-    </div>
-
-    @if (Model == null || !Model.Any()) // Adicionada verificação de Model == null
-    {
-        <div class="text-center p-5">
-            <i class="far fa-comments fa-4x text-muted mb-3"></i>
-            <p class="lead">Você ainda não tem conversas.</p>
-            <p>
-                <a asp-controller="Profiles" asp-action="BrowseUsers" class="btn btn-outline-primary">
-                    Encontre alguém para conversar
-                </a>
-            </p>
-        </div>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+<style>
+    .messages-layout {
+        display: flex;
+        height: calc(100vh - 56px - 40px - 1px); /* Altura da viewport - navbar - padding-top do container - borda */
+        /* Ajuste 56px conforme a altura da sua navbar principal se ela estiver visível aqui */
+        margin-top: -24px; /* Para compensar o mb-4 do container original, ajuste se necessário */
+        margin-left: -12px; /* Compensa padding do container-fluid no _Layout */
+        margin-right: -12px; /* Compensa padding do container-fluid no _Layout */
     }
-    else
-    {
-        <div class="list-group">
-            @foreach (var conversation in Model)
+
+    .conversations-list-panel {
+        width: 350px; /* Largura da lista de conversas */
+        min-width: 300px;
+        border-right: 1px solid #dbdbdb; /* Linha divisória */
+        display: flex;
+        flex-direction: column;
+        background-color: #fff; /* Fundo branco para a lista */
+    }
+
+    .conversations-header {
+        padding: 20px;
+        border-bottom: 1px solid #dbdbdb;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+        .conversations-header h4 {
+            margin-bottom: 0;
+            font-weight: 600;
+        }
+
+        .conversations-header .btn-new-message i {
+            font-size: 1.2rem;
+        }
+
+
+    .conversations-scrollable-list {
+        overflow-y: auto;
+        flex-grow: 1; /* Ocupa o espaço restante */
+    }
+
+    .conversation-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 20px;
+        cursor: pointer;
+        border-bottom: 1px solid #efefef;
+        text-decoration: none;
+        color: inherit;
+    }
+
+        .conversation-item:hover {
+            background-color: #f9f9f9;
+        }
+
+        .conversation-item.active {
+            background-color: #efefef;
+        }
+
+
+        .conversation-item img {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            margin-right: 12px;
+            object-fit: cover;
+        }
+
+    .conversation-details {
+        flex-grow: 1;
+        overflow: hidden; /* Para o text-truncate funcionar */
+    }
+
+    .conversation-name {
+        font-weight: 600;
+        color: #262626;
+        margin-bottom: 2px;
+    }
+
+    .conversation-last-message {
+        font-size: 0.9em;
+        color: #8e8e8e;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+        .conversation-last-message .you-prefix {
+            color: #262626; /* Cor mais escura para "Você:" */
+        }
+
+    .conversation-timestamp {
+        font-size: 0.8em;
+        color: #8e8e8e;
+        margin-left: auto; /* Empurra para a direita */
+        padding-left: 10px;
+        white-space: nowrap;
+    }
+
+    .unread-indicator {
+        width: 8px;
+        height: 8px;
+        background-color: #0095f6; /* Azul do Instagram */
+        border-radius: 50%;
+        margin-left: 10px;
+        align-self: center; /* Para centralizar com o texto da última mensagem */
+    }
+
+
+    .chat-content-panel {
+        flex-grow: 1; /* Ocupa o restante da largura */
+        display: flex;
+        flex-direction: column;
+        justify-content: center; /* Centraliza o conteúdo quando não há chat aberto */
+        align-items: center; /* Centraliza o conteúdo quando não há chat aberto */
+        background-color: #fff; /* Fundo branco para a área de chat */
+        /* padding: 20px; Será adicionado pelo #chatViewTarget ou pelo placeholder */
+    }
+
+    .chat-placeholder {
+        text-align: center;
+        color: #262626;
+    }
+
+        .chat-placeholder i {
+            font-size: 5rem; /* Ícone grande */
+            margin-bottom: 20px;
+            color: #262626;
+        }
+
+        .chat-placeholder h5 {
+            font-weight: 300;
+            font-size: 1.4rem;
+            margin-bottom: 10px;
+        }
+
+        .chat-placeholder p {
+            color: #8e8e8e;
+            margin-bottom: 20px;
+        }
+</style>
+
+<div class="messages-layout">
+    <div class="conversations-list-panel">
+        <div class="conversations-header">
+            <h4>Mensagens</h4>
+            <a asp-controller="Profiles" asp-action="BrowseUsers" class="btn btn-light btn-sm btn-new-message" title="Nova Conversa">
+                <i class="far fa-edit"></i>
+            </a>
+        </div>
+        <div class="conversations-scrollable-list">
+            @if (Model == null || !Model.Any())
             {
-                // Determinar o outro participante da conversa
-                // Adicionar verificação de nulo para otherParticipant e seu Profile
-                var otherParticipant = conversation.Participant1Id == currentUserId ?
-                conversation.Participant2 :
-                conversation.Participant1;
-
-                if (otherParticipant == null) // Salvaguarda, embora não deva acontecer com a query correta
+                <p class="p-3 text-muted text-center">Sem conversas. <a asp-controller="Profiles" asp-action="BrowseUsers">Inicie uma!</a></p>
+            }
+            else
+            {
+                @foreach (var conversation in Model)
                 {
-                    continue; // Pular esta iteração se o outro participante for nulo
-                }
+                    var otherParticipant = conversation.Participant1Id == currentUserId ?
+                    conversation.Participant2 :
+                    conversation.Participant1;
 
-                var lastMessage = conversation.Messages.FirstOrDefault(); // Já foi ordenado no controller
+                    if (otherParticipant == null) { continue; }
 
-                <a asp-action="Chat" asp-route-otherUserId="@otherParticipant.Id" class="list-group-item list-group-item-action flex-column align-items-start mb-2 shadow-sm">
-                    <div class="d-flex w-100 justify-content-start align-items-center">
-                        <img src="@(otherParticipant.Profile?.ProfilePicture ?? "/images/defaultuser.png")" alt="Foto de @(otherParticipant.Profile?.Name ?? otherParticipant.Username)"
-                             class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;">
-                        <div>
-                            <h5 class="mb-1">@(otherParticipant.Profile?.Name ?? otherParticipant.Username)</h5>
+                    var lastMessage = conversation.Messages.FirstOrDefault();
+                    bool isActive = initialChatOtherUserId.HasValue && otherParticipant.Id == initialChatOtherUserId.Value;
+
+                    // Para indicador de não lida (exemplo simples, você precisará de lógica mais robusta)
+                    // bool hasUnread = lastMessage != null && lastMessage.RecipientId == currentUserId && lastMessage.ReadAt == null;
+
+
+                    <a href="#" class="conversation-item @(isActive ? "active" : "")"
+                       data-conversationid="@conversation.Id"
+                       data-otheruserid="@otherParticipant.Id">
+                        <img src="@(otherParticipant.Profile?.ProfilePicture ?? "/images/defaultuser.png")" alt="Foto de @(otherParticipant.Profile?.Name ?? otherParticipant.Username)">
+                        <div class="conversation-details">
+                            <div class="conversation-name">@(otherParticipant.Profile?.Name ?? otherParticipant.Username)</div>
                             @if (lastMessage != null)
                             {
-                                <small class="text-muted">
+                                <div class="conversation-last-message">
                                     @if (lastMessage.SenderId == currentUserId)
                                     {
-                                        <span>Você: </span>
+                                        <span class="you-prefix">Você: </span>
                                     }
                                     @{
-                                        // Truncate com segurança, verificando se Content é nulo
                                         var previewContent = lastMessage.Content ?? "";
-                                        if (previewContent.Length > 50)
+                                        if (previewContent.Length > 30) // Reduzir para caber melhor
                                         {
-                                            previewContent = previewContent.Substring(0, 50) + "...";
+                                            previewContent = previewContent.Substring(0, 30) + "...";
                                         }
                                     }
                                     @Html.Raw(previewContent)
-                                </small>
+                                </div>
                             }
                             else
                             {
-                                <small class="text-muted"><em>Clique para iniciar a conversa.</em></small>
+                                <div class="conversation-last-message"><em>Inicie a conversa!</em></div>
                             }
                         </div>
-                    </div>
-                    @if (lastMessage != null)
-                    {
-                        <small class="text-muted float-end">@lastMessage.SentAt.ToString("dd MMM, HH:mm")</small>
-                    }
-                    else // Mostrar a data de criação da conversa se não houver mensagens
-                    {
-                        <small class="text-muted float-end">@conversation.CreatedAt.ToString("dd MMM, HH:mm")</small>
-                    }
-                </a>
+                        @if (lastMessage != null)
+                        {
+                            <small class="conversation-timestamp">@lastMessage.SentAt.ToString("HH:mm")</small>
+                        }
+                        @* @if(hasUnread) { <div class="unread-indicator ms-2"></div> } *@
+                    </a>
+                }
             }
         </div>
-    }
+    </div>
+
+    <div class="chat-content-panel" id="chatViewTarget">
+        @* O conteúdo do chat será carregado aqui via AJAX, ou mostrará um placeholder *@
+        <div class="chat-placeholder">
+            <i class="far fa-paper-plane"></i>
+            <h5>As tuas mensagens</h5>
+            <p>Envia fotos e mensagens privadas para um amigo ou grupo.</p>
+            <a asp-controller="Profiles" asp-action="BrowseUsers" class="btn btn-primary">Enviar mensagem</a>
+        </div>
+    </div>
 </div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            const chatViewTarget = $('#chatViewTarget');
+            const placeholderHtml = chatViewTarget.html(); // Salva o HTML do placeholder
+
+            function loadChat(otherUserId, conversationId) {
+                // Remove a classe 'active' de todos os itens e adiciona ao clicado
+                $('.conversation-item').removeClass('active');
+                $(`.conversation-item[data-otheruserid='${otherUserId}']`).addClass('active');
+
+                chatViewTarget.html('<div class="d-flex justify-content-center align-items-center h-100"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">A carregar...</span></div></div>'); // Mostra um spinner
+
+                // O URL para a action Chat do MessagesController que retorna uma PartialView
+                const chatUrl = '@Url.Action("ChatPartial", "Messages")' + '?otherUserId=' + otherUserId;
+                // Alternativamente, se a action Chat já retornar a partial quando for AJAX:
+                // const chatUrl = '@Url.Action("Chat", "Messages")' + '?otherUserId=' + otherUserId;
+
+
+                $.ajax({
+                    url: chatUrl,
+                    type: 'GET',
+                    success: function (response) {
+                        chatViewTarget.html(response);
+                        // Garante que o scroll da nova área de chat vá para o final
+                        var chatMessagesArea = chatViewTarget.find('.chat-messages'); // Se a partial tiver essa classe
+                         if (chatMessagesArea.length) {
+                            chatMessagesArea.scrollTop(chatMessagesArea[0].scrollHeight);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("Erro ao carregar chat:", error);
+                        chatViewTarget.html('<div class="alert alert-danger m-3">Erro ao carregar a conversa. Tente novamente.</div>');
+                    }
+                });
+            }
+
+            $('.conversation-item').on('click', function (e) {
+                e.preventDefault(); // Impede a navegação padrão do link '#'
+                const otherUserId = $(this).data('otheruserid');
+                const conversationId = $(this).data('conversationid');
+                loadChat(otherUserId, conversationId);
+
+                // Opcional: Atualizar URL sem recarregar (para deep linking e refresh)
+                // history.pushState(null, '', '@Url.Action("Index", "Messages")?chatWith=' + otherUserId);
+            });
+
+            // Verificar se há uma conversa para carregar inicialmente (passada pelo ViewBag)
+            const initialOtherUserId = @(initialChatOtherUserId.HasValue ? initialChatOtherUserId.Value.ToString() : "null");
+            if (initialOtherUserId) {
+                const initialConvItem = $(`.conversation-item[data-otheruserid='${initialOtherUserId}']`);
+                if (initialConvItem.length) {
+                    initialConvItem.trigger('click'); // Simula o clique para carregar o chat
+                } else {
+                    // Se o initialOtherUserId for válido mas não houver conversa listada,
+                    // ainda podemos tentar carregar (a action ChatPartial/Chat criará a conversa)
+                    loadChat(initialOtherUserId, null); // Passar null para conversationId se não soubermos
+                }
+            }
+
+
+            // Para o envio de mensagens funcionar com AJAX (delegar evento, pois o form é carregado dinamicamente)
+            $(document).on('submit', '#chatInputFormAjax', function(e){
+                e.preventDefault();
+                var form = $(this);
+                var messageContent = form.find('textarea[name="messageContent"]').val();
+                var chatMessagesArea = $('#chatMessagesArea'); // ID da div que contém as bolhas de mensagem
+
+                if (!messageContent.trim()) return;
+
+                $.ajax({
+                    url: form.attr('action'), // URL da action SendMessage
+                    type: 'POST',
+                    data: form.serialize(), // Envia os dados do formulário
+                    success: function(response){
+                        // Limpa o campo de texto
+                        form.find('textarea[name="messageContent"]').val('');
+
+                        // 'response' aqui DEVE ser a bolha da mensagem enviada em HTML,
+                        // ou os dados para construir a bolha.
+                        // Por simplicidade, vamos assumir que a action SendMessage (quando AJAX)
+                        // retorna a partial da mensagem enviada ou recarrega a conversa inteira.
+                        // A melhor abordagem é a action retornar JSON com a mensagem e adicioná-la via JS.
+                        // Para uma atualização simples, recarregamos o chat:
+                        var otherUserId = form.find('input[name="recipientUserId"]').val();
+                        loadChat(otherUserId, form.find('input[name="conversationId"]').val());
+
+                    },
+                    error: function(xhr, status, error){
+                        alert("Erro ao enviar mensagem.");
+                        console.error("Erro no envio:", error);
+                    }
+                });
+            });
+        });
+    </script>
+}
