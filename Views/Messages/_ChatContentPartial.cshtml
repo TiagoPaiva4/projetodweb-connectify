@@ -1,0 +1,165 @@
+﻿@* Views/Messages/_ChatContentPartial.cshtml *@
+@model projetodweb_connectify.Models.Conversation
+@{
+    var otherUser = ViewBag.OtherUser as Users; // Vem do controller (ChatPartial)
+    var currentUserId = ViewBag.CurrentUserId as int?; // Vem do controller
+    // Layout = null; // Se esta partial for carregada em um contêiner que já tem layout
+}
+
+@if (Model == null || otherUser == null)
+{
+    <div class="d-flex justify-content-center align-items-center h-100">
+        <p class="text-muted">Não foi possível carregar a conversa.</p>
+    </div>
+    return;
+}
+
+<style>
+    /* Estilos do Chat.cshtml podem ser movidos para um CSS global ou mantidos aqui se forem específicos */
+    .chat-container-partial { /* Novo container para a partial */
+        width: 100%;
+        height: 100%; /* Ocupar todo o espaço do painel direito */
+        display: flex;
+        flex-direction: column;
+        background-color: #fff;
+    }
+
+    .chat-header-partial {
+        background-color: #fff; /* Fundo branco para o header do chat */
+        padding: 15px 20px;
+        border-bottom: 1px solid #dbdbdb;
+        display: flex;
+        align-items: center;
+        flex-shrink: 0; /* Não encolher */
+    }
+
+        .chat-header-partial img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 15px;
+            object-fit: cover;
+        }
+
+        .chat-header-partial h5 {
+            font-weight: 600;
+            margin-bottom: 0;
+            color: #262626;
+        }
+
+    .chat-messages-partial {
+        flex-grow: 1; /* Ocupa o espaço restante */
+        overflow-y: auto;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+    }
+    /* message-bubble, sent, received styles podem ser os mesmos do Chat.cshtml original */
+    .message-bubble {
+        max-width: 70%;
+        padding: 10px 15px;
+        border-radius: 18px;
+        margin-bottom: 10px;
+        word-wrap: break-word;
+    }
+
+        .message-bubble.sent {
+            background-color: #efefef; /* Cinza para enviadas no tema instagram */
+            color: #000;
+            align-self: flex-end;
+            border-bottom-right-radius: 5px;
+        }
+
+        .message-bubble.received {
+            background-color: #fff; /* Branco para recebidas, com borda */
+            color: #000;
+            align-self: flex-start;
+            border-bottom-left-radius: 5px;
+            border: 1px solid #efefef;
+        }
+
+        .message-bubble .timestamp {
+            font-size: 0.75em;
+            color: #8e8e8e;
+            margin-top: 5px;
+            display: block;
+            text-align: right;
+        }
+    /* .message-bubble.sent .timestamp { color: #e0e0e0; } */
+
+
+    .chat-input-form-partial {
+        padding: 15px 20px;
+        border-top: 1px solid #dbdbdb;
+        background-color: #fff;
+        flex-shrink: 0; /* Não encolher */
+    }
+
+        .chat-input-form-partial textarea {
+            border-radius: 20px;
+            border: 1px solid #dbdbdb;
+            padding: 10px 15px;
+            resize: none; /* Impede redimensionamento manual */
+        }
+
+        .chat-input-form-partial .btn-send-message {
+            background: none;
+            border: none;
+            color: #0095f6; /* Azul do Instagram */
+            font-weight: 600;
+            padding-right: 0; /* Ajuste conforme necessário */
+        }
+
+        .chat-input-form-partial .input-group {
+            border: 1px solid #dbdbdb;
+            border-radius: 22px; /* Para envolver o textarea arredondado */
+            padding: 5px;
+        }
+
+        .chat-input-form-partial .form-control:focus {
+            box-shadow: none;
+            border-color: #dbdbdb;
+        }
+
+</style>
+
+<div class="chat-container-partial">
+    <div class="chat-header-partial">
+        <a asp-controller="Profiles" asp-action="UserProfile" asp-route-identifier="@otherUser.Username" class="d-flex align-items-center text-decoration-none">
+            <img src="@(otherUser.Profile?.ProfilePicture ?? "/images/defaultuser.png")" alt="Foto de @otherUser.Profile?.Name">
+            <h5>@(otherUser.Profile?.Name ?? otherUser.Username)</h5>
+        </a>
+    </div>
+
+    <div class="chat-messages-partial" id="chatMessagesArea">
+        @* ID para scroll e append de mensagens AJAX *@
+        @if (Model.Messages.Any())
+        {
+            @foreach (var message in Model.Messages)
+            {
+                var isSentByCurrentUser = message.SenderId == currentUserId;
+                <div class="message-bubble @(isSentByCurrentUser ? "sent" : "received")">
+                    @Html.Raw(message.Content.Replace("\n", "<br />"))
+                    <small class="timestamp">@message.SentAt.ToString("HH:mm")</small>
+                </div>
+            }
+        }
+        else
+        {
+            <p class="text-center text-muted mt-auto mb-auto">Envie uma mensagem para iniciar a conversa.</p>
+        }
+    </div>
+
+    <div class="chat-input-form-partial">
+        @* Formulário para AJAX, diferente do formulário de post completo *@
+        <form id="chatInputFormAjax" asp-action="SendMessage" method="post">
+            @Html.AntiForgeryToken() @* Ainda é bom ter, mesmo para AJAX, se a action o exigir *@
+            <input type="hidden" name="conversationId" value="@Model.Id" />
+            <input type="hidden" name="recipientUserId" value="@otherUser.Id" />
+            <div class="input-group">
+                <textarea name="messageContent" class="form-control border-0" rows="1" placeholder="Mensagem..." required></textarea>
+                <button type="submit" class="btn btn-send-message">Enviar</button>
+            </div>
+        </form>
+    </div>
+</div>

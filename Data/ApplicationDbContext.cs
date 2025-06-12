@@ -58,8 +58,15 @@ public class ApplicationDbContext : IdentityDbContext
     /// </summary>
     public DbSet<SavedTopic> SavedTopics { get; set; }
 
+    /// <summary>
+    /// tabela Conversation na BD
+    /// </summary>
+    public DbSet<Conversation> Conversations { get; set; }
+
+    /// <summary>
+    /// tabela Message na BD
+    /// </summary>
     public DbSet<Message> Messages { get; set; }
-    public DbSet<MessageRecipient> MessageRecipients { get; set; }
 
 
     /// <summary>
@@ -147,9 +154,36 @@ public class ApplicationDbContext : IdentityDbContext
         // or if you need to check for existing friendships in both directions (e.g., User1Id=A, User2Id=B OR User1Id=B, User2Id=A).
         // For a request system (User1 sends to User2), this index is fine.
 
-        // Definir chave primária composta para MessageRecipient
-        modelBuilder.Entity<MessageRecipient>()
-            .HasKey(mr => new { mr.MessageId, mr.RecipientId });
+        // Configuração para Conversation
+        modelBuilder.Entity<Conversation>()
+            .HasOne(c => c.Participant1)
+            .WithMany() // Users não precisa ter uma coleção de Conversations diretamente
+            .HasForeignKey(c => c.Participant1Id)
+            .OnDelete(DeleteBehavior.Restrict); // Evita que um utilizador seja apagado se tiver conversas
+
+        modelBuilder.Entity<Conversation>()
+            .HasOne(c => c.Participant2)
+            .WithMany()
+            .HasForeignKey(c => c.Participant2Id)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Adicionar um índice para buscar conversas rapidamente
+        modelBuilder.Entity<Conversation>()
+            .HasIndex(c => new { c.Participant1Id, c.Participant2Id }).IsUnique();
+
+
+        // Configuração para Message
+        modelBuilder.Entity<Message>()
+            .HasOne(m => m.Sender)
+            .WithMany() // Users não precisa ter uma coleção de SentMessages
+            .HasForeignKey(m => m.SenderId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Message>()
+            .HasOne(m => m.Recipient)
+            .WithMany() // Users não precisa ter uma coleção de ReceivedMessages
+            .HasForeignKey(m => m.RecipientId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         // Guarda automaticamente a data e hora em que o utilizador se registou 
         modelBuilder.Entity<Users>()

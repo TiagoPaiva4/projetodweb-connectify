@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using projetodweb_connectify.Data;
 
@@ -11,9 +12,11 @@ using projetodweb_connectify.Data;
 namespace projetodweb_connectify.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250522233257_AddMessagingTables")]
+    partial class AddMessagingTables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -52,7 +55,7 @@ namespace projetodweb_connectify.Data.Migrations
                         new
                         {
                             Id = "a",
-                            ConcurrencyStamp = "f112ab3e-d100-431e-94af-0dddd5a5fb9e",
+                            ConcurrencyStamp = "a8c18002-9dd1-40ef-91e7-fdb360dfdf45",
                             Name = "admin",
                             NormalizedName = "ADMIN"
                         });
@@ -152,15 +155,15 @@ namespace projetodweb_connectify.Data.Migrations
                         {
                             Id = "admin",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "67f1cd06-8c9a-4d82-8dc6-d9005d70c0e7",
+                            ConcurrencyStamp = "b3767706-9d8a-4e36-94ed-69042df2cd89",
                             Email = "admin@mail.pt",
                             EmailConfirmed = true,
                             LockoutEnabled = false,
                             NormalizedEmail = "ADMIN@MAIL.PT",
                             NormalizedUserName = "ADMIN@MAIL.PT",
-                            PasswordHash = "AQAAAAIAAYagAAAAEEJop5nHIzfeMJRXbhYN+lqIXu5zVSOOPMGNvBgUzulBsejQdA1YFmcfk8AEP1hCnw==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEKGFPfX7jTt6wKvnWZc1B+IUSkkqT5/G/l+fhTrlVj74Ot5q9WAb7HPTWFmaATjT3A==",
                             PhoneNumberConfirmed = false,
-                            SecurityStamp = "6b608457-f2ac-4ddc-9694-96be7f8ace64",
+                            SecurityStamp = "e1df6add-324b-4fc1-9402-78cc5541f24a",
                             TwoFactorEnabled = false,
                             UserName = "admin@mail.pt"
                         });
@@ -297,18 +300,17 @@ namespace projetodweb_connectify.Data.Migrations
                     b.Property<DateTime>("LastMessageAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("Participant1Id")
+                    b.Property<int>("User1Id")
                         .HasColumnType("int");
 
-                    b.Property<int>("Participant2Id")
+                    b.Property<int>("User2Id")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Participant2Id");
+                    b.HasIndex("User1Id");
 
-                    b.HasIndex("Participant1Id", "Participant2Id")
-                        .IsUnique();
+                    b.HasIndex("User2Id");
 
                     b.ToTable("Conversations");
                 });
@@ -665,21 +667,21 @@ namespace projetodweb_connectify.Data.Migrations
 
             modelBuilder.Entity("projetodweb_connectify.Models.Conversation", b =>
                 {
-                    b.HasOne("projetodweb_connectify.Models.Users", "Participant1")
+                    b.HasOne("projetodweb_connectify.Models.Users", "User1")
                         .WithMany()
-                        .HasForeignKey("Participant1Id")
+                        .HasForeignKey("User1Id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("projetodweb_connectify.Models.Users", "Participant2")
+                    b.HasOne("projetodweb_connectify.Models.Users", "User2")
                         .WithMany()
-                        .HasForeignKey("Participant2Id")
+                        .HasForeignKey("User2Id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("Participant1");
+                    b.Navigation("User1");
 
-                    b.Navigation("Participant2");
+                    b.Navigation("User2");
                 });
 
             modelBuilder.Entity("projetodweb_connectify.Models.DigitalLibrary", b =>
