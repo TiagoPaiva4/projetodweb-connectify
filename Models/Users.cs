@@ -63,5 +63,10 @@ namespace projetodweb_connectify.Models
         // propriedades de navegação para as amizades recebidas (User2Id)
         /// </summary>
         public ICollection<Friendship> FriendshipsReceived { get; set; } = new List<Friendship>();
+
+        /// <summary>
+        // propriedades de navegação para a tabela de junção de eventos
+        /// </summary>
+        public virtual ICollection<UserEventAttendance> EventAttendances { get; set; } = new List<UserEventAttendance>();
     }
 }
