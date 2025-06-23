@@ -50,5 +50,7 @@ namespace projetodweb_connectify.Models
         /// data e hora em que o comentário foi criado.
         /// </summary>
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        
+        public ICollection<TopicCommentLike> Likes { get; set; } = new List<TopicCommentLike>();
     }
 }

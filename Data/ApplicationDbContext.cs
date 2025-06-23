@@ -52,6 +52,10 @@ public class ApplicationDbContext : IdentityDbContext
     /// tabela TopicComments na BD
     /// </summary>
     public DbSet<TopicComment> TopicComments { get; set; }
+    
+    public DbSet<TopicPostLike> TopicPostLikes { get; set; }
+    
+    public DbSet<TopicCommentLike> TopicCommentLikes { get; set; }
 
     /// <summary>
     /// tabela SavedTopic na BD
@@ -260,6 +264,46 @@ public class ApplicationDbContext : IdentityDbContext
             .WithMany() // Profile doesn't necessarily need a direct collection of Topics it created here if already handled elsewhere or not needed.
             .HasForeignKey(t => t.CreatedBy)
             .OnDelete(DeleteBehavior.Restrict); // Prevent profile deletion if they created topics? Or Cascade? Often Restrict is safer.
+        
+        // Configure the composite key for TopicPostLike.
+        // This means a combination of a PostId and a ProfileId must be unique.
+        // In simple terms: A user can only like a post ONCE.
+        modelBuilder.Entity<TopicPostLike>()
+            .HasKey(tpl => new { tpl.TopicPostId, tpl.ProfileId });
+
+        // Configure the relationship: A Post can have many Likes.
+        modelBuilder.Entity<TopicPostLike>()
+            .HasOne(tpl => tpl.TopicPost)
+            .WithMany(tp => tp.Likes)
+            .HasForeignKey(tpl => tpl.TopicPostId)
+            .OnDelete(DeleteBehavior.Cascade); // If a post is deleted, delete its likes.
+
+        // Configure the relationship: A Profile can have many Post Likes.
+        modelBuilder.Entity<TopicPostLike>()
+            .HasOne(tpl => tpl.Profile)
+            .WithMany() // We don't need a navigation property on Profile for this
+            .HasForeignKey(tpl => tpl.ProfileId)
+            .OnDelete(DeleteBehavior.Restrict); // Do not delete a profile if they have liked posts.
+
+
+        // Configure the composite key for TopicCommentLike.
+        // A user can only like a comment ONCE.
+        modelBuilder.Entity<TopicCommentLike>()
+            .HasKey(tcl => new { tcl.TopicCommentId, tcl.ProfileId });
+
+        // Configure the relationship: A Comment can have many Likes.
+        modelBuilder.Entity<TopicCommentLike>()
+            .HasOne(tcl => tcl.TopicComment)
+            .WithMany(tc => tc.Likes)
+            .HasForeignKey(tcl => tcl.TopicCommentId)
+            .OnDelete(DeleteBehavior.Cascade); // If a comment is deleted, delete its likes.
+
+        // Configure the relationship: A Profile can have many Comment Likes.
+        modelBuilder.Entity<TopicCommentLike>()
+            .HasOne(tcl => tcl.Profile)
+            .WithMany() // We don't need a navigation property on Profile for this
+            .HasForeignKey(tcl => tcl.ProfileId)
+            .OnDelete(DeleteBehavior.Restrict); // Do not delete a profile if they have liked comments.
     }
 
 
