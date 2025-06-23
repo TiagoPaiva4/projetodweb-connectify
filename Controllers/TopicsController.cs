@@ -83,6 +83,14 @@ namespace projetodweb_connectify.Controllers
                     .ThenInclude(post => post.Comments) // For each Post, load its Comments collection
                         .ThenInclude(comment => comment.Profile) // For each Comment, load the commenter's Profile
                             .ThenInclude(commenterProfile => commenterProfile.User) // And the User for that Profile
+                // --- ADDED THIS SECTION TO LOAD POST LIKES ---
+                .Include(t => t.Posts)
+                .ThenInclude(post => post.Likes)
+                // --- ADDED THIS SECTION TO LOAD COMMENT LIKES ---
+                .Include(t => t.Posts)
+                .ThenInclude(p => p.Comments)
+                .ThenInclude(c => c.Likes)
+                
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (topic == null)
