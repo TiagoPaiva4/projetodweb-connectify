@@ -77,12 +77,6 @@ builder.Services.AddSwaggerGen(options =>
         Version = "v1",
         Title = "Connectify API",
         Description = "API para a plataforma social Connectify.",
-        // Opcional: Adicione informações de contato ou licença
-        Contact = new Microsoft.OpenApi.Models.OpenApiContact
-        {
-            Name = "Equipa de Desenvolvimento",
-            Email = "dev@connectify.com"
-        }
     });
 
     // Esta é a parte mais importante:
