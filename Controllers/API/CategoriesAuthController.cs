@@ -13,6 +13,7 @@ using projetodweb_connectify.Models.DTOs;
 
 namespace projetodweb_connectify.Controllers.API
 {
+    //[ApiExplorerSettings(IgnoreApi = true)]
     [Route("api/categories-auth")]
     [ApiController]
     [Authorize(Roles = "Admin")] // Protege todas as ações por defeito para Admins

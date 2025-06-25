@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 using projetodweb_connectify.Data;
 using projetodweb_connectify.Services.Email;
 
