@@ -978,74 +978,74 @@ namespace projetodweb_connectify.Data.Migrations
                 });
 
             modelBuilder.Entity("Event", b =>
-                {
-                    b.Navigation("Attendees");
+            {
+                b.Navigation("Attendees");
+            }); // <-- 1. ADICIONADO PARA FECHAR O BLOCO "Event"
 
             modelBuilder.Entity("projetodweb_connectify.Models.TopicPostLike", b =>
-                {
-                    b.HasOne("projetodweb_connectify.Models.Profile", "Profile")
-                        .WithMany()
-                        .HasForeignKey("ProfileId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+            {
+                b.HasOne("projetodweb_connectify.Models.Profile", "Profile")
+                    .WithMany()
+                    .HasForeignKey("ProfileId")
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
 
-                    b.HasOne("projetodweb_connectify.Models.TopicPost", "TopicPost")
-                        .WithMany("Likes")
-                        .HasForeignKey("TopicPostId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                b.HasOne("projetodweb_connectify.Models.TopicPost", "TopicPost")
+                    .WithMany("Likes")
+                    .HasForeignKey("TopicPostId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
 
-                    b.Navigation("Profile");
+                b.Navigation("Profile");
 
-                    b.Navigation("TopicPost");
-
-                });
+                b.Navigation("TopicPost");
+            });
 
             modelBuilder.Entity("projetodweb_connectify.Models.Category", b =>
-                {
-                    b.Navigation("Topics");
-                });
+            {
+                b.Navigation("Topics");
+            });
 
             modelBuilder.Entity("projetodweb_connectify.Models.Conversation", b =>
-                {
-                    b.Navigation("Messages");
-                });
+            {
+                b.Navigation("Messages");
+            });
 
             modelBuilder.Entity("projetodweb_connectify.Models.Profile", b =>
-                {
-                    b.Navigation("SavedTopics");
-                });
+            {
+                b.Navigation("SavedTopics");
+            });
 
             modelBuilder.Entity("projetodweb_connectify.Models.Topic", b =>
-                {
-                    b.Navigation("Posts");
+            {
+                b.Navigation("Posts");
 
-                    b.Navigation("Savers");
-                });
+                b.Navigation("Savers");
+            });
 
             modelBuilder.Entity("projetodweb_connectify.Models.TopicComment", b =>
-                {
-                    b.Navigation("Likes");
-                });
+            {
+                b.Navigation("Likes");
+            });
 
             modelBuilder.Entity("projetodweb_connectify.Models.TopicPost", b =>
-                {
-                    b.Navigation("Comments");
+            {
+                b.Navigation("Comments");
 
-                    b.Navigation("Likes");
-                });
+                b.Navigation("Likes");
+            });
 
             modelBuilder.Entity("projetodweb_connectify.Models.Users", b =>
-                {
-                    b.Navigation("EventAttendances");
+            {
+                b.Navigation("EventAttendances");
 
-                    b.Navigation("FriendshipsInitiated");
+                b.Navigation("FriendshipsInitiated");
 
-                    b.Navigation("FriendshipsReceived");
+                b.Navigation("FriendshipsReceived");
 
-                    b.Navigation("Profile");
-                });
+                b.Navigation("Profile");
+            });
 #pragma warning restore 612, 618
-        }
+        } // <-- 2. O ");" ANTES DESTE "}" FOI REMOVIDO
     }
 }
