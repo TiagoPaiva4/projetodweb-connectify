@@ -75,10 +75,22 @@ namespace projetodweb_connectify.Controllers
             var topic = await _context.Topics
                 .Include(t => t.Creator)
                     .ThenInclude(c => c.User)
+                .Include(t => t.Category)
+                .Include(t => t.Posts) // Load Posts
+                    .ThenInclude(post => post.Profile) // For each Post, load its author's Profile
+                        .ThenInclude(authorProfile => authorProfile.User) // And the User for that Profile
+                .Include(t => t.Posts) // Still on Posts, now load Comments for each Post
+                    .ThenInclude(post => post.Comments) // For each Post, load its Comments collection
+                        .ThenInclude(comment => comment.Profile) // For each Comment, load the commenter's Profile
+                            .ThenInclude(commenterProfile => commenterProfile.User) // And the User for that Profile
+                // --- ADDED THIS SECTION TO LOAD POST LIKES ---
                 .Include(t => t.Posts)
-                    .ThenInclude(p => p.Profile)
-                        .ThenInclude(profile => profile.User)
-                .Include(t => t.Category) 
+                .ThenInclude(post => post.Likes)
+                // --- ADDED THIS SECTION TO LOAD COMMENT LIKES ---
+                .Include(t => t.Posts)
+                .ThenInclude(p => p.Comments)
+                .ThenInclude(c => c.Likes)
+                
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (topic == null)
@@ -88,7 +100,20 @@ namespace projetodweb_connectify.Controllers
 
             if (topic.Posts != null)
             {
-                topic.Posts = topic.Posts.OrderByDescending(p => p.CreatedAt).ToList();
+                // Order posts
+                var orderedPosts = topic.Posts.OrderByDescending(p => p.CreatedAt).ToList();
+        
+                // For each post, order its comments
+                foreach (var post in orderedPosts)
+                {
+                    if (post.Comments != null)
+                    {
+                        // Order comments by creation date (e.g., oldest first, or newest first)
+                        post.Comments = post.Comments.OrderBy(c => c.CreatedAt).ToList(); 
+                        // Or use .OrderByDescending(c => c.CreatedAt) for newest first
+                    }
+                }
+                topic.Posts = orderedPosts;
             }
 
             bool isCurrentUserTheCreator = false;
@@ -594,6 +619,86 @@ namespace projetodweb_connectify.Controllers
                 return Redirect(returnUrl);
             }
             return RedirectToAction("MyProfile", "Profiles");
+        }
+        
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize] 
+        public async Task<IActionResult> AddComment(int topicPostId, string content, string? returnUrl)
+        {
+            // 1. Get the logged-in user's ProfileId
+            var userEmail = User.Identity?.Name;
+            if (string.IsNullOrEmpty(userEmail))
+            {
+                TempData["ErrorMessage"] = "Utilizador não autenticado.";
+                return RedirectToLocal(returnUrl); 
+            }
+
+            var appUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == userEmail);
+            if (appUser == null)
+            {
+                TempData["ErrorMessage"] = "Utilizador não encontrado.";
+                return RedirectToLocal(returnUrl);
+            }
+
+            var userProfile = await _context.Profiles.AsNoTracking()
+                                            .FirstOrDefaultAsync(p => p.UserId == appUser.Id);
+            if (userProfile == null)
+            {
+                TempData["ErrorMessage"] = "Perfil não encontrado. Por favor, crie um perfil para comentar.";
+                return RedirectToLocal(returnUrl);
+            }
+
+            // 2. Validate input
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                TempData["ErrorMessage"] = "O conteúdo do comentário não pode estar vazio.";
+                return RedirectToLocal(returnUrl);
+            }
+            if (content.Length > 1000) 
+            {
+                TempData["ErrorMessage"] = "O comentário excede o limite de 1000 caracteres.";
+                return RedirectToLocal(returnUrl);
+            }
+
+            // 3. Check if the TopicPost exists
+            var postExists = await _context.TopicPosts.AnyAsync(p => p.Id == topicPostId);
+            if (!postExists)
+            {
+                TempData["ErrorMessage"] = "A publicação à qual está a tentar comentar não foi encontrada.";
+                return RedirectToLocal(returnUrl);
+            }
+
+            // 4. Create and save the comment
+            var newComment = new TopicComment
+            {
+                TopicPostId = topicPostId,
+                ProfileId = userProfile.Id, 
+                Content = content,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.TopicComments.Add(newComment);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Comentário adicionado com sucesso!";
+
+            // 5. Redirect back to the page
+            return RedirectToLocal(returnUrl);
+        }
+
+        // Helper method for safe redirection
+        private IActionResult RedirectToLocal(string? returnUrl)
+        {
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                return Redirect(returnUrl);
+            }
+            else
+            {
+                // Fallback to a default page, e.g., Topic Index or Home
+                return RedirectToAction(nameof(Index)); 
+            }
         }
 
     }

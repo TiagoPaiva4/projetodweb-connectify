@@ -1,11 +1,13 @@
 ﻿@model projetodweb_connectify.Models.Topic
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<IdentityUser> SignInManager
 
 @{
     ViewData["Title"] = Model.Title;
     string defaultTopicImage = Url.Content("~/images/topics/default_topic_image.png");
     string topicImageUrl = string.IsNullOrEmpty(Model.TopicImageUrl) ? defaultTopicImage : Url.Content(Model.TopicImageUrl);
+    string defaultUserImage = Url.Content("~/images/defaultuser.png");
 
-    // Obter os valores do ViewBag (com verificação para evitar erros se não estiverem definidos)
     bool isTopicCreator = ViewBag.IsCurrentUserTheCreator ?? false;
     int? loggedInUserProfileId = ViewBag.CurrentUserProfileId as int?;
 }
@@ -14,6 +16,7 @@
     <div class="row">
         <div class="col-md-10 offset-md-1">
 
+            <!-- This is your original Topic Details card. No changes were made here. -->
             <div class="card shadow-sm mb-4">
                 <img src="@topicImageUrl" alt="Imagem do Tópico: @Model.Title" class="card-img-top img-fluid" style="max-height: 400px; object-fit: cover;" onerror="this.onerror=null; this.src='@defaultTopicImage';" />
                 <div class="card-body">
@@ -33,7 +36,7 @@
                             @if (Model.Creator != null && Model.Creator.User != null)
                             {
                                 <a asp-controller="Profiles" asp-action="Details" asp-route-id="@Model.Creator.Id">
-                                    @(Model.Creator.Name ?? Model.Creator.User.Username) @* Prefer Name if available *@
+                                    @(Model.Creator.Name ?? Model.Creator.User.Username)
                                 </a>
                             }
                             else
@@ -57,44 +60,38 @@
                                 <i class="fas fa-trash-alt"></i> Apagar Tópico
                             </a>
                         }
-                        @* Botões de Salvar/Remover (requer lógica adicional no ViewBag ou no modelo se quiser evitar consultas aqui) *@
                     </div>
                 </div>
             </div>
 
+            <!-- Your original "Add New Post" button -->
             <div class="mb-3 text-end">
                 <a asp-controller="TopicPosts" asp-action="Create" asp-route-topicId="@Model.Id" class="btn btn-success">
                     <i class="fas fa-plus-circle"></i> Adicionar Nova Publicação
                 </a>
             </div>
 
-            <h3 class="mt-4 mb-3">Publicações no Tópico (@(Model.Posts?.Count ?? 0))</h3> @* Added null check for Count *@
+            <h3 class="mt-4 mb-3">Publicações no Tópico (@(Model.Posts?.Count ?? 0))</h3>
 
             @if (Model.Posts != null && Model.Posts.Any())
             {
-                @* Order posts by CreatedAt descending (newest first) before iterating *@
-                @foreach (var post in Model.Posts.OrderByDescending(p => p.CreatedAt))
+                foreach (var post in Model.Posts)
                 {
                     <div class="card mb-3 shadow-sm">
                         <div class="card-body">
-                            @* ================================= *@
-                            @* == START: Display Post Image == *@
-                            @* ================================= *@
+                            <!-- Your original post image display -->
                             @if (!string.IsNullOrEmpty(post.PostImageUrl))
                             {
                                 <div class="mb-3 text-center">
-                                    @* Center the image and add margin bottom *@
-                                    <img src="@Url.Content(post.PostImageUrl)" @* Use Url.Content for safety *@
+                                    <img src="@Url.Content(post.PostImageUrl)"
                                          alt="Imagem da Publicação"
-                                         class="img-fluid rounded" @* Responsive and rounded corners *@
-                                         style="max-height: 500px; object-fit: contain;" @* Limit height, maintain aspect ratio *@
-                                         onerror="this.style.display='none';" /> @* Hide if image fails to load *@
+                                         class="img-fluid rounded"
+                                         style="max-height: 500px; object-fit: contain;"
+                                         onerror="this.style.display='none';" />
                                 </div>
                             }
-                            @* =============================== *@
-                            @* == END: Display Post Image == *@
-                            @* =============================== *@
-
+                            
+                            <!-- Your original post content and footer -->
                             <p class="card-text">
                                 @Html.Raw(post.Content?.Replace(Environment.NewLine, "<br />"))
                             </p>
@@ -103,7 +100,7 @@
                                 @if (post.Profile != null)
                                 {
                                     <a asp-controller="Profiles" asp-action="Details" asp-route-id="@post.ProfileId" class="text-decoration-none">
-                                        @(post.Profile.Name ?? post.Profile.User?.Username ?? "Utilizador Desconhecido") @* Display Name, fallback to Username *@
+                                        @(post.Profile.Name ?? post.Profile.User?.Username ?? "Utilizador Desconhecido")
                                     </a>
                                 }
                                 else
@@ -112,20 +109,146 @@
                                 }
                                 em <span title="@post.CreatedAt.ToString("F")">@post.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
                             </footer>
-
-                            @if (loggedInUserProfileId.HasValue && post.ProfileId == loggedInUserProfileId.Value)
-                            {
-                                <div class="mt-2 text-end">
-                                    <a asp-controller="TopicPosts" asp-action="Edit" asp-route-id="@post.Id" class="btn btn-sm btn-outline-secondary me-1"><i class="fas fa-pen"></i> Editar</a>
-                                    @* Updated Delete to use a form for POST and anti-forgery token *@
-                                    <form asp-controller="TopicPosts" asp-action="Delete" asp-route-id="@post.Id" method="post" class="d-inline" onsubmit="return confirm('Tem certeza que deseja apagar esta publicação?');">
-                                        @Html.AntiForgeryToken()
-                                        @* Optional: You might want to pass the current TopicId as a returnUrl or similar if needed by the Delete action *@
-                                        @* <input type="hidden" name="returnUrl" value="@Url.Action("Details", "Topics", new { id = Model.Id })" /> *@
-                                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-times"></i> Apagar</button>
+                            
+                            <!-- =================================================================================== -->
+                            <!-- START: COMBINED ACTIONS (LIKE BUTTON AND YOUR ORIGINAL EDIT/DELETE BUTTONS) -->
+                            <!-- =================================================================================== -->
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <!-- Like Button on the left -->
+                                @if (SignInManager.IsSignedIn(User))
+                                {
+                                    <form asp-controller="Likes" asp-action="TogglePostLike" asp-route-id="@post.Id" 
+                                          data-like-form="@($"post-{post.Id}")" class="d-inline-flex align-items-center me-3">
+                                        @{
+                                            var hasLikedPost = post.Likes.Any(l => l.ProfileId == loggedInUserProfileId);
+                                        }
+                                        <button type="submit" class="btn btn-sm @(hasLikedPost ? "btn-primary" : "btn-outline-primary")">
+                                            <i class="fas fa-thumbs-up"></i> @(hasLikedPost ? "Gostei" : "Gosto")
+                                        </button>
+                                        <span class="ms-2" data-like-count="@($"post-{post.Id}")">@post.Likes.Count</span>
                                     </form>
+                                }
+                                else
+                                {
+                                    <span class="d-inline-flex align-items-center me-3">
+                                        <button class="btn btn-sm btn-outline-primary" disabled><i class="fas fa-thumbs-up"></i> Gosto</button>
+                                        <span class="ms-2">@post.Likes.Count</span>
+                                    </span>
+                                }
+
+                                <!-- Your original Edit/Delete buttons on the right -->
+                                <div class="text-end">
+                                    @if (loggedInUserProfileId.HasValue && post.ProfileId == loggedInUserProfileId.Value)
+                                    {
+                                        <a asp-controller="TopicPosts" asp-action="Edit" asp-route-id="@post.Id" class="btn btn-sm btn-outline-secondary me-1"><i class="fas fa-pen"></i> Editar</a>
+                                        <form asp-controller="TopicPosts" asp-action="Delete" asp-route-id="@post.Id" method="post" class="d-inline" onsubmit="return confirm('Tem certeza que deseja apagar esta publicação?');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-times"></i> Apagar</button>
+                                        </form>
+                                    }
                                 </div>
-                            }
+                            </div>
+                            <!-- =================================================================================== -->
+                            <!-- END: COMBINED ACTIONS -->
+                            <!-- =================================================================================== -->
+
+
+                            <hr class="my-3" />
+                            <div class="comments-section ms-3">
+                                <h6 class="mb-2">Comentários (@post.Comments.Count)</h6>
+
+                                @if (post.Comments != null && post.Comments.Any())
+                                {
+                                    foreach (var comment in post.Comments)
+                                    {
+                                        <div class="comment mb-2 pb-2 border-bottom">
+                                            <div class="d-flex align-items-start">
+                                                <img src="@(string.IsNullOrEmpty(comment.Profile?.ProfilePicture) ? defaultUserImage : Url.Content(comment.Profile.ProfilePicture))"
+                                                     alt="Foto de @(comment.Profile?.Name ?? comment.Profile?.User?.Username)"
+                                                     class="rounded-circle me-2" width="32" height="32"
+                                                     onerror="this.onerror=null; this.src='@defaultUserImage';" />
+                                                <div class="flex-grow-1">
+                                                    <strong>
+                                                        @if (comment.Profile != null)
+                                                        {
+                                                            <a asp-controller="Profiles" asp-action="Details" asp-route-id="@comment.Profile.Id" class="text-dark text-decoration-none">
+                                                                @(comment.Profile.Name ?? comment.Profile.User?.Username ?? "Anónimo")
+                                                            </a>
+                                                        }
+                                                        else
+                                                        {
+                                                            @:Anónimo
+                                                        }
+                                                    </strong>
+                                                    <small class="text-muted ms-2" title="@comment.CreatedAt.ToString("F")">
+                                                        @comment.CreatedAt.ToString("dd/MM/yy HH:mm")
+                                                    </small>
+                                                    <p class="mb-0">@Html.Raw(comment.Content?.Replace(Environment.NewLine, "<br />"))</p>
+
+                                                    <!-- ======================================================================= -->
+                                                    <!-- START: COMMENT LIKE BUTTON, ADDED HERE -->
+                                                    <!-- ======================================================================= -->
+                                                    <div class="mt-1">
+                                                        @if (SignInManager.IsSignedIn(User))
+                                                        {
+                                                            <form asp-controller="Likes" asp-action="ToggleCommentLike" asp-route-id="@comment.Id"
+                                                                  data-like-form="@($"comment-{comment.Id}")" class="d-inline-flex align-items-center">
+                                                                @{
+                                                                    var hasLikedComment = comment.Likes.Any(l => l.ProfileId == loggedInUserProfileId);
+                                                                }
+                                                                <button type="submit" class="btn btn-sm @(hasLikedComment ? "btn-info text-white" : "btn-outline-info")" style="--bs-btn-padding-y: .1rem; --bs-btn-padding-x: .4rem; --bs-btn-font-size: .75rem;">
+                                                                    <i class="fas fa-thumbs-up"></i> @(hasLikedComment ? "Gostei" : "Gosto")
+                                                                </button>
+                                                                <span class="ms-2 small" data-like-count="@($"comment-{comment.Id}")">@comment.Likes.Count</span>
+                                                            </form>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="d-inline-flex align-items-center">
+                                                                <button class="btn btn-sm btn-outline-info" style="--bs-btn-padding-y: .1rem; --bs-btn-padding-x: .4rem; --bs-btn-font-size: .75rem;" disabled><i class="fas fa-thumbs-up"></i> Gosto</button>
+                                                                <span class="ms-2 small">@comment.Likes.Count</span>
+                                                            </span>
+                                                        }
+                                                    </div>
+                                                    <!-- ======================================================================= -->
+                                                    <!-- END: COMMENT LIKE BUTTON -->
+                                                    <!-- ======================================================================= -->
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    <p class="text-muted small"><em>Ainda não há comentários. Seja o primeiro a comentar!</em></p>
+                                }
+                                
+                                <!-- Your original "Add Comment" form -->
+                                @if (User.Identity != null && User.Identity.IsAuthenticated && loggedInUserProfileId.HasValue)
+                                {
+                                    <div class="add-comment-form mt-3">
+                                        <form asp-controller="Topics" asp-action="AddComment" method="post">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="TopicPostId" value="@post.Id" />
+                                            <input type="hidden" name="ReturnUrl" value="@Url.Action("Details", "Topics", new { id = Model.Id })" />
+                                            <div class="mb-2">
+                                                <textarea name="Content" class="form-control form-control-sm" rows="2" placeholder="Escreva o seu comentário..." required></textarea>
+                                            </div>
+                                            <button type="submit" class="btn btn-sm btn-primary">
+                                                <i class="fas fa-paper-plane"></i> Comentar
+                                            </button>
+                                        </form>
+                                    </div>
+                                }
+                                else if (User.Identity != null && User.Identity.IsAuthenticated && !loggedInUserProfileId.HasValue)
+                                {
+                                     <p class="mt-3"><a asp-controller="Profiles" asp-action="Create">Crie um perfil</a> para comentar.</p>
+                                }
+                                else
+                                {
+                                    <p class="mt-3"><a asp-area="Identity" asp-page="/Account/Login" asp-route-returnUrl="@Url.Action("Details", "Topics", new { id = Model.Id })">Inicie sessão</a> para comentar.</p>
+                                }
+                            </div>
                         </div>
                     </div>
                 }
@@ -145,3 +268,79 @@
         </div>
     </div>
 </div>
+
+<!-- ======================================================================= -->
+<!-- START: JAVASCRIPT SECTION FOR LIKES -->
+<!-- ======================================================================= -->
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            
+            const allLikeForms = document.querySelectorAll('form[data-like-form]');
+            
+            allLikeForms.forEach(form => {
+                form.addEventListener('submit', function (e) {
+                    e.preventDefault();
+
+                    const currentForm = this;
+                    const url = currentForm.action;
+                    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                    if (!token) {
+                        console.error('Anti-forgery token not found.');
+                        return;
+                    }
+
+                    fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'RequestVerificationToken': token
+                        }
+                    })
+                    .then(response => {
+                        if (response.status === 401) {
+                            alert("Precisa de iniciar sessão para gostar disto.");
+                            throw new Error('Unauthorized');
+                        }
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        const itemId = currentForm.getAttribute('data-like-form');
+                        const countSpan = document.querySelector(`span[data-like-count="${itemId}"]`);
+                        const button = currentForm.querySelector('button[type="submit"]');
+
+                        countSpan.textContent = data.count;
+                        
+                        const isPost = itemId.startsWith('post');
+                        const likedClass = isPost ? 'btn-primary' : 'btn-info';
+                        const unlikedClass = isPost ? 'btn-outline-primary' : 'btn-outline-info';
+                        
+                        if (button.classList.contains(unlikedClass)) {
+                            button.classList.remove(unlikedClass);
+                            button.classList.add(likedClass);
+                            if (!isPost) button.classList.add('text-white');
+                            button.innerHTML = '<i class="fas fa-thumbs-up"></i> Gostei';
+                        } else {
+                            button.classList.remove(likedClass, 'text-white');
+                            button.classList.add(unlikedClass);
+                            button.innerHTML = '<i class="fas fa-thumbs-up"></i> Gosto';
+                        }
+                    })
+                    .catch(error => {
+                        if (error.message !== 'Unauthorized') {
+                           console.error('Error toggling like:', error);
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+}
+<!-- ======================================================================= -->
+<!-- END: JAVASCRIPT SECTION -->
+<!-- ======================================================================= -->

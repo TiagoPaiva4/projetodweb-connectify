@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using projetodweb_connectify.Data;
 
@@ -11,9 +12,11 @@ using projetodweb_connectify.Data;
 namespace projetodweb_connectify.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250623122139_AddLikeFeature")]
+    partial class AddLikeFeature
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,53 +24,6 @@ namespace projetodweb_connectify.Data.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("Event", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("CreatorId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("EndDateTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("EventImageUrl")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Location")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<DateTime>("StartDateTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatorId");
-
-                    b.ToTable("Events");
-                });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
@@ -99,9 +55,7 @@ namespace projetodweb_connectify.Data.Migrations
                         new
                         {
                             Id = "a",
-
                             ConcurrencyStamp = "ce1bff26-1727-4adb-a28a-981c8af07023",
-
                             Name = "admin",
                             NormalizedName = "ADMIN"
                         });
@@ -201,18 +155,15 @@ namespace projetodweb_connectify.Data.Migrations
                         {
                             Id = "admin",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "7eb1f246-d908-4847-a71e-44e62cc4d33c",
-
+                            ConcurrencyStamp = "a86ab022-22f3-4e5a-953e-5739a741d7d0",
                             Email = "admin@mail.pt",
                             EmailConfirmed = true,
                             LockoutEnabled = false,
                             NormalizedEmail = "ADMIN@MAIL.PT",
                             NormalizedUserName = "ADMIN@MAIL.PT",
-
                             PasswordHash = "AQAAAAIAAYagAAAAEBxNh8GOyc/C7SGP9bQGwog4p/o4nSfLT4SXrbnINfEtBHA6igIPTZ63WK8MY2uQ/Q==",
                             PhoneNumberConfirmed = false,
                             SecurityStamp = "7d6fd552-c7c3-46ea-b518-02512d0e0a2f",
-
                             TwoFactorEnabled = false,
                             UserName = "admin@mail.pt"
                         });
@@ -308,27 +259,6 @@ namespace projetodweb_connectify.Data.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
-                });
-
-            modelBuilder.Entity("UserEventAttendance", b =>
-                {
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("EventId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("LastUpdated")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.HasKey("UserId", "EventId");
-
-                    b.HasIndex("EventId");
-
-                    b.ToTable("UserEventAttendances");
                 });
 
             modelBuilder.Entity("projetodweb_connectify.Models.Category", b =>
@@ -715,17 +645,6 @@ namespace projetodweb_connectify.Data.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("Event", b =>
-                {
-                    b.HasOne("projetodweb_connectify.Models.Users", "Creator")
-                        .WithMany()
-                        .HasForeignKey("CreatorId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Creator");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -775,25 +694,6 @@ namespace projetodweb_connectify.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("UserEventAttendance", b =>
-                {
-                    b.HasOne("Event", "Event")
-                        .WithMany("Attendees")
-                        .HasForeignKey("EventId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("projetodweb_connectify.Models.Users", "User")
-                        .WithMany("EventAttendances")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Event");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("projetodweb_connectify.Models.Conversation", b =>
@@ -977,10 +877,6 @@ namespace projetodweb_connectify.Data.Migrations
                     b.Navigation("Topic");
                 });
 
-            modelBuilder.Entity("Event", b =>
-                {
-                    b.Navigation("Attendees");
-
             modelBuilder.Entity("projetodweb_connectify.Models.TopicPostLike", b =>
                 {
                     b.HasOne("projetodweb_connectify.Models.Profile", "Profile")
@@ -998,7 +894,6 @@ namespace projetodweb_connectify.Data.Migrations
                     b.Navigation("Profile");
 
                     b.Navigation("TopicPost");
-
                 });
 
             modelBuilder.Entity("projetodweb_connectify.Models.Category", b =>
@@ -1037,8 +932,6 @@ namespace projetodweb_connectify.Data.Migrations
 
             modelBuilder.Entity("projetodweb_connectify.Models.Users", b =>
                 {
-                    b.Navigation("EventAttendances");
-
                     b.Navigation("FriendshipsInitiated");
 
                     b.Navigation("FriendshipsReceived");

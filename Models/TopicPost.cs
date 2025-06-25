@@ -61,5 +61,7 @@ namespace projetodweb_connectify.Models
         /// lista de comentários associados a esta publicação.
         /// </summary>
         public ICollection<TopicComment> Comments { get; set; } = new List<TopicComment>();
+        
+        public ICollection<TopicPostLike> Likes { get; set; } = new List<TopicPostLike>();
     }
 }
