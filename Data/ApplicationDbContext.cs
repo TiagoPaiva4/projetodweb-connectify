@@ -90,10 +90,6 @@ public class ApplicationDbContext : IdentityDbContext
     /// </summary>
     public DbSet<UserEventAttendance> UserEventAttendances { get; set; }
 
-    /// <summary>
-    /// tabela DigitalLibrary na BD
-    /// </summary>
-    public DbSet<DigitalLibrary> DigitalLibrary { get; set; }
 
     /// <summary>
     /// Método para configurar as relações entre as entidades.
