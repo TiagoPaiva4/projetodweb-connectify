@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using projetodweb_connectify.Data;
 
@@ -11,9 +12,11 @@ using projetodweb_connectify.Data;
 namespace projetodweb_connectify.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250612173502_AddUserEventAttendanceRelationship")]
+    partial class AddUserEventAttendanceRelationship
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -99,9 +102,7 @@ namespace projetodweb_connectify.Data.Migrations
                         new
                         {
                             Id = "a",
-
-                            ConcurrencyStamp = "ce1bff26-1727-4adb-a28a-981c8af07023",
-
+                            ConcurrencyStamp = "584c448a-9a1a-47dc-a92d-22737985a2d5",
                             Name = "admin",
                             NormalizedName = "ADMIN"
                         });
@@ -202,17 +203,14 @@ namespace projetodweb_connectify.Data.Migrations
                             Id = "admin",
                             AccessFailedCount = 0,
                             ConcurrencyStamp = "7eb1f246-d908-4847-a71e-44e62cc4d33c",
-
                             Email = "admin@mail.pt",
                             EmailConfirmed = true,
                             LockoutEnabled = false,
                             NormalizedEmail = "ADMIN@MAIL.PT",
                             NormalizedUserName = "ADMIN@MAIL.PT",
-
-                            PasswordHash = "AQAAAAIAAYagAAAAEBxNh8GOyc/C7SGP9bQGwog4p/o4nSfLT4SXrbnINfEtBHA6igIPTZ63WK8MY2uQ/Q==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEAxOF1fAZV9xEHpCLWrrgz9RgLu+XlO0T+YU1APdBXft7WtptkJSYc/KdwtWTIVEEQ==",
                             PhoneNumberConfirmed = false,
-                            SecurityStamp = "7d6fd552-c7c3-46ea-b518-02512d0e0a2f",
-
+                            SecurityStamp = "a74f9835-c0dd-4506-92f8-b2ce9a577e59",
                             TwoFactorEnabled = false,
                             UserName = "admin@mail.pt"
                         });
@@ -620,21 +618,6 @@ namespace projetodweb_connectify.Data.Migrations
                     b.ToTable("TopicComments");
                 });
 
-            modelBuilder.Entity("projetodweb_connectify.Models.TopicCommentLike", b =>
-                {
-                    b.Property<int>("TopicCommentId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ProfileId")
-                        .HasColumnType("int");
-
-                    b.HasKey("TopicCommentId", "ProfileId");
-
-                    b.HasIndex("ProfileId");
-
-                    b.ToTable("TopicCommentLikes");
-                });
-
             modelBuilder.Entity("projetodweb_connectify.Models.TopicPost", b =>
                 {
                     b.Property<int>("Id")
@@ -667,21 +650,6 @@ namespace projetodweb_connectify.Data.Migrations
                     b.HasIndex("TopicId");
 
                     b.ToTable("TopicPosts");
-                });
-
-            modelBuilder.Entity("projetodweb_connectify.Models.TopicPostLike", b =>
-                {
-                    b.Property<int>("TopicPostId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ProfileId")
-                        .HasColumnType("int");
-
-                    b.HasKey("TopicPostId", "ProfileId");
-
-                    b.HasIndex("ProfileId");
-
-                    b.ToTable("TopicPostLikes");
                 });
 
             modelBuilder.Entity("projetodweb_connectify.Models.Users", b =>
@@ -939,25 +907,6 @@ namespace projetodweb_connectify.Data.Migrations
                     b.Navigation("TopicPost");
                 });
 
-            modelBuilder.Entity("projetodweb_connectify.Models.TopicCommentLike", b =>
-                {
-                    b.HasOne("projetodweb_connectify.Models.Profile", "Profile")
-                        .WithMany()
-                        .HasForeignKey("ProfileId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("projetodweb_connectify.Models.TopicComment", "TopicComment")
-                        .WithMany("Likes")
-                        .HasForeignKey("TopicCommentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Profile");
-
-                    b.Navigation("TopicComment");
-                });
-
             modelBuilder.Entity("projetodweb_connectify.Models.TopicPost", b =>
                 {
                     b.HasOne("projetodweb_connectify.Models.Profile", "Profile")
@@ -980,25 +929,6 @@ namespace projetodweb_connectify.Data.Migrations
             modelBuilder.Entity("Event", b =>
                 {
                     b.Navigation("Attendees");
-
-            modelBuilder.Entity("projetodweb_connectify.Models.TopicPostLike", b =>
-                {
-                    b.HasOne("projetodweb_connectify.Models.Profile", "Profile")
-                        .WithMany()
-                        .HasForeignKey("ProfileId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("projetodweb_connectify.Models.TopicPost", "TopicPost")
-                        .WithMany("Likes")
-                        .HasForeignKey("TopicPostId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Profile");
-
-                    b.Navigation("TopicPost");
-
                 });
 
             modelBuilder.Entity("projetodweb_connectify.Models.Category", b =>
@@ -1023,16 +953,9 @@ namespace projetodweb_connectify.Data.Migrations
                     b.Navigation("Savers");
                 });
 
-            modelBuilder.Entity("projetodweb_connectify.Models.TopicComment", b =>
-                {
-                    b.Navigation("Likes");
-                });
-
             modelBuilder.Entity("projetodweb_connectify.Models.TopicPost", b =>
                 {
                     b.Navigation("Comments");
-
-                    b.Navigation("Likes");
                 });
 
             modelBuilder.Entity("projetodweb_connectify.Models.Users", b =>

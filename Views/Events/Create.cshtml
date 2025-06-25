@@ -1,0 +1,70 @@
+﻿@model EventCreateViewModel
+
+@{
+    ViewData["Title"] = "Criar Novo Evento";
+}
+
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <h1 class="mb-4">@ViewData["Title"]</h1>
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form asp-action="Create">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Title" class="form-label">Título do Evento</label>
+                        <input asp-for="Title" class="form-control" placeholder="Ex: Encontro de Programadores" />
+                        <span asp-validation-for="Title" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label">Descrição</label>
+                        <textarea asp-for="Description" class="form-control" rows="5" placeholder="Descreva os detalhes do evento, o que vai acontecer, etc."></textarea>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="StartDateTime" class="form-label">Data e Hora de Início</label>
+                            <input asp-for="StartDateTime" type="datetime-local" class="form-control" />
+                            <span asp-validation-for="StartDateTime" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="EndDateTime" class="form-label">Data e Hora de Fim (Opcional)</label>
+                            <input asp-for="EndDateTime" type="datetime-local" class="form-control" />
+                            <span asp-validation-for="EndDateTime" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Location" class="form-label">Localização</label>
+                        <input asp-for="Location" class="form-control" placeholder="Ex: Auditório Principal, Hub Criativo" />
+                        <span asp-validation-for="Location" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="EventImageUrl" class="form-label">URL da Imagem do Evento (Opcional)</label>
+                        <input asp-for="EventImageUrl" class="form-control" placeholder="https://exemplo.com/imagem.jpg" />
+                        <span asp-validation-for="EventImageUrl" class="text-danger"></span>
+                    </div>
+
+                    <hr class="my-4" />
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a asp-action="Index" class="btn btn-secondary me-md-2">Cancelar</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-check me-2"></i>Criar Evento
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

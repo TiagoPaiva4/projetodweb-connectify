@@ -78,6 +78,18 @@ public class ApplicationDbContext : IdentityDbContext
     /// </summary>
     public DbSet<Friendship> Friendships { get; set; }
 
+
+    /// <summary>
+    /// tabela Events na BD
+    /// </summary>
+    public DbSet<Event> Events { get; set; }
+
+
+    /// <summary>
+    /// tabela UserEventAttendances na BD
+    /// </summary>
+    public DbSet<UserEventAttendance> UserEventAttendances { get; set; }
+
     /// <summary>
     /// tabela DigitalLibrary na BD
     /// </summary>
@@ -264,6 +276,30 @@ public class ApplicationDbContext : IdentityDbContext
             .WithMany() // Profile doesn't necessarily need a direct collection of Topics it created here if already handled elsewhere or not needed.
             .HasForeignKey(t => t.CreatedBy)
             .OnDelete(DeleteBehavior.Restrict); // Prevent profile deletion if they created topics? Or Cascade? Often Restrict is safer.
+
+
+        // --- Configuração para UserEventAttendance (Relação N-M entre SEU Users e Event) ---
+        modelBuilder.Entity<UserEventAttendance>()
+            .HasKey(uea => new { uea.UserId, uea.EventId }); // <<--- MUDANÇA AQUI
+
+        modelBuilder.Entity<UserEventAttendance>()
+            .HasOne(uea => uea.User)                // UserEventAttendance tem um Users
+            .WithMany(u => u.EventAttendances)   // Users tem muitas EventAttendances
+            .HasForeignKey(uea => uea.UserId)      // <<--- MUDANÇA AQUI
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<UserEventAttendance>()
+            .HasOne(uea => uea.Event)
+            .WithMany(e => e.Attendees)
+            .HasForeignKey(uea => uea.EventId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Configuração para a propriedade Creator do Evento
+        modelBuilder.Entity<Event>()
+            .HasOne(e => e.Creator)
+            .WithMany() // Users não precisa de uma coleção de "EventosCriados" diretamente aqui
+            .HasForeignKey(e => e.CreatorId) // Já é int, referenciando Users.Id
+            .OnDelete(DeleteBehavior.Restrict);
         
         // Configure the composite key for TopicPostLike.
         // This means a combination of a PostId and a ProfileId must be unique.
