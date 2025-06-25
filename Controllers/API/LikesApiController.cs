@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 
 namespace projetodweb_connectify.Controllers.API
 {
-    //[ApiExplorerSettings(IgnoreApi = true)]
     [Route("api/likes")]
     [ApiController]
     [Authorize] // Exige que o utilizador esteja autenticado para todas as ações

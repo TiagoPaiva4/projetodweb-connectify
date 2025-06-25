@@ -4,6 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+	<GenerateDocumentationFile>true</GenerateDocumentationFile>
     <UserSecretsId>aspnet-projetodweb_connectify-b4406328-edd4-40fb-a011-d9f1c5be1396</UserSecretsId>
     <RootNamespace>projetodweb_connectify</RootNamespace>
   </PropertyGroup>

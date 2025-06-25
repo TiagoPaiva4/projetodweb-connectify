@@ -67,8 +67,24 @@ builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Emai
 
 // --- ADICIONAR SERVIÇOS PARA O SWAGGER (DOCUMENTAÇÃO DA API) ---
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
+// --- CONFIGURAÇÃO DO SWAGGER PARA LER COMENTÁRIOS XML ---
+builder.Services.AddSwaggerGen(options =>
+{
+    // Define as informações gerais da sua API que aparecem no topo do Swagger
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Version = "v1",
+        Title = "Connectify API",
+        Description = "API para a plataforma social Connectify.",
+    });
+
+    // Esta é a parte mais importante:
+    // Diz ao Swagger para encontrar e carregar o ficheiro XML gerado.
+    var xmlFilename = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
+    options.IncludeXmlComments(xmlPath);
+});
 
 var app = builder.Build();
 

@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 
 namespace projetodweb_connectify.Controllers.API
 {
-    //[ApiExplorerSettings(IgnoreApi = true)]
     [Route("api/messages")]
     [ApiController]
     [Authorize] // Todas as ações de mensagens são protegidas

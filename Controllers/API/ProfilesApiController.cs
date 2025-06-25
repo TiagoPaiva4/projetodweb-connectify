@@ -13,7 +13,6 @@ using System.Threading.Tasks;
 
 namespace projetodweb_connectify.Controllers.API
 {
-    //[ApiExplorerSettings(IgnoreApi = true)]
     [Route("api/profiles")]
     [ApiController]
     public class ProfilesApiController : ControllerBase
