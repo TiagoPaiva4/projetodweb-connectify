@@ -1,0 +1,139 @@
+﻿<!-- Placeholder para o conteúdo do perfil, mostrado enquanto carrega -->
+<div id="profile-loading" class="text-center mt-5">
+    <div class="spinner-border" role="status">
+        <span class="visually-hidden">A carregar...</span>
+    </div>
+    <p class="mt-2">A carregar o seu perfil...</p>
+</div>
+
+<!-- Container onde o perfil será renderizado pelo JavaScript -->
+<div id="profile-container" class="container mt-4" style="display: none;">
+    <!-- O HTML do perfil será injetado aqui -->
+</div>
+
+@section Scripts {
+    <script>
+        // ===================
+        // FUNÇÕES HELPER
+        // ===================
+
+        /**
+         * Escapa texto para prevenir XSS.
+         */
+        function safeHtml(text) {
+            const tempDiv = document.createElement('div');
+            tempDiv.textContent = text || '';
+            return tempDiv.innerHTML;
+        }
+
+        function renderTopicsList(topics, type) {
+            if (!topics || topics.length === 0) {
+                return `<div class="alert alert-light text-center">Não existem tópicos ${type}.</div>`;
+            }
+
+            let listHtml = '<ul class="list-group list-group-flush">';
+            topics.forEach(topic => {
+                listHtml += `
+                    <li class="list-group-item mb-3 border rounded p-3 shadow-sm">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1"><a href="/Topics/Details/${topic.id}">${safeHtml(topic.title)}</a></h5>
+                            <small class="text-muted">${new Date(topic.createdAt).toLocaleDateString('pt-PT')}</small>
+                        </div>
+                        <p class="mb-1"><small>Categoria: ${safeHtml(topic.categoryName)}</small></p>
+                        <p class="mb-1"><small>Posts: ${topic.postCount}</small></p>
+                    </li>`;
+            });
+            listHtml += '</ul>';
+            return listHtml;
+        }
+
+        function renderProfile(profile) {
+            const container = document.getElementById('profile-container');
+
+            let profileHeaderHtml = `
+                <div class="row justify-content-center mb-4">
+                    <div class="col-md-10 col-lg-8">
+                        <div class="d-flex align-items-start">
+                            <div class="flex-shrink-0 me-4">
+                                <img src="${profile.profilePictureUrl || '/images/defaultuser.png'}"
+                                     alt="Foto de Perfil"
+                                     class="rounded-circle img-thumbnail"
+                                     style="width: 150px; height: 150px; object-fit: cover;"
+                                     onerror="this.onerror=null; this.src='/images/defaultuser.png';" />
+                            </div>
+                            <div class="flex-grow-1 text-start">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <div>
+                                        <h2 class="display-6 mb-1">${safeHtml(profile.name) || safeHtml(profile.username)}</h2>
+                                        ${(profile.name && profile.name !== profile.username) ? `<p class="lead text-muted mb-0">${safeHtml(profile.username)}</p>` : ''}                                    </div>
+                                    <div>
+                                        <a href="/Profiles/Edit/${profile.profileId}" class="btn btn-primary btn-sm mt-1">
+                                            <i class="fas fa-user-edit me-1"></i> Editar
+                                        </a>
+                                    </div>
+                                </div>
+                                <p class="mb-1">${profile.bio ? safeHtml(profile.bio) : '<i>Nenhuma bio definida.</i>'}</p>
+                                <p class="text-muted mb-0"><small>Membro desde: ${new Date(profile.createdAt).toLocaleDateString('pt-PT')}</small></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+
+            let tabsHtml = `
+                <div class="row">
+                    <div class="col-12">
+                        <ul class="nav nav-tabs justify-content-center mb-3" id="profileTab" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="created-topics-tab" data-bs-toggle="tab" data-bs-target="#created-topics-content" type="button" role="tab">Tópicos Criados</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="saved-topics-tab" data-bs-toggle="tab" data-bs-target="#saved-topics-content" type="button" role="tab">Guardados</button>
+                            </li>
+                        </ul>
+                        <div class="tab-content" id="profileTabContent">
+                            <div class="tab-pane fade show active" id="created-topics-content" role="tabpanel">
+                                ${renderTopicsList(profile.createdTopics, 'criados')}
+                            </div>
+                            <div class="tab-pane fade" id="saved-topics-content" role="tabpanel">
+                                ${renderTopicsList(profile.savedTopics, 'guardados')}
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+
+            container.innerHTML = profileHeaderHtml + tabsHtml;
+        }
+
+        // ===================
+        // LÓGICA PRINCIPAL
+        // ===================
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const loadingDiv = document.getElementById('profile-loading');
+            const containerDiv = document.getElementById('profile-container');
+
+            fetch('/api/profiles/me')
+                .then(response => {
+                    if (response.status === 404) {
+                        window.location.href = '/Profiles/Create';
+                        return null;
+                    }
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data) {
+                        renderProfile(data);
+                        loadingDiv.style.display = 'none';
+                        containerDiv.style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar o perfil:', error);
+                    loadingDiv.innerHTML = '<div class="alert alert-danger">Ocorreu um erro ao carregar o seu perfil.</div>';
+                });
+        });
+    </script>
+}

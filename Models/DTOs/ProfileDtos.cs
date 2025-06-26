@@ -1,9 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-
+﻿// Certifique-se que o namespace está correto para o seu projeto
 namespace projetodweb_connectify.Models.DTOs
 {
+    using Microsoft.AspNetCore.Http; // Necessário para IFormFile
+    using System;
+    using System.Collections.Generic;
+    using System.ComponentModel.DataAnnotations;
+
     /// <summary>
     /// DTO para uma visão resumida de um perfil, usado em listas de pesquisa.
     /// </summary>
@@ -34,7 +36,7 @@ namespace projetodweb_connectify.Models.DTOs
         public List<FriendshipDto> Friends { get; set; } = new List<FriendshipDto>();
         public List<TopicSummaryDto> SavedTopics { get; set; } = new List<TopicSummaryDto>();
         public List<TopicSummaryDto> CreatedTopics { get; set; } = new List<TopicSummaryDto>();
-        public TopicDetailDto? PersonalTopic { get; set; } // O tópico pessoal com seus posts
+        // O TopicDetailDto e outros DTOs relacionados (FriendshipDto, etc.) também precisam estar definidos
     }
 
     /// <summary>
@@ -55,16 +57,47 @@ namespace projetodweb_connectify.Models.DTOs
         public List<TopicSummaryDto> CreatedTopics { get; set; } = new List<TopicSummaryDto>();
     }
 
+    // --- CLASSE EM FALTA ADICIONADA AQUI ---
+    /// <summary>
+    /// DTO para a criação de um novo perfil.
+    /// Contém apenas os campos que o utilizador pode preencher no formulário.
+    /// </summary>
+    public class ProfileCreateDto
+    {
+        [Required(ErrorMessage = "O nome é obrigatório.")]
+        [StringLength(100, ErrorMessage = "O nome não pode exceder 100 caracteres.")]
+        public string Name { get; set; }
+
+        [Required(ErrorMessage = "O tipo de perfil é obrigatório.")]
+        public string Type { get; set; }
+
+        [StringLength(500, ErrorMessage = "A biografia não pode exceder 500 caracteres.")]
+        public string? Bio { get; set; }
+
+        // O ficheiro da imagem de perfil é opcional na criação
+        public IFormFile? ProfilePictureFile { get; set; }
+    }
+    // --- FIM DA CLASSE ADICIONADA ---
+
+
     /// <summary>
     /// DTO para editar o perfil do utilizador.
     /// </summary>
     public class ProfileEditDto
     {
-        [StringLength(100)]
+        [Required(ErrorMessage = "O nome é obrigatório.")]
+        [StringLength(100, ErrorMessage = "O nome não pode exceder 100 caracteres.")]
         public string Name { get; set; }
-        [StringLength(500)]
+
+        [StringLength(500, ErrorMessage = "A biografia não pode exceder 500 caracteres.")]
         public string Bio { get; set; }
+
+        [Required(ErrorMessage = "O tipo de perfil é obrigatório.")]
         public string Type { get; set; }
+
         public IFormFile? ProfilePictureFile { get; set; }
     }
+
+    // Nota: Certifique-se que FriendshipDto, TopicSummaryDto, FriendshipStatusDto etc.
+    // também estão definidos ou no mesmo ficheiro ou noutro ficheiro DTO.
 }

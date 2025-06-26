@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Authorization;
 namespace projetodweb_connectify.Controllers
 {
     [Authorize]
+    [ApiExplorerSettings(IgnoreApi = true)] // <-- ADICIONE ESTA LINHA
     public class ProfilesController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -56,7 +57,7 @@ namespace projetodweb_connectify.Controllers
             return View("UserProfileView");
         }
 
-       
+
         // GET: Profiles/Details/5
         public async Task<IActionResult> Details(int? id)
         {
@@ -97,7 +98,7 @@ namespace projetodweb_connectify.Controllers
         // POST: Profiles/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Name,Type,Bio,ProfilePicture")] Profile profile) 
+        public async Task<IActionResult> Create([Bind("Name,Type,Bio,ProfilePicture")] Profile profile)
         {
             var identityName = User.Identity?.Name;
             var appUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == identityName);
@@ -115,7 +116,7 @@ namespace projetodweb_connectify.Controllers
             // --- Create the Personal Topic ---
             var personalTopic = new Topic
             {
-                Title = $"Perfil de {profile.Name ?? appUser.Username}", 
+                Title = $"Perfil de {profile.Name ?? appUser.Username}",
                 Description = $"Posts pessoais de {profile.Name ?? appUser.Username}.",
                 IsPersonal = true,
                 IsPrivate = true, // Personal topics are usually private to the profile context

@@ -1,7 +1,10 @@
+using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using projetodweb_connectify.Data;
+using projetodweb_connectify.Services;
 using projetodweb_connectify.Services.Email;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,6 +27,50 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
+
+// JWT Settings
+// Obter a secção de configuração. Usar 'GetRequiredSection' é uma boa prática
+// no .NET 8, pois lança uma exceção imediata se a secção "Jwt" não existir 
+// no appsettings.json, evitando erros posteriores.
+var jwtSettings = builder.Configuration.GetRequiredSection("Jwt");
+
+// Ler a chave secreta e garantir que não é nula. Se for, a aplicação
+// não deve arrancar, pois a segurança estaria comprometida.
+var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]
+    ?? throw new InvalidOperationException("A chave secreta JWT 'Key' não pode ser nula e deve ser configurada no appsettings.json."));
+
+// Configuração da autenticação
+builder.Services.AddAuthentication(options =>
+{
+    // Boa prática: Definir explicitamente o esquema padrão.
+    // Para uma aplicação híbrida (web + API), "Cookies" é geralmente o padrão
+    // para a interface web.
+    options.DefaultScheme = "Cookies";
+    options.DefaultChallengeScheme = "Cookies";
+})
+    .AddCookie("Cookies", options =>
+    {
+        options.LoginPath = "/Identity/Account/Login";
+        options.AccessDeniedPath = "/Identity/Account/AccessDenied";
+    })
+    .AddJwtBearer("Bearer", options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtSettings["Issuer"],
+            ValidAudience = jwtSettings["Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(key)
+        };
+    });
+
+// Configuração do serviço JWT
+// Esta linha já estava perfeita, mantém-se igual.
+builder.Services.AddScoped<TokenService>();
+
 
 // --- AJUSTE NA AUTENTICAÇÃO PARA FUNCIONAR COM APIS E VIEWS ---
 // Esta configuração customiza o comportamento do Identity para que,
