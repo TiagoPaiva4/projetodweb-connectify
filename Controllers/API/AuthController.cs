@@ -2,12 +2,12 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using projetodweb_connectify.Data;  
-using projetodweb_connectify.Models; 
+using projetodweb_connectify.Data;
 using projetodweb_connectify.Services;
-using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using projetodweb_connectify.Models.DTOs;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace projetodweb_connectify.Controllers.API
 {
@@ -17,10 +17,9 @@ namespace projetodweb_connectify.Controllers.API
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<IdentityUser> _userManager;
-        private readonly SignInManager<IdentityUser> _signInManager;
+        private readonly SignInManager<IdentityUser> _signInManager; // Necessário para CheckPasswordSignInAsync
         private readonly TokenService _tokenService;
 
-        // Injetamos todas as dependências necessárias através do construtor
         public AuthController(
             ApplicationDbContext context,
             UserManager<IdentityUser> userManager,
@@ -29,86 +28,79 @@ namespace projetodweb_connectify.Controllers.API
         {
             _context = context;
             _userManager = userManager;
-            _signInManager = signInManager;
+            _signInManager = signInManager; // Mantemos a injeção para validar a password
             _tokenService = tokenService;
         }
 
         /// <summary>
         /// Endpoint para autenticar um utilizador e gerar um token JWT.
+        /// Este endpoint é para ser usado por clientes de API (ex: JavaScript, Mobile).
         /// </summary>
-        /// <param name="loginDto">Objeto com o email e a password do utilizador.</param>
-        /// <returns>Um token JWT e informações do utilizador em caso de sucesso.</returns>
         [HttpPost("login")]
-        [AllowAnonymous] // Permite o acesso a este endpoint sem autenticação prévia
+        [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
         {
-            // --- Passo 1: Autenticar contra o ASP.NET Core Identity ---
+            // 1. Procura o utilizador pelo email na base de dados do Identity
             var identityUser = await _userManager.FindByEmailAsync(loginDto.Email);
             if (identityUser == null)
             {
-                // Não especificamos se o email ou a password estão errados por segurança
+                // Não encontrou o utilizador. Retorna Unauthorized para não dar pistas a atacantes.
                 return Unauthorized(new { message = "Email ou password inválidos." });
             }
 
+            // 2. Verifica se a password fornecida está correta para esse utilizador.
+            //    CheckPasswordSignInAsync é o método correto para isto, pois não cria um cookie.
             var result = await _signInManager.CheckPasswordSignInAsync(identityUser, loginDto.Password, lockoutOnFailure: false);
             if (!result.Succeeded)
             {
+                // A password está incorreta.
                 return Unauthorized(new { message = "Email ou password inválidos." });
             }
 
-            // --- Passo 2: Encontrar o perfil personalizado associado ---
-            // Usamos o 'UserName' do IdentityUser (que por padrão é o email) para encontrar o nosso User personalizado.
-            // O .Include() é crucial para carregar os dados do Perfil na mesma consulta.
+            // Se chegamos aqui, o utilizador está autenticado com sucesso.
+            // Agora, vamos buscar os dados do perfil personalizado para enriquecer o token.
+
             var customUser = await _context.Users
                                            .Include(u => u.Profile)
                                            .FirstOrDefaultAsync(u => u.Username == identityUser.UserName);
 
-            // Verificação de segurança: Se o utilizador está autenticado, ele DEVE ter um perfil.
             if (customUser?.Profile == null)
             {
-                // Este é um erro de integridade de dados no servidor, não um erro do cliente.
-                // É uma boa prática logar este tipo de erro.
-                return StatusCode(500, new { message = "Ocorreu um erro interno: o perfil do utilizador não foi encontrado." });
+                // Erro de integridade de dados no servidor.
+                return StatusCode(500, new { message = "Erro interno: perfil do utilizador não encontrado." });
             }
 
-            // --- Passo 3: Preparar as claims personalizadas para o token ---
-            var customClaims = new[]
+            // 3. Prepara as 'claims' (informações) que irão dentro do token.
+            var claims = new[]
             {
-                // O claim "profileId" é a informação crucial que queremos no token.
+                // Claims padrão que o Identity pode usar
+                new Claim(JwtRegisteredClaimNames.Sub, identityUser.Id),
+                new Claim(JwtRegisteredClaimNames.Email, identityUser.Email),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()), // ID único para o token
+                
+                // Suas claims personalizadas
                 new Claim("profileId", customUser.Profile.Id.ToString()),
-                // Podemos adicionar outras informações úteis, como o nome do perfil.
-                new Claim(ClaimTypes.Name, customUser.Profile.Name)
+                new Claim(ClaimTypes.Name, customUser.Profile.Name), // Nome de exibição
+                new Claim("username", customUser.Username)
             };
 
-            // --- Passo 4: Gerar o token JWT ---
-            // Chamamos o nosso serviço para criar o token, passando as claims extra.
-            var token = _tokenService.GenerateToken(identityUser, customClaims);
+            // 4. Gera o token JWT usando o seu TokenService.
+            // (Assumindo que o seu TokenService faz o que o GenerateJwtToken do exemplo faz)
+            var token = _tokenService.GenerateToken(identityUser, claims);
 
-            // --- Passo 5: Retornar a resposta de sucesso ---
+            // 5. Retorna a resposta de sucesso com o token e os dados do utilizador.
             return Ok(new
             {
                 token = token,
                 user = new
                 {
                     profileId = customUser.Profile.Id,
+                    userId = customUser.Id,
                     name = customUser.Profile.Name,
+                    profilePictureUrl = customUser.Profile.ProfilePicture,
                     email = identityUser.Email
                 }
             });
         }
-    }
-
-    /// <summary>
-    /// DTO para o processo de login padrão.
-    /// Pode mover esta classe para uma pasta 'DTOs' se preferir.
-    /// </summary>
-    public class LoginDto
-    {
-        [Required(ErrorMessage = "O email é obrigatório.")]
-        [EmailAddress(ErrorMessage = "O formato do email é inválido.")]
-        public string Email { get; set; }
-
-        [Required(ErrorMessage = "A password é obrigatória.")]
-        public string Password { get; set; }
     }
 }
