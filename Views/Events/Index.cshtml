@@ -4,110 +4,221 @@
     ViewData["Title"] = "Próximos Eventos";
 }
 
-@* Bloco de Estilos para dar um toque final aos cartões *@
-@section Styles {
-    <style>
-        .event-card {
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-            border-radius: 0.75rem; /* Bordas mais arredondadas */
-            border: 1px solid #e9ecef;
+<!-- =================================================================
+     CSS INTEGRADO - COM CARDS CLICÁVEIS
+     ================================================================= -->
+<style>
+    /* 1. Definição da Paleta de Cores (sem alterações) */
+    :root {
+        --color-background: #fafafa;
+        --color-primary-dark: #1D3461;
+        --color-primary-medium: #376996;
+        --color-secondary-light: #6290C8;
+        --color-secondary-lightest: #829CBC;
+        --color-text-on-dark: #ffffff;
+        --color-text-primary: #333;
+        --color-text-secondary: #6c757d;
+        --color-danger: #dc3545;
+    }
+
+    /* 2. Estilos gerais da página (sem alterações) */
+    .event-index-page {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    /* 3. Cabeçalho da Página (sem alterações) */
+    .page-header h1 {
+        color: var(--color-primary-dark);
+        font-weight: 700;
+    }
+
+    .page-header .btn-create {
+        background-color: var(--color-primary-medium);
+        border-color: var(--color-primary-medium);
+        color: var(--color-text-on-dark);
+        font-weight: 600;
+        padding: 0.75rem 1.5rem;
+        transition: all 0.2s ease;
+    }
+
+        .page-header .btn-create:hover {
+            background-color: var(--color-primary-dark);
+            border-color: var(--color-primary-dark);
+            transform: translateY(-2px);
         }
 
-            .event-card:hover {
-                transform: translateY(-5px);
-                box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    /* ========================================================== */
+    /* ALTERAÇÃO #1: PREPARAR O CARD PARA O LINK ESTICADO         */
+    /* ========================================================== */
+    .event-card {
+        position: relative; /* Essencial para o "stretched-link" funcionar */
+        background-color: #ffffff;
+        border: none;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+    }
+
+        .event-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(29, 52, 97, 0.15);
+        }
+
+    .event-card-img {
+        height: 200px;
+        object-fit: cover;
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+    }
+
+    .event-card .card-body {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .event-card .card-title {
+        color: var(--color-primary-dark);
+        font-weight: 600;
+    }
+
+    /* 5. Lista de Informações com Ícones (sem alterações) */
+    .info-list li {
+        color: var(--color-text-secondary);
+        font-size: 0.9rem;
+    }
+
+    .info-list i {
+        color: var(--color-secondary-light);
+        width: 20px;
+        text-align: center;
+    }
+
+    /* ========================================================== */
+    /* ALTERAÇÃO #2: A REGRA DO "STRETCHED LINK"                  */
+    /* ========================================================== */
+    /* Esta pseudo-classe ::after estica o link para preencher o seu parente com position:relative */
+    .stretched-link::after {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 1; /* Coloca o link "atrás" de outros elementos com z-index > 1 */
+        content: "";
+        background-color: transparent; /* Garante que é invisível */
+    }
+
+    /* 7. Ações Secundárias (Editar/Apagar) */
+    .card-actions {
+        font-size: 0.85rem;
+        text-align: center;
+        margin-top: auto; /* Empurra para o fundo se houver espaço */
+        padding-top: 1rem;
+        border-top: 1px solid #f0f0f0;
+        /* ALTERAÇÃO #3: Elevar os links de ação para ficarem clicáveis */
+        position: relative; /* Necessário para que o z-index funcione */
+        z-index: 2; /* Mais alto que o z-index do stretched-link */
+    }
+
+        .card-actions a {
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+
+        .card-actions .link-edit {
+            color: var(--color-text-secondary);
+        }
+
+            .card-actions .link-edit:hover {
+                color: var(--color-primary-dark);
             }
 
-        .event-card-img {
-            height: 200px;
-            object-fit: cover; /* Garante que a imagem preenche o espaço sem distorcer */
-            border-top-left-radius: 0.75rem;
-            border-top-right-radius: 0.75rem;
+        .card-actions .link-delete {
+            color: var(--color-danger);
         }
 
-        .card-body {
-            display: flex;
-            flex-direction: column;
-        }
+            .card-actions .link-delete:hover {
+                filter: brightness(0.8);
+            }
 
-        .card-footer {
-            background-color: #ffffff;
-            border-top: none; /* Remove a linha de separação do footer */
-            padding-top: 0;
-        }
-
-        .info-list li {
-            color: #6c757d; /* Cor cinza para os detalhes */
-            margin-bottom: 0.5rem;
-        }
-
-        .info-list i {
-            color: #0d6efd; /* Cor primária para os ícones */
-            width: 20px; /* Alinha os ícones */
-        }
-    </style>
-}
-
-<!-- Cabeçalho da Página com Título e Botão de Criar -->
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="mb-0">@ViewData["Title"]</h1>
-    <a asp-action="Create" class="btn btn-primary btn-lg">
-        <i class="fas fa-plus me-2"></i> Criar Novo Evento
-    </a>
-</div>
-
-<!-- Grelha de Eventos -->
-<div class="row">
-    @if (!Model.Any())
-    {
-        <div class="col-12 text-center mt-5">
-            <i class="fas fa-calendar-times fa-4x text-muted mb-3"></i>
-            <h4>Ainda não há eventos.</h4>
-            <p class="text-muted">Seja o primeiro a criar um!</p>
-        </div>
+    /* 8. Estilo para quando não há eventos (sem alterações) */
+    .no-events-placeholder {
+        border: 2px dashed #e0e0e0;
+        border-radius: 8px;
+        padding: 4rem 2rem;
+        background-color: #f8f9fa;
     }
-    else
-    {
-        @foreach (var item in Model)
+</style>
+
+<div class="event-index-page">
+    <!-- Cabeçalho da Página (sem alterações) -->
+    <div class="d-flex justify-content-between align-items-center mb-4 page-header">
+        <h1 class="mb-0">@ViewData["Title"]</h1>
+        <a asp-action="Create" class="btn btn-create">
+            <i class="fas fa-plus me-2"></i> Criar Novo Evento
+        </a>
+    </div>
+
+    <!-- Grelha de Eventos -->
+    <div class="row">
+        @if (!Model.Any())
         {
-            <div class="col-lg-4 col-md-6 mb-4">
-                <div class="card h-100 event-card shadow-sm">
-                    <!-- Imagem do Evento (com um placeholder se não existir) -->
-                    <img src="@(string.IsNullOrEmpty(item.EventImageUrl) ? "https://placehold.co/600x400/007bff/FFFFFF?text=Evento" : item.EventImageUrl)"
-                         class="card-img-top event-card-img" alt="@item.Title">
-
-                    <div class="card-body">
-                        <!-- Título do Evento -->
-                        <h5 class="card-title">@item.Title</h5>
-
-                        <!-- Lista de Informações com Ícones -->
-                        <ul class="list-unstyled mt-3 mb-4 info-list">
-                            <li>
-                                <i class="fas fa-calendar-alt me-2"></i>
-                                @item.StartDateTime.ToString("g") <!-- Formato: dd/mm/aaaa hh:mm -->
-                            </li>
-                            <li>
-                                <i class="fas fa-map-marker-alt me-2"></i>
-                                @(string.IsNullOrEmpty(item.Location) ? "Local a definir" : item.Location)
-                            </li>
-                            <li>
-                                <i class="fas fa-user me-2"></i>
-                                Criado por <strong>@item.Creator.Username</strong>
-                            </li>
-                        </ul>
-
-                        <!-- Botões de Ação no Fundo do Cartão -->
-                        <div class="mt-auto">
-                            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-primary w-100">Ver Detalhes</a>
-                        </div>
-                    </div>
-
-                    <div class="card-footer text-center">
-                        <a asp-action="Edit" asp-route-id="@item.Id" class="text-secondary me-3">Editar</a>
-                        <a asp-action="Delete" asp-route-id="@item.Id" class="text-danger">Apagar</a>
-                    </div>
+            <div class="col-12 text-center mt-4">
+                <div class="no-events-placeholder">
+                    <i class="fas fa-calendar-times fa-4x text-muted mb-3"></i>
+                    <h4>Ainda não há eventos agendados.</h4>
+                    <p class="text-muted mb-0">Que tal ser o primeiro a criar um?</p>
                 </div>
             </div>
         }
-    }
+        else
+        {
+            @foreach (var item in Model)
+            {
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card h-100 event-card">
+                        <img src="@(string.IsNullOrEmpty(item.EventImageUrl) ? $"https://placehold.co/600x400/376996/FFFFFF?text={Uri.EscapeDataString(item.Title)}" : item.EventImageUrl)"
+                             class="card-img-top event-card-img" alt="@item.Title">
+
+                        <div class="card-body pb-3">
+                            <!-- ========================================================== -->
+                            <!-- ALTERAÇÃO #4: O TÍTULO AGORA É O LINK ESTICADO           -->
+                            <!-- ========================================================== -->
+                            <h5 class="card-title">
+                                <a asp-action="Details" asp-route-id="@item.Id" class="stretched-link text-decoration-none text-reset">
+                                    @item.Title
+                                </a>
+                            </h5>
+
+                            <!-- Lista de Informações (sem alterações) -->
+                            <ul class="list-unstyled mt-3 mb-4 info-list">
+                                <li>
+                                    <i class="fas fa-calendar-alt me-2"></i>
+                                    @item.StartDateTime.ToString("g")
+                                </li>
+                                <li>
+                                    <i class="fas fa-map-marker-alt me-2"></i>
+                                    @(string.IsNullOrEmpty(item.Location) ? "Local a definir" : item.Location)
+                                </li>
+                                <li>
+                                    <i class="fas fa-user me-2"></i>
+                                    Criado por <strong>@item.Creator.Username</strong>
+                                </li>
+                            </ul>
+
+                            <!-- Ações Secundárias (Editar/Apagar) -->
+                            <div class="card-actions">
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="link-edit me-3">Editar</a>
+                                <a asp-action="Delete" asp-route-id="@item.Id" class="link-delete">Apagar</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
 </div>
