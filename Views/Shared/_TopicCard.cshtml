@@ -1,0 +1,54 @@
+﻿@model projetodweb_connectify.Models.Topic
+
+<div class="col">
+    <div class="card h-100 topic-card shadow-sm">
+        <a asp-controller="Topics" asp-action="Details" asp-route-id="@Model.Id" class="topic-card-image-link">
+            @{
+                string defaultTopicImage = Url.Content("~/images/topics/default_topic_image.png");
+                string topicImageUrl = string.IsNullOrEmpty(Model.TopicImageUrl) ? defaultTopicImage : Url.Content(Model.TopicImageUrl);
+            }
+            <div class="topic-card-image-wrapper">
+                <img src="@topicImageUrl" alt="Imagem do Tópico: @Model.Title" class="card-img-top" onerror="this.onerror=null; this.src='@defaultTopicImage';" />
+                @if (Model.IsPrivate)
+                {
+                    <span class="badge bg-warning text-dark private-topic-badge" title="Tópico Privado"><i class="fas fa-lock"></i></span>
+                }
+            </div>
+        </a>
+        <div class="card-body d-flex flex-column">
+            <h5 class="card-title topic-title mb-1">
+                <a asp-controller="Topics" asp-action="Details" asp-route-id="@Model.Id">
+                    @Model.Title
+                </a>
+            </h5>
+            @if (Model.Category != null)
+            {
+                <small class="text-muted mb-2 topic-category">
+                    <a asp-controller="Categories" asp-action="Details" asp-route-id="@Model.CategoryId">
+                        @Model.Category.Name
+                    </a>
+                </small>
+            }
+            <p class="card-text topic-description flex-grow-1">
+                @Html.Raw(Model.Description.Length > 60 ? Model.Description.Substring(0, 60) + "..." : Model.Description)
+            </p>
+            @if (Model.Creator != null)
+            {
+                <small class="text-muted mb-2 d-block"><em>Criado por: @(Model.Creator?.Name ?? Model.Creator?.User?.Username ?? "Desconhecido")</em></small>
+            }
+            <div class="mt-auto d-flex justify-content-between align-items-center topic-actions">
+                <small class="text-muted" title="@Model.CreatedAt.ToString("F")">
+                    @Model.CreatedAt.ToString("dd/MM/yy")
+                </small>
+
+                @* Adicione aqui botões de ação se necessário, como editar/excluir, etc. *@
+                @* Exemplo: *@
+                @*
+                <div class="btn-group btn-group-sm">
+                     <a asp-controller="Topics" asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-secondary" title="Editar Tópico"><i class="fas fa-edit"></i></a>
+                </div>
+                *@
+            </div>
+        </div>
+    </div>
+</div>
