@@ -89,8 +89,6 @@ builder.Services.AddSwaggerGen(options =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
     app.UseMigrationsEndPoint();
     // --- ATIVAR O SWAGGER EM AMBIENTE DE DESENVOLVIMENTO ---
     app.UseSwagger();
@@ -100,12 +98,8 @@ if (app.Environment.IsDevelopment())
         // Opcional: faz com que a página do Swagger seja a página inicial ao executar em desenvolvimento
         // c.RoutePrefix = string.Empty; 
     });
-}
-else
-{
-    app.UseExceptionHandler("/Home/Error");
-    app.UseHsts();
-}
+
+
 
 // Começar a usar, realmente, os 'cookies' de sessão
 app.UseSession();

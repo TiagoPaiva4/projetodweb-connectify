@@ -252,5 +252,72 @@ namespace projetodweb_connectify.Controllers.API
 
             return Ok(profileDto);
         }
+
+
+        /// <summary>
+        /// Atualiza o perfil do utilizador autenticado.
+        /// </summary>
+        /// <remarks>
+        /// Este método aceita dados de formulário (multipart/form-data) para permitir o upload de imagem.
+        /// </remarks>
+        [HttpPut("me")]
+        public async Task<IActionResult> UpdateMyProfile([FromForm] ProfileUpdateDto profileUpdateDto)
+        {
+            // 1. Obter o utilizador logado
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username))
+            {
+                return Unauthorized();
+            }
+
+            var appUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+            if (appUser == null)
+            {
+                return NotFound(new { message = "Utilizador não encontrado." });
+            }
+
+            var profile = await _context.Profiles.FirstOrDefaultAsync(p => p.UserId == appUser.Id);
+            if (profile == null)
+            {
+                return NotFound(new { message = "Perfil não encontrado." });
+            }
+
+            // 2. Atualizar as propriedades do perfil com os dados do DTO
+            profile.Name = profileUpdateDto.Name;
+            profile.Bio = profileUpdateDto.Bio;
+
+            // 3. Lógica para upload de imagem (exatamente como no seu controller MVC)
+            if (profileUpdateDto.ProfilePictureFile != null && profileUpdateDto.ProfilePictureFile.Length > 0)
+            {
+                string uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images/profiles");
+                if (!Directory.Exists(uploadsFolder))
+                {
+                    Directory.CreateDirectory(uploadsFolder);
+                }
+                string uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(profileUpdateDto.ProfilePictureFile.FileName);
+                string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await profileUpdateDto.ProfilePictureFile.CopyToAsync(fileStream);
+                }
+                profile.ProfilePicture = "/images/profiles/" + uniqueFileName;
+            }
+
+            // 4. Salvar as alterações
+            try
+            {
+                _context.Update(profile);
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return Conflict(new { message = "Ocorreu um conflito de concorrência. Tente novamente." });
+            }
+
+            // 5. Retornar o perfil atualizado (opcional, mas boa prática)
+            // Para isso, precisaríamos de remapear para o ProfileDto, mas por simplicidade, vamos retornar NoContent.
+            return NoContent(); // HTTP 204 - Sucesso, sem conteúdo para retornar
+        }
     }
 }
