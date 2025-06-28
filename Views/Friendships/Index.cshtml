@@ -2,16 +2,15 @@
 
 @{
     ViewData["Title"] = "Minhas Conexões";
-    var currentUserId = (int)ViewData["CurrentUserId"]; // Obtém o ID do utilizador logado
+    var currentUserId = (int)ViewData["CurrentUserId"];
 
-    // Filtrar os dados aqui na View
+    // Filtrar os dados aqui na View para melhor organização
     var pendingRequests = Model.Where(f => f.User2Id == currentUserId && f.Status == FriendshipStatus.Pending).ToList();
     var currentFriends = Model.Where(f => f.Status == FriendshipStatus.Accepted).ToList();
 }
 
-<div class="container mt-4">
+<div class="container mt-4 mb-5">
     <h1>@ViewData["Title"]</h1>
-    <hr />
 
     @if (TempData["SuccessMessage"] != null)
     {
@@ -30,70 +29,75 @@
 
     <!-- Secção de Pedidos Pendentes -->
     <section id="pending-requests" class="mb-5">
-        <h2><i class="fas fa-user-plus me-2"></i>Pedidos de Amizade Pendentes (@pendingRequests.Count)</h2>
+        <h2 class="section-title">
+            <i class="fas fa-user-plus me-2"></i>Pedidos de Amizade Pendentes (@pendingRequests.Count)
+        </h2>
         @if (pendingRequests.Any())
         {
-            <ul class="list-group">
+            <div class="list-group">
                 @foreach (var request in pendingRequests)
                 {
                     var requester = request.User1; // User1 é quem enviou o pedido
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <div class="d-flex align-items-center">
-                            <img src="@(requester.Profile?.ProfilePicture ?? "/images/defaultuser.png")" alt="Foto de @requester.Username" class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;" />
+                    <div class="list-group-item pending-request-item">
+                        <div class="d-flex align-items-center flex-grow-1">
+                            <a asp-controller="Profiles" asp-action="UserProfile" asp-route-identifier="@requester.Username">
+                                <img src="@(requester.Profile?.ProfilePicture ?? "/images/defaultuser.png")" alt="Foto de @requester.Username" class="profile-pic me-3" />
+                            </a>
                             <div>
-                                <a asp-controller="Profiles" asp-action="UserProfile" asp-route-identifier="@requester.Username" class="fw-bold text-decoration-none">
+                                <a asp-controller="Profiles" asp-action="UserProfile" asp-route-identifier="@requester.Username" class="user-name-link">
                                     @(requester.Profile?.Name ?? requester.Username)
                                 </a>
                                 <div class="text-muted small">Pedido enviado em: @request.RequestDate.ToString("dd/MM/yyyy 'às' HH:mm")</div>
                             </div>
                         </div>
-                        <div>
-                            <form asp-action="AcceptFriendRequestFromPage" method="post" style="display: inline;">
+                        <div class="request-actions">
+                            <form asp-action="AcceptFriendRequestFromPage" method="post" class="d-inline">
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" name="friendshipId" value="@request.Id" />
-                                <button type="submit" class="btn btn-success btn-sm me-2" title="Aceitar Pedido">
+                                <button type="submit" class="btn btn-sm btn-accept" title="Aceitar Pedido">
                                     <i class="fas fa-check"></i> Aceitar
                                 </button>
                             </form>
-                            <form asp-action="RejectFriendRequestFromPage" method="post" style="display: inline;">
+                            <form asp-action="RejectFriendRequestFromPage" method="post" class="d-inline">
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" name="friendshipId" value="@request.Id" />
-                                <button type="submit" class="btn btn-danger btn-sm" title="Rejeitar Pedido">
+                                <button type="submit" class="btn btn-sm btn-reject" title="Rejeitar Pedido">
                                     <i class="fas fa-times"></i> Rejeitar
                                 </button>
                             </form>
                         </div>
-                    </li>
+                    </div>
                 }
-            </ul>
+            </div>
         }
         else
         {
-            <div class="alert alert-info" role="alert">
-                <i class="fas fa-info-circle me-1"></i> Você não tem pedidos de amizade pendentes no momento.
+            <div class="alert alert-info-custom" role="alert">
+                <i class="fas fa-info-circle me-2"></i>Você não tem pedidos de amizade pendentes no momento.
             </div>
         }
     </section>
 
     <!-- Secção de Amigos Atuais -->
     <section id="current-friends">
-        <h2><i class="fas fa-users me-2"></i>Meus Amigos (@currentFriends.Count)</h2>
+        <h2 class="section-title">
+            <i class="fas fa-users me-2"></i>Meus Amigos (@currentFriends.Count)
+        </h2>
         @if (currentFriends.Any())
         {
-            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4">
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">
                 @foreach (var friendship in currentFriends)
                 {
-                    // Determinar quem é o amigo nesta relação
                     var friendUser = (friendship.User1Id == currentUserId) ? friendship.User2 : friendship.User1;
 
                     <div class="col">
-                        <div class="card h-100 shadow-sm">
-                            <a asp-controller="Profiles" asp-action="UserProfile" asp-route-identifier="@friendUser.Username" class="text-decoration-none text-dark">
-                                <img src="@(friendUser.Profile?.ProfilePicture ?? "/images/defaultuser.png")" class="card-img-top" alt="Foto de @(friendUser.Profile?.Name ?? friendUser.Username)" style="height: 180px; object-fit: cover;">
+                        <div class="card h-100 friend-card">
+                            <a asp-controller="Profiles" asp-action="UserProfile" asp-route-identifier="@friendUser.Username">
+                                <img src="@(friendUser.Profile?.ProfilePicture ?? "/images/defaultuser.png")" class="card-img-top" alt="Foto de @(friendUser.Profile?.Name ?? friendUser.Username)">
                             </a>
                             <div class="card-body text-center">
                                 <h5 class="card-title">
-                                    <a asp-controller="Profiles" asp-action="UserProfile" asp-route-identifier="@friendUser.Username" class="text-decoration-none">
+                                    <a asp-controller="Profiles" asp-action="UserProfile" asp-route-identifier="@friendUser.Username" class="user-name-link">
                                         @(friendUser.Profile?.Name ?? friendUser.Username)
                                     </a>
                                 </h5>
@@ -102,11 +106,11 @@
                                     <p class="card-text"><small class="text-muted">Amigos desde: @friendship.AcceptanceDate.Value.ToString("dd/MM/yyyy")</small></p>
                                 }
                             </div>
-                            <div class="card-footer text-center">
+                            <div class="card-footer">
                                 <form asp-action="RemoveFriendFromPage" method="post" onsubmit="return confirm('Tem a certeza que quer remover esta amizade?');">
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" name="friendshipId" value="@friendship.Id" />
-                                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger w-100">
                                         <i class="fas fa-user-minus"></i> Remover Amigo
                                     </button>
                                 </form>
@@ -118,8 +122,8 @@
         }
         else
         {
-            <div class="alert alert-info" role="alert">
-                <i class="fas fa-info-circle me-1"></i> Você ainda não tem amigos. <a asp-controller="Profiles" asp-action="BrowseUsers" class="alert-link">Procure utilizadores</a> para conectar!
+            <div class="alert alert-info-custom" role="alert">
+                <i class="fas fa-info-circle me-2"></i>Você ainda não tem amigos. <a asp-controller="Profiles" asp-action="BrowseUsers" class="alert-link">Procure utilizadores</a> para se conectar!
             </div>
         }
     </section>
@@ -128,17 +132,186 @@
 @section Styles {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <style>
-        .card-img-top {
-            border-bottom: 1px solid #eee;
+        :root {
+            --color-background: #fafafa;
+            --color-primary-dark: #1D3461;
+            --color-primary-medium: #376996;
+            --color-secondary-light: #6290C8;
+            --color-secondary-lightest: #829CBC;
+            --color-text-on-dark: #ffffff;
+            --color-success: #198754;
+            --color-warning: #ffc107;
+            --color-danger: #dc3545;
+            --border-color-light: #e0e0e0;
+            --card-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            --card-shadow-hover: 0 8px 16px rgba(0,0,0,0.1);
         }
 
-        .card {
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        body {
+            background-color: var(--color-background);
         }
 
-            .card:hover {
-                transform: translateY(-5px);
-                box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15) !important;
+        h1 {
+            color: var(--color-primary-dark);
+            font-weight: 700;
+        }
+
+        /* --- Títulos das Secções --- */
+        .section-title {
+            color: var(--color-primary-dark);
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--color-secondary-lightest);
+            margin-bottom: 2rem;
+            font-size: 1.75rem;
+        }
+
+        /* --- Pedidos de Amizade Pendentes --- */
+        .list-group {
+            border: none;
+        }
+
+        .pending-request-item {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1rem;
+            background-color: #fff;
+            border: 1px solid var(--border-color-light);
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+            .pending-request-item:hover {
+                transform: translateY(-3px);
+                box-shadow: var(--card-shadow-hover);
             }
+
+        .profile-pic {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 2px solid var(--color-secondary-lightest);
+        }
+
+        .user-name-link {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--color-primary-dark);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+            .user-name-link:hover {
+                color: var(--color-secondary-light);
+            }
+
+        .request-actions {
+            margin-top: 10px;
+            margin-left: auto; /* Alinha à direita em ecrãs maiores */
+        }
+
+        .btn-accept {
+            background-color: var(--color-success);
+            color: var(--color-text-on-dark);
+            border: none;
+            margin-right: 0.5rem;
+        }
+
+        .btn-reject {
+            background-color: var(--color-danger);
+            color: var(--color-text-on-dark);
+            border: none;
+        }
+
+        .btn-accept, .btn-reject {
+            transition: opacity 0.2s ease;
+        }
+
+            .btn-accept:hover, .btn-reject:hover {
+                opacity: 0.85;
+            }
+
+
+        /* --- Cards de Amigos --- */
+        .friend-card {
+            border: none;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+            .friend-card:hover {
+                transform: translateY(-8px);
+                box-shadow: var(--card-shadow-hover);
+            }
+
+            .friend-card .card-img-top {
+                height: 200px;
+                object-fit: cover;
+            }
+
+            .friend-card .card-body {
+                padding: 1.5rem;
+            }
+
+            .friend-card .card-footer {
+                background-color: #fff;
+                border-top: 1px solid var(--border-color-light);
+                padding: 1rem;
+            }
+
+            .friend-card .btn-outline-danger {
+                border-color: var(--color-danger);
+                color: var(--color-danger);
+                transition: background-color 0.2s ease, color 0.2s ease;
+            }
+
+                .friend-card .btn-outline-danger:hover {
+                    background-color: var(--color-danger);
+                    color: var(--color-text-on-dark);
+                }
+
+        /* --- Alertas Personalizados --- */
+        .alert-info-custom {
+            background-color: #eaf2f9; /* Tom de azul muito claro */
+            border-left: 5px solid var(--color-secondary-light);
+            color: var(--color-primary-medium);
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+        }
+
+            .alert-info-custom .alert-link {
+                color: var(--color-primary-dark);
+                font-weight: 600;
+            }
+
+        /* Media Query para responsividade nos botões de pedido */
+        @@media (max-width: 576px) {
+            .pending-request-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .request-actions {
+                width: 100%;
+                margin-left: 0;
+                margin-top: 1rem;
+                display: flex;
+                justify-content: space-between;
+            }
+
+                .request-actions form {
+                    flex-grow: 1;
+                }
+
+                .request-actions .btn {
+                    width: 100%;
+                }
+        }
     </style>
 }
