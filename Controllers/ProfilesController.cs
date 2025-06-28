@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Authorization;
 namespace projetodweb_connectify.Controllers
 {
     [Authorize]
+    [ApiExplorerSettings(IgnoreApi = true)]
     public class ProfilesController : Controller
     {
         private readonly ApplicationDbContext _context;
