@@ -12,9 +12,24 @@
     <p class="mt-2">A carregar perfis...</p>
 </div>
 
-<!-- Container onde os cartões dos perfis serão inseridos -->
-<div id="profiles-container" class="row" style="display: none;">
-    <!-- Os cartões de perfil serão adicionados aqui pelo JavaScript -->
+<!-- Secções de Amigos e Descobrir -->
+<div id="content-container" style="display: none;">
+    <!-- Secção de Amigos -->
+    <div id="friends-section">
+        <h2 class="section-title">Amigos</h2>
+        <div id="friends-container" class="row">
+            <!-- Cartões de amigos aqui -->
+        </div>
+        <hr class="my-5">
+    </div>
+
+    <!-- Secção de Descobrir -->
+    <div id="discover-section">
+        <h2 class="section-title">Descobrir Novos Perfis</h2>
+        <div id="discover-container" class="row">
+            <!-- Cartões de outros utilizadores aqui -->
+        </div>
+    </div>
 </div>
 
 <!-- Secção para mostrar erros -->
@@ -24,32 +39,33 @@
 
 @section Scripts {
     <style>
-        /*
-             * PALETA DE CORES AZUL
-             * Definimos as cores como variáveis para ser fácil de gerir e garantir consistência.
-            */
         :root {
-            --color-background: #fafafa; /* Fundo branco/cinza claro */
-            --color-primary-dark: #1D3461; /* Azul mais escuro (texto principal, títulos) */
-            --color-primary-medium: #376996; /* Azul médio (hovers de botão) */
-            --color-secondary-light: #6290C8; /* Azul claro (bordas) */
-            --color-secondary-lightest: #829CBC; /* Azul mais claro/acinzentado (texto secundário) */
-            --color-text-on-dark: #ffffff; /* Texto branco para botões e overlays */
+            --color-background: #fafafa;
+            --color-primary-dark: #1D3461;
+            --color-primary-medium: #376996;
+            --color-secondary-light: #6290C8;
+            --color-secondary-lightest: #829CBC;
+            --color-text-on-dark: #ffffff;
+            --color-success: #198754;
+            --color-warning: #ffc107;
+            --color-danger: #dc3545;
         }
 
-        /* Estilo geral da página para consistência */
-        body {
-            background-color: var(--color-background);
+        body { background-color: var(--color-background); }
+        h1, .section-title { color: var(--color-primary-dark); }
+        .section-title { margin-bottom: 1.5rem; }
+
+        /* Faz o cartão ser clicável */
+        .profile-card-link-wrapper {
+            display: block;
+            text-decoration: none;
+            color: inherit;
+            height: 100%;
         }
 
-        h1 {
-            color: var(--color-primary-dark);
-        }
-
-        /* Cartão de Perfil com a nova paleta */
         .profile-card {
-            background-color: #ffffff; /* O cartão em si continua branco para se destacar */
-            border: 1px solid var(--color-secondary-light); /* Borda temática azul claro */
+            background-color: #ffffff;
+            border: 1px solid var(--color-secondary-light);
             border-radius: 12px;
             padding: 20px;
             text-align: center;
@@ -58,116 +74,193 @@
             flex-direction: column;
             height: 100%;
         }
-
-            .profile-card:hover {
-                transform: translateY(-5px);
-                box-shadow: 0 8px 20px rgba(98, 144, 200, 0.15); /* Sombra suave com a cor da paleta */
-            }
-
+        .profile-card-link-wrapper:hover .profile-card {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(98, 144, 200, 0.15);
+        }
         .profile-card-avatar {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin: 0 auto 15px auto;
-            border: 2px solid var(--color-secondary-light); /* Borda azul claro */
+            width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin: 0 auto 15px auto; border: 2px solid var(--color-secondary-light);
         }
-
         .profile-card-name {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: var(--color-primary-dark); /* Texto principal em azul escuro */
-            margin-bottom: 5px;
+            font-size: 1.2rem; font-weight: 600; color: var(--color-primary-dark); margin-bottom: 5px;
         }
-
         .profile-card-username {
-            font-size: 0.9rem;
-            color: var(--color-secondary-lightest); /* Texto secundário em azul acinzentado */
-            margin-bottom: 15px;
+            font-size: 0.9rem; color: var(--color-secondary-lightest); margin-bottom: 15px;
         }
-
         .profile-card-bio {
-            font-size: 0.9rem;
-            color: var(--color-primary-dark); /* Bio com a cor do texto principal para legibilidade */
-            opacity: 0.8; /* Ligeiramente mais suave que o nome */
-            flex-grow: 1;
-            margin-bottom: 20px;
+            font-size: 0.9rem; color: var(--color-primary-dark); opacity: 0.8; flex-grow: 1; margin-bottom: 20px;
         }
-
-        .profile-card-link {
-            margin-top: auto;
-            display: block;
-            padding: 8px 20px;
-            background-color: var(--color-primary-dark); /* Botão em azul escuro */
-            color: var(--color-text-on-dark); /* Texto do botão em branco */
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 600;
-            transition: background-color 0.2s;
+        
+        .profile-card-actions {
+            margin-top: auto; /* Empurra os botões para o fundo */
         }
-
-            .profile-card-link:hover {
-                background-color: var(--color-primary-medium); /* Hover para azul médio */
-                color: var(--color-text-on-dark);
-            }
+        
+        .btn-card-action {
+            display: block; width: 100%; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 600; border: none; cursor: pointer; transition: background-color 0.2s, opacity 0.2s;
+        }
+        .btn-card-action.success {
+            background-color: var(--color-success); color: var(--color-text-on-dark);
+        }
+        .btn-card-action.warning {
+            background-color: var(--color-warning); color: #000;
+        }
+        .btn-card-action.danger {
+            background-color: var(--color-danger); color: var(--color-text-on-dark);
+        }
+         .btn-card-action.secondary {
+            background-color: #e2e6ea; color: #000;
+        }
+        .btn-card-action:disabled {
+            opacity: 0.65; cursor: not-allowed;
+        }
     </style>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const loadingDiv = document.getElementById('loading-state');
-            const profilesContainer = document.getElementById('profiles-container');
+            const contentContainer = document.getElementById('content-container');
+            const friendsContainer = document.getElementById('friends-container');
+            const discoverContainer = document.getElementById('discover-container');
             const errorDiv = document.getElementById('error-state');
 
-            fetch('/api/profiles')
-                .then(response => {
-                    if (!response.ok) {
-                        return Promise.reject(response);
-                    }
-                    return response.json();
-                })
-                .then(profiles => {
-                    loadingDiv.style.display = 'none';
-                    profilesContainer.style.display = 'flex';
+            function loadAndRenderProfiles() {
+                loadingDiv.style.display = 'block';
+                contentContainer.style.display = 'none';
 
-                    if (profiles && profiles.length > 0) {
-                        renderProfiles(profiles);
-                    } else {
-                        profilesContainer.innerHTML = '<p class="text-center col-12">Não foram encontrados outros perfis.</p>';
-                    }
-                })
-                .catch(error => {
-                    console.error('Erro ao buscar os perfis:', error);
-                    loadingDiv.style.display = 'none';
-                    errorDiv.style.display = 'block';
-                });
+                fetch('/api/profiles')
+                    .then(response => response.ok ? response.json() : Promise.reject(response))
+                    .then(profiles => {
+                        loadingDiv.style.display = 'none';
+                        contentContainer.style.display = 'block';
+                        
+                        friendsContainer.innerHTML = '';
+                        discoverContainer.innerHTML = '';
+                        
+                        if (profiles && profiles.length > 0) {
+                            const friends = profiles.filter(p => p.friendshipStatus === 'friends');
+                            const others = profiles.filter(p => p.friendshipStatus !== 'friends');
 
-            function renderProfiles(profiles) {
-                profilesContainer.innerHTML = '';
+                            renderProfileSection(friends, friendsContainer, 'friends-section');
+                            renderProfileSection(others, discoverContainer, 'discover-section');
 
-                profiles.forEach(profile => {
-                    const profileCardCol = document.createElement('div');
-                    profileCardCol.className = 'col-lg-3 col-md-4 col-sm-6 mb-4';
+                        } else {
+                            document.getElementById('friends-section').style.display = 'none';
+                            document.getElementById('discover-section').innerHTML = '<p class="text-center col-12">Não foram encontrados outros perfis.</p>';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro ao buscar os perfis:', error);
+                        loadingDiv.style.display = 'none';
+                        errorDiv.style.display = 'block';
+                    });
+            }
 
-                    const profileUrl = `/profile/${profile.username}`; // Adiciona o prefixo
-                    const profileAvatar = profile.profilePicture || '/images/defaultuser.png';
-                    const shortBio = profile.bio && profile.bio.length > 100
-                                   ? profile.bio.substring(0, 100) + '...'
-                                   : profile.bio || 'Sem biografia.';
+            function renderProfileSection(profiles, container, sectionId) {
+                const section = document.getElementById(sectionId);
+                if (profiles && profiles.length > 0) {
+                    section.style.display = 'block';
+                    profiles.forEach(profile => {
+                        const profileCardCol = createProfileCard(profile);
+                        container.appendChild(profileCardCol);
+                    });
+                } else {
+                    section.style.display = 'none';
+                }
+            }
+            
+            function createProfileCard(profile) {
+                const profileCardCol = document.createElement('div');
+                profileCardCol.className = 'col-lg-3 col-md-4 col-sm-6 mb-4';
 
-                    // A correção do @@ já está aplicada aqui
-                    profileCardCol.innerHTML = `
+                const profileUrl = `/profile/${profile.username}`;
+                const profileAvatar = profile.profilePicture || '/images/defaultuser.png';
+                const shortBio = (profile.bio && profile.bio.length > 80) ? profile.bio.substring(0, 80) + '...' : profile.bio || 'Sem biografia.';
+
+                let actionButtonHtml = '';
+                // O botão de ação só é relevante se o utilizador não for já amigo
+                switch(profile.friendshipStatus) {
+                    case 'not_friends':
+                        actionButtonHtml = `<button class="btn-card-action success" data-action="request" data-userid="${profile.userId}">Adicionar Amigo</button>`;
+                        break;
+                    case 'pending_sent':
+                        actionButtonHtml = `<button class="btn-card-action warning" data-action="cancel" data-userid="${profile.userId}">Cancelar Pedido</button>`;
+                        break;
+                    case 'pending_received':
+                         // Para quem recebeu um pedido, o botão de adicionar faz mais sentido aqui
+                        actionButtonHtml = `<button class="btn-card-action success" data-action="accept" data-userid="${profile.userId}">Aceitar Pedido</button>`;
+                        break;
+                    case 'friends':
+                        // Para amigos, o botão pode ser para desfazer amizade
+                        actionButtonHtml = `<button class="btn-card-action danger" data-action="unfriend" data-userid="${profile.userId}">Desfazer Amizade</button>`;
+                        break;
+                }
+
+                // O cartão inteiro está envolvido num link <a>
+                profileCardCol.innerHTML = `
+                    <a href="${profileUrl}" class="profile-card-link-wrapper">
                         <div class="profile-card">
                             <img src="${profileAvatar}" alt="Foto de ${profile.name}" class="profile-card-avatar" />
                             <h5 class="profile-card-name">${profile.name}</h5>
                             <p class="profile-card-username">@@${profile.username}</p>
                             <p class="profile-card-bio">${shortBio}</p>
-                            <a href="${profileUrl}" class="profile-card-link">Ver Perfil</a>
+                            <div class="profile-card-actions">
+                                ${actionButtonHtml}
+                            </div>
                         </div>
-                    `;
+                    </a>
+                `;
 
-                    profilesContainer.appendChild(profileCardCol);
-                });
+                // Adicionar o event listener ao botão para impedir a navegação
+                const actionButton = profileCardCol.querySelector('.btn-card-action');
+                if(actionButton) {
+                    actionButton.addEventListener('click', handleFriendAction);
+                }
+
+                return profileCardCol;
             }
+            
+            async function handleFriendAction(event) {
+                // Impede o link <a> pai de ser acionado
+                event.preventDefault();
+                event.stopPropagation();
+
+                const button = event.target;
+                const action = button.dataset.action;
+                const userId = button.dataset.userid;
+
+                button.disabled = true;
+                button.textContent = 'A processar...';
+
+                const actions = {
+                    request: { url: `/api/friendships/request/${userId}`, confirmation: false },
+                    cancel: { url: `/api/friendships/cancel/${userId}`, confirmation: false },
+                    accept: { url: `/api/friendships/accept/${userId}`, confirmation: false },
+                    unfriend: { url: `/api/friendships/unfriend/${userId}`, confirmation: true }
+                };
+
+                const currentAction = actions[action];
+                if (!currentAction) return;
+
+                if (currentAction.confirmation && !confirm('Tem a certeza?')) {
+                    loadAndRenderProfiles(); // Recarrega para restaurar o botão
+                    return;
+                }
+
+                try {
+                    const response = await fetch(currentAction.url, { method: 'POST' });
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.message || 'A ação falhou.');
+                    }
+                } catch (error) {
+                    console.error(`Erro ao ${action} amigo:`, error);
+                    alert(error.message);
+                } finally {
+                    loadAndRenderProfiles();
+                }
+            };
+
+            loadAndRenderProfiles();
         });
     </script>
 }

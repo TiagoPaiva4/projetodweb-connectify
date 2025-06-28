@@ -16,6 +16,7 @@
     public class TopicPostDto
     {
         public int Id { get; set; }
+        public int TopicId { get; set; }
         public string Content { get; set; }
         public string? PostImageUrl { get; set; }
         public DateTime CreatedAt { get; set; }
