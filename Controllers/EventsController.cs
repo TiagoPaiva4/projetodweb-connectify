@@ -30,6 +30,8 @@ namespace projetodweb_connectify.Controllers
         }
 
         // GET: Events/Details/5
+        // CÓDIGO CORRIGIDO PARA O SEU EventsController.cs (NÃO o API Controller)
+
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -37,16 +39,21 @@ namespace projetodweb_connectify.Controllers
                 return NotFound();
             }
 
-            // FIX: Replaced "@ => @.Creator" with a valid lambda expression "e => e.Creator"
-            var @event = await _context.Events
-                .Include(e => e.Creator)
+            // AQUI ESTÁ A CORREÇÃO:
+            // Usamos Include() para carregar a lista de Attendees
+            // e ThenInclude() para carregar o User de cada um dos Attendees
+            var eventModel = await _context.Events
+                .Include(e => e.Creator)                      // Inclui os dados do criador do evento
+                .Include(e => e.Attendees)                    // INCLUI A LISTA DE PARTICIPAÇÕES
+                    .ThenInclude(attendance => attendance.User) // PARA CADA PARTICIPAÇÃO, INCLUI OS DADOS DO UTILIZADOR
                 .FirstOrDefaultAsync(m => m.Id == id);
-            if (@event == null)
+
+            if (eventModel == null)
             {
                 return NotFound();
             }
 
-            return View(@event);
+            return View(eventModel);
         }
 
         // GET: /Events/Create

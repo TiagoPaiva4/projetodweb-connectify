@@ -1,72 +1,337 @@
 ﻿@model Event
 
 @{
-    ViewData["Title"] = "Details";
+    ViewData["Title"] = "Detalhes do Evento";
+    var goingAttendees = Model.Attendees.Where(a => a.Status == AttendanceStatus.Going).ToList();
+    var interestedAttendees = Model.Attendees.Where(a => a.Status == AttendanceStatus.Interested).ToList();
 }
 
-<h1>Details</h1>
+<!-- =================================================================
+     CSS INTEGRADO - COM BOTÕES DE PARTICIPAÇÃO ATUALIZADOS
+     ================================================================= -->
+<style>
+    /* 1. Definição da sua Paleta de Cores (sem alterações) */
+    :root {
+        --color-background: #fafafa;
+        --color-primary-dark: #1D3461;
+        --color-primary-medium: #376996;
+        --color-secondary-light: #6290C8;
+        --color-secondary-lightest: #829CBC; /* <- Cor que vamos usar para os botões */
+        --color-text-on-dark: #ffffff;
+        --color-text-primary: #333;
+        --color-text-secondary: #666;
+        --color-border: #dee2e6;
+        --color-success: #198754;
+        --color-info: #0dcaf0;
+        --color-warning: #ffc107;
+        --color-danger: #dc3545;
+    }
 
-<div>
-    <h4>Event</h4>
-    <hr />
-    <dl class="row">
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Title)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Title)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Description)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Description)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.StartDateTime)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.StartDateTime)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.EndDateTime)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.EndDateTime)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Location)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Location)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.EventImageUrl)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.EventImageUrl)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Creator)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Creator.Username)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.CreatedAt)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.CreatedAt)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.UpdatedAt)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.UpdatedAt)
-        </dd>
-    </dl>
+    /* 2. Estilos gerais da página (sem alterações) */
+    .event-details-page {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        color: var(--color-text-primary);
+    }
+
+    .event-header {
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 2px solid var(--color-primary-dark);
+    }
+
+        .event-header h1 {
+            color: var(--color-primary-dark);
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .event-header .event-main-date {
+            color: var(--color-primary-medium);
+            font-size: 1.25rem;
+            font-weight: 500;
+        }
+
+    .event-card {
+        background-color: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        padding: 1.5rem 2rem;
+        margin-bottom: 2rem;
+        transition: all 0.3s ease;
+    }
+
+        .event-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+        }
+
+        .event-card h4, .event-card h5 {
+            color: var(--color-primary-dark);
+            font-weight: 600;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #eee;
+        }
+
+    .event-info-list dt {
+        color: var(--color-text-secondary);
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .event-info-list dd {
+        color: var(--color-text-primary);
+        margin-bottom: 1.25rem;
+    }
+
+    /* ========================================================== */
+    /* ALTERAÇÃO #1: ESTILO PARA O CONTAINER DOS BOTÕES           */
+    /* ========================================================== */
+    .attendance-buttons {
+        display: flex; /* Usar flexbox para controlar o alinhamento */
+        flex-wrap: wrap; /* Permite que os botões quebrem para a linha de baixo em ecrãs pequenos */
+        gap: 10px; /* Adiciona um espaço de 10px entre cada botão */
+    }
+
+        /* ========================================================== */
+        /* ALTERAÇÃO #2: NOVO ESTILO UNIFICADO PARA OS BOTÕES         */
+        /* ========================================================== */
+        .attendance-buttons .btn {
+            background-color: var(--color-secondary-lightest); /* Cor azul acinzentada do "Editar Perfil" */
+            color: var(--color-text-on-dark); /* Texto branco */
+            border: none;
+            border-radius: 6px; /* Cantos arredondados */
+            padding: 0.75rem 1.5rem; /* Mais preenchimento horizontal */
+            font-weight: 600;
+            transition: all 0.2s ease-in-out;
+        }
+
+            /* ALTERAÇÃO #3: EFEITO HOVER ATUALIZADO */
+            .attendance-buttons .btn:hover {
+                transform: translateY(-2px) scale(1.02); /* Efeito de elevação subtil */
+                filter: brightness(0.95); /* Escurece ligeiramente o botão em vez de clarear */
+            }
+
+    /* REMOÇÃO: As classes de cor individuais não são mais necessárias */
+    /*
+        .btn-going { background-color: var(--color-success); color: white; }
+        .btn-interested { background-color: var(--color-info); color: white; }
+        .btn-maybe { background-color: var(--color-warning); color: black; }
+        .btn-not-going { background-color: var(--color-danger); color: white; }
+        */
+
+    /* Estilos restantes (sem alterações) */
+    .attendees-list {
+        list-style: none;
+        padding: 0;
+    }
+
+        .attendees-list li {
+            padding: 0.8rem 1rem;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            transition: background-color 0.2s ease;
+        }
+
+            .attendees-list li:last-child {
+                border-bottom: none;
+            }
+
+            .attendees-list li:hover {
+                background-color: #f8f9fa;
+            }
+
+            .attendees-list li::before {
+                content: '';
+                display: inline-block;
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                background-color: var(--color-secondary-light);
+                margin-right: 1rem;
+                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E");
+                background-size: 20px;
+                background-repeat: no-repeat;
+                background-position: center;
+            }
+
+    .event-actions {
+        margin-top: 2rem;
+    }
+
+        .event-actions .btn-primary {
+            background-color: var(--color-primary-medium);
+            border-color: var(--color-primary-medium);
+        }
+
+            .event-actions .btn-primary:hover {
+                background-color: var(--color-primary-dark);
+                border-color: var(--color-primary-dark);
+            }
+
+        .event-actions .link-secondary {
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            margin-left: 1rem;
+            font-weight: 500;
+        }
+
+            .event-actions .link-secondary:hover {
+                color: var(--color-primary-dark);
+                text-decoration: underline;
+            }
+</style>
+
+<!-- =================================================================
+     CONTEÚDO HTML DA PÁGINA
+     ================================================================= -->
+<div class="event-details-page">
+
+    <!-- CABEÇALHO DO EVENTO (sem alterações) -->
+    <div class="event-header text-center">
+        <h1>@Html.DisplayFor(model => model.Title)</h1>
+        <p class="event-main-date">
+            @Model.StartDateTime.ToString("dddd, dd 'de' MMMM 'de' yyyy 'às' HH:mm")
+        </p>
+    </div>
+
+    <!-- Cartão com Detalhes e Imagem (sem alterações) -->
+    <div class="event-card">
+        <div class="row">
+            <div class="col-lg-8">
+                <h4>Detalhes do Evento</h4>
+                <dl class="row event-info-list">
+                    <dt class="col-sm-3">Descrição</dt>
+                    <dd class="col-sm-9">@Html.DisplayFor(model => model.Description)</dd>
+
+                    <dt class="col-sm-3">Fim</dt>
+                    <dd class="col-sm-9">
+                        @(Model.EndDateTime.HasValue ? Model.EndDateTime.Value.ToString("dddd, dd 'de' MMMM 'de' yyyy 'às' HH:mm") : "Não definido")
+                    </dd>
+
+                    <dt class="col-sm-3">Localização</dt>
+                    <dd class="col-sm-9">@Html.DisplayFor(model => model.Location)</dd>
+
+                    <dt class="col-sm-3">Organizador</dt>
+                    <dd class="col-sm-9">@Html.DisplayFor(model => model.Creator.Username)</dd>
+                </dl>
+            </div>
+            @if (!string.IsNullOrEmpty(Model.EventImageUrl))
+            {
+                <div class="col-lg-4 d-flex align-items-center justify-content-center">
+                    <img src="@Model.EventImageUrl" class="img-fluid rounded shadow-sm" alt="Imagem do Evento" />
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Cartão de Participação -->
+    @if (User.Identity.IsAuthenticated)
+    {
+        <div class="event-card">
+            <h5>Sua Participação</h5>
+            <p>Marque o seu interesse neste evento:</p>
+
+            <!-- ========================================================== -->
+            <!-- ALTERAÇÃO #4: ESTRUTURA DOS BOTÕES ATUALIZADA            -->
+            <!-- ========================================================== -->
+            <div class="attendance-buttons">
+                <!-- Removida a classe "btn-group" para separar os botões -->
+                <!-- As classes específicas de cor (btn-going, etc.) podem ser removidas, pois o estilo agora é genérico -->
+                <button type="button" class="btn" onclick="attendEvent(@Model.Id, 'Going')">Vou</button>
+                <button type="button" class="btn" onclick="attendEvent(@Model.Id, 'Interested')">Interessado</button>
+                <!-- O botão "Talvez" foi removido -->
+                <button type="button" class="btn" onclick="attendEvent(@Model.Id, 'NotGoing')">Não Vou</button>
+            </div>
+            <div id="attendance-status" class="mt-3"></div>
+        </div>
+    }
+    else
+    {
+        <div class="event-card text-center">
+            <p class="mb-0"><a asp-area="Identity" asp-page="/Account/Login" asp-route-returnUrl="@Context.Request.Path">Faça login</a> para participar neste evento.</p>
+        </div>
+    }
+
+    <!-- Restante do código (sem alterações) -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="event-card">
+                <h4>Quem Vai (@goingAttendees.Count)</h4>
+                @if (goingAttendees.Any())
+                {
+                    <ul class="attendees-list">
+                        @foreach (var attendance in goingAttendees)
+                        {
+                            <li>@attendance.User.Username</li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <p>Ainda ninguém confirmou presença. Sê o primeiro!</p>
+                }
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="event-card">
+                <h4>Interessados (@interestedAttendees.Count)</h4>
+                @if (interestedAttendees.Any())
+                {
+                    <ul class="attendees-list">
+                        @foreach (var attendance in interestedAttendees)
+                        {
+                            <li>@attendance.User.Username</li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <p>Ninguém marcou interesse ainda.</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="event-actions text-center">
+        @if (User.Identity.IsAuthenticated && (Model.Creator.Username == User.Identity.Name || User.IsInRole("admin")))
+        {
+            <a asp-action="Edit" asp-route-id="@Model?.Id" class="btn btn-primary btn-lg">Editar Evento</a>
+        }
+        <a asp-action="Index" class="link-secondary">Voltar à Lista de Eventos</a>
+    </div>
+
 </div>
-<div>
-    <a asp-action="Edit" asp-route-id="@Model?.Id">Edit</a> |
-    <a asp-action="Index">Back to List</a>
-</div>
+
+@section Scripts {
+    <script>
+        // O JavaScript não precisa de alterações.
+        async function attendEvent(eventId, status) {
+            const statusMap = { 'Going': 0, 'Interested': 1, 'NotGoing': 2, 'Maybe': 3 };
+            const numericStatus = statusMap[status];
+
+            try {
+                 const response = await fetch(`/api/events/${eventId}/attend`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: numericStatus })
+                });
+
+                const result = await response.json();
+                const statusDiv = document.getElementById('attendance-status');
+
+                if (response.ok) {
+                    statusDiv.innerHTML = `<div class="alert alert-success mt-2">Seu estado foi atualizado para: <strong>${status}</strong>. A página será atualizada para refletir a mudança.</div>`;
+                    setTimeout(() => location.reload(), 2000);
+                } else {
+                    statusDiv.innerHTML = `<div class="alert alert-danger mt-2">Erro: ${result.message || 'Ocorreu um problema.'}</div>`;
+                }
+            } catch (error) {
+                 console.error("Fetch error:", error);
+                 const statusDiv = document.getElementById('attendance-status');
+                 statusDiv.innerHTML = `<div class="alert alert-danger mt-2">Não foi possível comunicar com o servidor.</div>`;
+            }
+        }
+    </script>
+}

@@ -54,4 +54,13 @@ namespace projetodweb_connectify.Models.DTOs
         public string Location { get; set; }
         public IFormFile? EventImageFile { get; set; }
     }
+
+    /// <summary>
+    /// DTO para receber o status de participação num evento.
+    /// </summary>
+    public class EventAttendanceDto
+    {
+        [Required]
+        public AttendanceStatus Status { get; set; }
+    }
 }
