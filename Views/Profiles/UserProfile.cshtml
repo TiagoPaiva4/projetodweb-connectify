@@ -21,6 +21,10 @@
             <div class="profile-info-header">
                 <h2 id="profile-username" class="profile-username"></h2>
 
+                <!-- CONTAINER PARA OS BOTÕES DE AÇÃO (EDITAR, AMIZADE, MENSAGEM) -->
+                <div id="action-buttons-container">
+                    <!-- Os botões serão injetados aqui pelo JavaScript -->
+                </div>
             </div>
             <ul class="profile-stats">
                 <li><span id="topics-count" class="stat-number">0</span> tópicos</li>
@@ -66,6 +70,9 @@
             --color-secondary-light: #6290C8;
             --color-secondary-lightest: #829CBC;
             --color-text-on-dark: #ffffff;
+            --color-danger: #dc3545;
+            --color-success: #198754;
+            --color-warning: #ffc107;
         }
 
         body {
@@ -110,6 +117,79 @@
             margin-right: 20px;
         }
 
+        #action-buttons-container {
+            margin-left: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        /* Estilos genéricos para todos os botões de ação */
+        .btn-action {
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, opacity 0.2s, color 0.2s;
+            white-space: nowrap;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+            .btn-action.btn-action-primary {
+                background-color: var(--color-primary-dark);
+                color: var(--color-text-on-dark);
+            }
+
+                .btn-action.btn-action-primary:hover:not(:disabled) {
+                    background-color: var(--color-primary-medium);
+                }
+
+            .btn-action.btn-action-secondary {
+                background-color: #efefef;
+                color: var(--color-primary-dark);
+                border: 1px solid #dbdbdb;
+            }
+
+                .btn-action.btn-action-secondary:hover:not(:disabled) {
+                    background-color: #dbdbdb;
+                }
+
+            .btn-action.btn-action-success {
+                background-color: var(--color-success);
+                color: var(--color-text-on-dark);
+            }
+
+                .btn-action.btn-action-success:hover:not(:disabled) {
+                    background-color: #157347;
+                }
+
+            .btn-action.btn-action-danger {
+                background-color: var(--color-danger);
+                color: var(--color-text-on-dark);
+            }
+
+                .btn-action.btn-action-danger:hover:not(:disabled) {
+                    background-color: #bb2d3b;
+                }
+
+            .btn-action.btn-action-warning {
+                background-color: var(--color-warning);
+                color: #000;
+            }
+
+                .btn-action.btn-action-warning:hover:not(:disabled) {
+                    background-color: #ffca2c;
+                }
+
+            .btn-action:disabled {
+                cursor: default;
+                opacity: 0.65;
+            }
+
+        /* Resto do CSS */
         .profile-stats {
             display: flex;
             list-style: none;
@@ -180,6 +260,8 @@
             width: 100%;
             aspect-ratio: 1 / 1;
             cursor: pointer;
+            text-decoration: none;
+            color: inherit;
         }
 
             .grid-item img {
@@ -234,46 +316,6 @@
             justify-content: center;
             margin-bottom: 20px;
         }
-        /* Estilos para os novos botões de ação */
-        #action-buttons-container {
-            margin-left: 20px;
-            display: flex; /* Para alinhar botões lado a lado */
-            gap: 10px; /* Espaço entre os botões */
-        }
-
-        .btn-action-primary, .btn-action-secondary {
-            border: none;
-            border-radius: 8px;
-            padding: 8px 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.2s, opacity 0.2s;
-        }
-
-        .btn-action-primary {
-            background-color: var(--color-primary-dark);
-            color: var(--color-text-on-dark);
-        }
-
-            .btn-action-primary:hover:not(:disabled) {
-                background-color: var(--color-primary-medium);
-            }
-
-        .btn-action-secondary {
-            background-color: #efefef;
-            color: var(--color-primary-dark);
-            border: 1px solid #dbdbdb;
-        }
-
-            .btn-action-secondary:hover:not(:disabled) {
-                background-color: #dbdbdb;
-            }
-
-            .btn-action-primary:disabled,
-            .btn-action-secondary:disabled {
-                cursor: default;
-                opacity: 0.7;
-            }
     </style>
 
     <script>
@@ -285,10 +327,9 @@
             const postsContainer = document.getElementById('personal-posts-container');
             const createdTopicsContainer = document.getElementById('created-topics-container');
 
-            // É crucial que esta variável contenha o username correto vindo do Controller
             const profileUsername = '@ViewData["ProfileUsername"]';
 
-            // Função para lidar com a mudança de abas (tabs)
+            // ... (código das abas permanece o mesmo) ...
             const tabButtons = document.querySelectorAll('.tab-button');
             const tabPanels = document.querySelectorAll('.tab-content-panel');
             tabButtons.forEach(button => {
@@ -303,12 +344,17 @@
                 });
             });
 
-            // Função principal para carregar os dados do perfil
             function loadProfile() {
+                if (!profileUsername) {
+                    loadingDiv.style.display = 'none';
+                    errorDiv.querySelector('p').textContent = 'Nome de utilizador não especificado.';
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+
                 fetch(`/api/profiles/${profileUsername}`)
                     .then(response => {
                         if (!response.ok) {
-                            // Se a resposta não for OK, rejeita a promise para ser apanhada pelo .catch()
                             return response.json().then(err => Promise.reject(err));
                         }
                         return response.json();
@@ -318,21 +364,18 @@
                         document.getElementById('profile-picture').src = data.profilePicture || '/images/defaultuser.png';
                         document.getElementById('profile-username').textContent = data.username;
                         document.getElementById('profile-name').textContent = data.name;
-                        document.getElementById('profile-bio').innerHTML = data.bio; // Usar innerHTML para interpretar tags como <br>
+                        document.getElementById('profile-bio').innerHTML = data.bio || '<i>Nenhuma bio definida.</i>';
                         document.title = `${data.name || data.username}'s Profile - Connectify`;
 
-                        // Preenche as estatísticas
                         document.getElementById('topics-count').textContent = data.createdTopics.length;
-                        // Nota: as contagens de seguidores/a seguir não estão a ser enviadas pela API, por isso ficarão a 0.
-                        // document.getElementById('followers-count').textContent = data.followersCount;
-                        // document.getElementById('following-count').textContent = data.followingCount;
+                        document.getElementById('followers-count').textContent = data.followersCount || 0;
+                        document.getElementById('following-count').textContent = data.followingCount || 0;
 
-                        // Renderiza os botões, posts e tópicos
-                  
+                        // **INICIA A LÓGICA DE RENDERIZAÇÃO DE BOTÕES E CONTEÚDO**
+                        renderActionAndFriendshipButtons(data);
                         renderPersonalPosts(data.personalTopicPosts);
                         renderCreatedTopics(data.createdTopics);
 
-                        // Mostra o conteúdo do perfil e esconde o carregamento
                         loadingDiv.style.display = 'none';
                         profileDiv.style.display = 'block';
                     })
@@ -344,14 +387,133 @@
                     });
             }
 
+            // =========================================================================
+            // LÓGICA DE AMIZADE E AÇÕES
+            // =========================================================================
 
-            // Função para renderizar os posts do mural
+            function renderActionAndFriendshipButtons(profileData) {
+                actionButtonsContainer.innerHTML = ''; // Limpa botões antigos
+
+                if (!profileData.friendshipStatus || !profileData.userId) {
+                    console.error("Dados de amizade (friendshipStatus, userId) não foram retornados pela API.");
+                    return;
+                }
+
+                if (profileData.friendshipStatus === 'self') {
+                    const editButton = document.createElement('a');
+                    editButton.href = `/Profiles/Edit/${profileData.id}`; // `id` aqui é o ProfileId
+                    editButton.className = 'btn-action btn-action-secondary';
+                    editButton.innerHTML = `<i class="fas fa-user-edit me-1"></i> Editar Perfil`;
+                    actionButtonsContainer.appendChild(editButton);
+                } else {
+                    const messageButton = document.createElement('a');
+                    messageButton.href = `/Messages/Chat?otherUserId=${profileData.userId}`;
+                    messageButton.className = 'btn-action btn-action-primary';
+                    messageButton.innerHTML = `<i class="fas fa-paper-plane"></i> Enviar Mensagem`;
+                    actionButtonsContainer.appendChild(messageButton);
+
+                    const friendshipControls = document.createElement('div');
+                    friendshipControls.id = 'friendship-controls-placeholder';
+                    actionButtonsContainer.appendChild(friendshipControls);
+
+                    // O estado inicial já veio na primeira chamada, então podemos renderizar diretamente
+                    setButtonState(profileData.friendshipStatus, profileData.userId);
+                }
+            }
+
+            // Esta função agora é chamada diretamente ou pelo handleFriendshipAction
+            function setButtonState(status, targetUserId) {
+                const controlsPlaceholder = document.getElementById('friendship-controls-placeholder');
+                if (!controlsPlaceholder) return;
+                controlsPlaceholder.innerHTML = '';
+
+                let btn;
+                switch (status) {
+                    case 'not_friends':
+                        btn = document.createElement('button');
+                        btn.textContent = 'Adicionar Amigo';
+                        btn.className = 'btn-action btn-action-success';
+                        btn.onclick = () => handleFriendshipAction(`/api/friendships/request/${targetUserId}`, 'POST', targetUserId);
+                        controlsPlaceholder.appendChild(btn);
+                        break;
+                    case 'pending_sent':
+                        btn = document.createElement('button');
+                        btn.textContent = 'Cancelar Pedido';
+                        btn.className = 'btn-action btn-action-warning';
+                        btn.onclick = () => handleFriendshipAction(`/api/friendships/cancel/${targetUserId}`, 'POST', targetUserId);
+                        controlsPlaceholder.appendChild(btn);
+                        break;
+                    case 'pending_received':
+                        const acceptBtn = document.createElement('button');
+                        acceptBtn.textContent = "Aceitar";
+                        acceptBtn.className = "btn-action btn-action-success";
+                        acceptBtn.onclick = () => handleFriendshipAction(`/api/friendships/accept/${targetUserId}`, 'POST', targetUserId);
+
+                        const rejectBtn = document.createElement('button');
+                        rejectBtn.textContent = "Rejeitar";
+                        rejectBtn.className = "btn-action btn-action-danger ms-2";
+                        rejectBtn.onclick = () => handleFriendshipAction(`/api/friendships/reject/${targetUserId}`, 'POST', targetUserId);
+
+                        controlsPlaceholder.appendChild(acceptBtn);
+                        controlsPlaceholder.appendChild(rejectBtn);
+                        break;
+                    case 'friends':
+                        btn = document.createElement('button');
+                        btn.textContent = 'Desfazer Amizade';
+                        btn.className = 'btn-action btn-action-danger';
+                        btn.onclick = () => {
+                             if (confirm("Tem a certeza que quer desfazer esta amizade?")) {
+                                handleFriendshipAction(`/api/friendships/unfriend/${targetUserId}`, 'POST', targetUserId);
+                            }
+                        };
+                        controlsPlaceholder.appendChild(btn);
+                        break;
+                    default:
+                        btn = document.createElement('button');
+                        btn.textContent = 'Indisponível';
+                        btn.className = 'btn-action btn-action-secondary';
+                        btn.disabled = true;
+                        controlsPlaceholder.appendChild(btn);
+                }
+            }
+
+            async function handleFriendshipAction(url, method, targetUserId) {
+                const buttons = document.querySelectorAll('#friendship-controls-placeholder button');
+                buttons.forEach(b => b.disabled = true);
+
+                try {
+                    const response = await fetch(url, { method: method, headers: {} });
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.message || 'Ação falhou.');
+                    }
+                    // Após uma ação bem-sucedida, precisamos de saber o novo estado.
+                    // A forma mais simples é recarregar os dados do perfil.
+                    loadProfile();
+                } catch (error) {
+                    console.error('Falha na requisição de ação:', error);
+                    alert(error.message);
+                    // Em caso de erro, reabilitar os botões pode ser útil, ou recarregar para reverter.
+                    loadProfile();
+                }
+            }
+
+            // =========================================================================
+            // Funções de Renderização de Conteúdo
+            // =========================================================================
+
             function renderPersonalPosts(posts) {
                 postsContainer.innerHTML = '';
                 if (posts && posts.length > 0) {
                     posts.forEach(post => {
+                        if (!post.topicId) {
+                            console.warn("Post com ID", post.id, "não tem 'topicId'. O link não será criado.");
+                            return; // Pula este post se não tiver topicId
+                        }
+                        const postLink = `/Topics/Details/${post.topicId}?postId=${post.id}`;
                         const postImage = post.postImageUrl || '/images/default-post.png';
-                        const postCard = document.createElement('div');
+                        const postCard = document.createElement('a'); // Agora é um link
+                        postCard.href = postLink;
                         postCard.className = 'grid-item';
                         postCard.innerHTML = `
                             <img src="${postImage}" alt="Publicação" />
@@ -371,7 +533,6 @@
                 }
             }
 
-            // Função para renderizar os tópicos criados
             function renderCreatedTopics(topics) {
                 createdTopicsContainer.innerHTML = '';
                 if (topics && topics.length > 0) {
@@ -399,7 +560,6 @@
                 }
             }
 
-            // Inicia o carregamento do perfil quando a página estiver pronta
             loadProfile();
         });
     </script>
