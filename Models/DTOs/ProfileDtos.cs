@@ -1,4 +1,6 @@
 ﻿// In Models/DTOs/ProfileDto.cs
+using System.ComponentModel.DataAnnotations;
+
 namespace projetodweb_connectify.Models.DTOs
 {
 
@@ -31,5 +33,18 @@ namespace projetodweb_connectify.Models.DTOs
         public string Type { get; set; }
 
         public FriendshipStatusDto FriendshipStatus { get; set; }
+    }
+
+    public class ProfileUpdateDto
+    {
+        [Required(ErrorMessage = "O nome é obrigatório.")]
+        [MaxLength(100)]
+        public string Name { get; set; }
+
+        [MaxLength(1000)]
+        public string? Bio { get; set; }
+
+        // Usamos IFormFile para receber o ficheiro do formulário
+        public IFormFile? ProfilePictureFile { get; set; }
     }
 }
