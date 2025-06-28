@@ -152,6 +152,63 @@ namespace projetodweb_connectify.Controllers.API
             return NoContent();
         }
 
+        // Dentro da classe EventsApiController
+
+        /// <summary>
+        /// Regista ou atualiza a participação de um utilizador num evento.
+        /// Requer autenticação.
+        /// </summary>
+        /// <param name="id">O ID do evento.</param>
+        /// <param name="dto">O DTO com o novo status de participação.</param>
+        [HttpPost("{id}/attend")] // URL: api/events/5/attend
+        [Authorize]
+        public async Task<IActionResult> AttendEvent(int id, [FromBody] EventAttendanceDto dto)
+        {
+            // 1. Obter o ID do utilizador autenticado
+            var currentUserId = GetCurrentUserId();
+            if (currentUserId == null)
+            {
+                // Esta verificação é redundante devido ao [Authorize], mas é boa prática
+                return Unauthorized(new { message = "Utilizador não autenticado." });
+            }
+
+            // 2. Verificar se o evento existe
+            var eventExists = await _context.Events.AnyAsync(e => e.Id == id);
+            if (!eventExists)
+            {
+                return NotFound(new { message = "Evento não encontrado." });
+            }
+
+            // 3. Procurar por uma participação existente
+            var attendance = await _context.UserEventAttendances
+                .FirstOrDefaultAsync(a => a.EventId == id && a.UserId == currentUserId.Value);
+
+            if (attendance != null)
+            {
+                // 4. Se já existe, atualiza o status e a data
+                attendance.Status = dto.Status;
+                attendance.LastUpdated = DateTime.UtcNow;
+                _context.UserEventAttendances.Update(attendance);
+            }
+            else
+            {
+                // 5. Se não existe, cria um novo registo de participação
+                var newAttendance = new UserEventAttendance
+                {
+                    EventId = id,
+                    UserId = currentUserId.Value,
+                    Status = dto.Status,
+                    LastUpdated = DateTime.UtcNow
+                };
+                _context.UserEventAttendances.Add(newAttendance);
+            }
+
+            // 6. Salvar as alterações na base de dados
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Participação registada com sucesso.", newStatus = dto.Status.ToString() });
+        }
+
         #region Helper Methods
         private int? GetCurrentUserId()
         {

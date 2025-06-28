@@ -1,72 +1,162 @@
 ﻿@model Event
 
 @{
-    ViewData["Title"] = "Details";
+    ViewData["Title"] = "Detalhes do Evento";
+
+    // Vamos preparar as listas de participantes aqui para deixar o HTML mais limpo
+    var goingAttendees = Model.Attendees.Where(a => a.Status == AttendanceStatus.Going).ToList();
+    var interestedAttendees = Model.Attendees.Where(a => a.Status == AttendanceStatus.Interested).ToList();
 }
 
-<h1>Details</h1>
+<h1>@Html.DisplayFor(model => model.Title)</h1>
 
 <div>
-    <h4>Event</h4>
+    <h4>Detalhes</h4>
     <hr />
-    <dl class="row">
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Title)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Title)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Description)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Description)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.StartDateTime)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.StartDateTime)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.EndDateTime)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.EndDateTime)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Location)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Location)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.EventImageUrl)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.EventImageUrl)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Creator)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Creator.Username)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.CreatedAt)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.CreatedAt)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.UpdatedAt)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.UpdatedAt)
-        </dd>
-    </dl>
+    <div class="row">
+        <div class="col-md-8">
+            <dl class="row">
+                <dt class="col-sm-3">Descrição</dt>
+                <dd class="col-sm-9">@Html.DisplayFor(model => model.Description)</dd>
+
+                <dt class="col-sm-3">Início</dt>
+                <dd class="col-sm-9">
+                    @* Formatar a data para ser mais legível *@
+                    @Model.StartDateTime.ToString("dddd, dd 'de' MMMM 'de' yyyy 'às' HH:mm")
+                </dd>
+
+                <dt class="col-sm-3">Fim</dt>
+                <dd class="col-sm-9">
+                    @* Verificar se a data de fim existe antes de a mostrar *@
+                    @(Model.EndDateTime.HasValue ? Model.EndDateTime.Value.ToString("dddd, dd 'de' MMMM 'de' yyyy 'às' HH:mm") : "Não definido")
+                </dd>
+
+                <dt class="col-sm-3">Localização</dt>
+                <dd class="col-sm-9">@Html.DisplayFor(model => model.Location)</dd>
+
+                <dt class="col-sm-3">Criador</dt>
+                <dd class="col-sm-9">@Html.DisplayFor(model => model.Creator.Username)</dd>
+
+                <dt class="col-sm-3">Criado em</dt>
+                <dd class="col-sm-9">@Model.CreatedAt.ToLocalTime().ToString("g")</dd>
+            </dl>
+        </div>
+        @if (!string.IsNullOrEmpty(Model.EventImageUrl))
+        {
+            <div class="col-md-4">
+                <img src="@Model.EventImageUrl" class="img-fluid rounded" alt="Imagem do Evento" />
+            </div>
+        }
+    </div>
 </div>
+
+<hr />
+
+@* Secção de Participação (apenas para utilizadores autenticados) *@
+@if (User.Identity.IsAuthenticated)
+{
+    <div>
+        <h5>Sua Participação</h5>
+        <p>Marque o seu interesse neste evento:</p>
+        
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-success" onclick="attendEvent(@Model.Id, 'Going')">Vou</button>
+            <button type="button" class="btn btn-info" onclick="attendEvent(@Model.Id, 'Interested')">Interessado</button>
+            <button type="button" class="btn btn-warning" onclick="attendEvent(@Model.Id, 'Maybe')">Talvez</button>
+            <button type="button" class="btn btn-danger" onclick="attendEvent(@Model.Id, 'NotGoing')">Não Vou</button>
+        </div>
+        <div id="attendance-status" class="mt-2"></div>
+    </div>
+}
+else
+{
+    <p><a asp-area="Identity" asp-page="/Account/Login" asp-route-returnUrl="@Context.Request.Path">Faça login</a> para participar neste evento.</p>
+}
+
+<hr />
+
+@* NOVA SECÇÃO: LISTA DE PARTICIPANTES *@
+<div class="row">
+    <div class="col-md-6">
+        <h4>Quem Vai (@goingAttendees.Count)</h4>
+        @if (goingAttendees.Any())
+        {
+            <ul class="list-group">
+                @foreach (var attendance in goingAttendees)
+                {
+                    <li class="list-group-item">
+                        @* Assumindo que o seu modelo `Users` tem uma propriedade Username *@
+                        @attendance.User.Username
+                    </li>
+                }
+            </ul>
+        }
+        else
+        {
+            <p>Ainda ninguém confirmou presença. Sê o primeiro!</p>
+        }
+    </div>
+    <div class="col-md-6">
+        <h4>Interessados (@interestedAttendees.Count)</h4>
+        @if (interestedAttendees.Any())
+        {
+            <ul class="list-group">
+                @foreach (var attendance in interestedAttendees)
+                {
+                    <li class="list-group-item">
+                        @attendance.User.Username
+                    </li>
+                }
+            </ul>
+        }
+        else
+        {
+            <p>Ninguém marcou interesse ainda.</p>
+        }
+    </div>
+</div>
+
+<hr />
+
 <div>
-    <a asp-action="Edit" asp-route-id="@Model?.Id">Edit</a> |
-    <a asp-action="Index">Back to List</a>
+    @* Apenas o criador do evento ou um Admin pode editar *@
+    @if (User.Identity.IsAuthenticated && (Model.Creator.Username == User.Identity.Name || User.IsInRole("admin")))
+    {
+        <a asp-action="Edit" asp-route-id="@Model?.Id" class="btn btn-primary">Editar</a> 
+        <text>|</text>
+    }
+    <a asp-action="Index">Voltar à Lista</a>
 </div>
+
+@section Scripts {
+    <script>
+        // A sua função JavaScript 'attendEvent' fica aqui, exatamente como na resposta anterior.
+        async function attendEvent(eventId, status) {
+            const statusMap = { 'Going': 0, 'Interested': 1, 'NotGoing': 2, 'Maybe': 3 };
+            const numericStatus = statusMap[status];
+
+            try {
+                 const response = await fetch(`/api/events/${eventId}/attend`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: numericStatus })
+                });
+
+                const result = await response.json();
+                const statusDiv = document.getElementById('attendance-status');
+
+                if (response.ok) {
+                    statusDiv.innerHTML = `<div class="alert alert-success mt-2">Seu estado foi atualizado para: <strong>${status}</strong>. A página será atualizada para refletir a mudança.</div>`;
+                    // Recarregar a página para atualizar as listas de participantes
+                    setTimeout(() => location.reload(), 2000); 
+                } else {
+                    statusDiv.innerHTML = `<div class="alert alert-danger mt-2">Erro: ${result.message || 'Ocorreu um problema.'}</div>`;
+                }
+            } catch (error) {
+                 console.error("Fetch error:", error);
+                 const statusDiv = document.getElementById('attendance-status');
+                 statusDiv.innerHTML = `<div class="alert alert-danger mt-2">Não foi possível comunicar com o servidor.</div>`;
+            }
+        }
+    </script>
+}
