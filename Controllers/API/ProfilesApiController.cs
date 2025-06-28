@@ -1,60 +1,49 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using projetodweb_connectify.Data;
 using projetodweb_connectify.Models;
 using projetodweb_connectify.Models.DTOs;
-using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace projetodweb_connectify.Controllers.API
 {
-    //[ApiExplorerSettings(IgnoreApi = true)]
     [Route("api/profiles")]
     [ApiController]
+    [Authorize]
     public class ProfilesApiController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
-        private readonly IWebHostEnvironment _env;
 
-        public ProfilesApiController(ApplicationDbContext context, IWebHostEnvironment env)
+        public ProfilesApiController(ApplicationDbContext context)
         {
             _context = context;
-            _env = env;
         }
 
         /// <summary>
-        /// Procura por utilizadores/perfis. Acessível a utilizadores autenticados.
+        /// Devolve uma lista resumida de todos os perfis de utilizadores (exceto o próprio).
         /// </summary>
-        /// <param name="searchQuery">O termo de pesquisa.</param>
         [HttpGet]
-        [Authorize]
-        public async Task<ActionResult<IEnumerable<ProfileSummaryDto>>> SearchProfiles([FromQuery] string searchQuery)
+        public async Task<ActionResult<IEnumerable<ProfileSummaryDto>>> GetAllProfiles()
         {
-            var currentUserId = (await GetCurrentUserAsync())?.Id;
+            // Obtém o nome de utilizador do utilizador autenticado para o excluir da lista
+            var currentUsername = User.Identity?.Name;
 
-            var query = _context.Profiles
-                .Include(p => p.User)
-                .Where(p => p.UserId != currentUserId); // Excluir o próprio utilizador
-
-            if (!string.IsNullOrEmpty(searchQuery))
-            {
-                query = query.Where(p => p.User.Username.Contains(searchQuery) || p.Name.Contains(searchQuery));
-            }
-
-            var profiles = await query
-                .OrderBy(p => p.User.Username)
-                .Select(p => new ProfileSummaryDto
+            var profiles = await _context.Users
+                .AsNoTracking()
+                .Where(u => u.Profile != null && u.Username != currentUsername) // Garante que o utilizador tem perfil e não é o próprio
+                .OrderBy(u => u.Profile.Name) // Ordena por nome de perfil para consistência
+                .Select(u => new ProfileSummaryDto
                 {
-                    ProfileId = p.Id,
-                    UserId = p.UserId,
-                    Username = p.User.Username,
-                    Name = p.Name,
-                    ProfilePictureUrl = p.ProfilePicture
+                    // Selecionamos apenas os campos necessários para a lista de exploração
+                    Username = u.Username,
+                    Name = u.Profile.Name,
+                    ProfilePicture = u.Profile.ProfilePicture,
+                    Bio = u.Profile.Bio,
+                    Type = u.Profile.Type
+                    // Nota: O FriendshipStatus foi removido deste DTO ou será nulo
                 })
                 .ToListAsync();
 
@@ -62,176 +51,137 @@ namespace projetodweb_connectify.Controllers.API
         }
 
         /// <summary>
-        /// Obtém os dados detalhados do perfil do utilizador atualmente autenticado.
+        /// Devolve os dados públicos de um perfil específico pelo username.
+        /// </summary>
+        [HttpGet("{username}")]
+        public async Task<ActionResult<ProfileDto>> GetProfileByUsername(string username)
+        {
+            if (string.IsNullOrEmpty(username))
+                return BadRequest("O nome de utilizador é obrigatório.");
+
+            var user = await _context.Users
+                .AsNoTracking()
+                .Include(u => u.Profile)
+                .FirstOrDefaultAsync(u => u.Username == username);
+
+            if (user == null || user.Profile == null)
+                return NotFound(new { message = $"Perfil para '{username}' não encontrado." });
+
+            var profileDto = new ProfileDto
+            {
+                Id = user.Profile.Id,
+                Name = user.Profile.Name,
+                Type = user.Profile.Type,
+                Bio = user.Profile.Bio,
+                ProfilePicture = user.Profile.ProfilePicture,
+                Username = user.Username,
+                CreatedAt = user.Profile.CreatedAt
+            };
+
+            // Lógica para obter posts do mural pessoal (públicos)
+            var personalTopic = await _context.Topics
+                .AsNoTracking()
+                .Include(t => t.Posts)
+                .Where(t => t.CreatedBy == user.Profile.Id && t.IsPersonal)
+                .FirstOrDefaultAsync();
+
+            if (personalTopic != null && personalTopic.Posts.Any())
+            {
+                profileDto.PersonalTopicPosts = personalTopic.Posts
+                    .OrderByDescending(p => p.CreatedAt)
+                    .Select(p => new TopicPostDto
+                    {
+                        Id = p.Id,
+                        Content = p.Content,
+                        CreatedAt = p.CreatedAt,
+                        PostImageUrl = p.PostImageUrl
+                    })
+                    .ToList();
+            }
+
+            // Lógica para obter tópicos criados (públicos)
+            profileDto.CreatedTopics = await _context.Topics
+                .AsNoTracking()
+                .Where(t => t.CreatedBy == user.Profile.Id && !t.IsPersonal)
+                .OrderByDescending(t => t.CreatedAt)
+                .Select(t => new TopicSummaryDto
+                {
+                    Id = t.Id,
+                    Title = t.Title,
+                    TopicImageUrl = t.TopicImageUrl,
+                    CreatedAt = t.CreatedAt
+                })
+                .ToListAsync();
+
+            // Nota: Os SavedTopics não são incluídos aqui, pois são privados.
+
+            return Ok(profileDto);
+        }
+
+        /// <summary>
+        /// Devolve os dados completos do perfil do utilizador autenticado.
         /// </summary>
         [HttpGet("me")]
-        [Authorize]
-        public async Task<ActionResult<MyProfileDetailDto>> GetMyProfile()
-        {
-            var currentUser = await GetCurrentUserAsync();
-            if (currentUser == null) return Unauthorized();
-
-            var profile = await _context.Profiles
-                .Include(p => p.User)
-                .FirstOrDefaultAsync(p => p.UserId == currentUser.Id);
-
-            if (profile == null) return NotFound(new { message = "Perfil não encontrado." });
-
-            // Carregar dados agregados
-            var friends = await LoadFriendsDtoAsync(currentUser.Id);
-            var savedTopics = await LoadSavedTopicsDtoAsync(profile.Id);
-            var createdTopics = await LoadCreatedTopicsDtoAsync(profile.Id);
-
-            var myProfileDto = new MyProfileDetailDto
-            {
-                ProfileId = profile.Id,
-                UserId = profile.UserId,
-                Username = profile.User.Username,
-                Name = profile.Name,
-                Bio = profile.Bio,
-                Type = profile.Type,
-                ProfilePictureUrl = profile.ProfilePicture,
-                CreatedAt = profile.CreatedAt,
-                Friends = friends,
-                SavedTopics = savedTopics,
-                CreatedTopics = createdTopics
-            };
-
-            return Ok(myProfileDto);
-        }
-
-        /// <summary>
-        /// Obtém os dados públicos de um perfil de utilizador, especificado pelo seu ID de utilizador.
-        /// </summary>
-        /// <param name="userId">O ID do utilizador (não o ID do perfil).</param>
-        [HttpGet("user/{userId}")]
-        public async Task<ActionResult<UserProfileDetailDto>> GetUserProfile(int userId)
-        {
-            var profile = await _context.Profiles
-                .Include(p => p.User)
-                .FirstOrDefaultAsync(p => p.UserId == userId);
-
-            if (profile == null) return NotFound();
-
-            var createdTopics = await LoadCreatedTopicsDtoAsync(profile.Id);
-
-            var userProfileDto = new UserProfileDetailDto
-            {
-                ProfileId = profile.Id,
-                UserId = profile.UserId,
-                Username = profile.User.Username,
-                Name = profile.Name,
-                Bio = profile.Bio,
-                Type = profile.Type,
-                ProfilePictureUrl = profile.ProfilePicture,
-                CreatedAt = profile.CreatedAt,
-                CreatedTopics = createdTopics,
-                FriendshipStatus = await GetFriendshipStatusAsync(userId) // Obtém o status em relação ao user logado
-            };
-
-            return Ok(userProfileDto);
-        }
-
-        /// <summary>
-        /// Atualiza o perfil do utilizador autenticado.
-        /// </summary>
-        [HttpPut("me")]
-        [Authorize]
-        public async Task<IActionResult> UpdateMyProfile([FromForm] ProfileEditDto editDto)
-        {
-            var currentUserId = (await GetCurrentUserAsync())?.Id;
-            if (currentUserId == null) return Unauthorized();
-
-            var profileToUpdate = await _context.Profiles.FirstOrDefaultAsync(p => p.UserId == currentUserId.Value);
-            if (profileToUpdate == null) return NotFound();
-
-            profileToUpdate.Name = editDto.Name;
-            profileToUpdate.Bio = editDto.Bio;
-            profileToUpdate.Type = editDto.Type;
-
-            if (editDto.ProfilePictureFile != null)
-            {
-                DeleteImage(profileToUpdate.ProfilePicture);
-                profileToUpdate.ProfilePicture = await SaveImage(editDto.ProfilePictureFile);
-            }
-
-            _context.Profiles.Update(profileToUpdate);
-            await _context.SaveChangesAsync();
-            return NoContent();
-        }
-
-        #region Helper Methods
-
-        private async Task<Users?> GetCurrentUserAsync()
+        public async Task<ActionResult<ProfileDto>> GetMyProfile()
         {
             var username = User.Identity?.Name;
-            if (string.IsNullOrEmpty(username)) return null;
-            return await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
-        }
+            if (string.IsNullOrEmpty(username))
+                return Unauthorized();
 
-        private async Task<List<FriendshipDto>> LoadFriendsDtoAsync(int currentUserId)
-        {
-            return await _context.Friendships
-                .Where(f => f.Status == FriendshipStatus.Accepted && (f.User1Id == currentUserId || f.User2Id == currentUserId))
-                .Select(f => new FriendshipDto { /* Mapear para DTO */ }).ToListAsync();
-        }
+            var user = await _context.Users
+                .AsNoTracking()
+                .Include(u => u.Profile)
+                .FirstOrDefaultAsync(u => u.Username == username);
 
-        private async Task<List<TopicSummaryDto>> LoadSavedTopicsDtoAsync(int profileId)
-        {
-            return await _context.SavedTopics.Where(st => st.ProfileId == profileId)
-               .Include(st => st.Topic.Category)
-               .Include(st => st.Topic.Creator.User)
-               .OrderByDescending(st => st.SavedAt)
-               .Select(st => new TopicSummaryDto { /* Mapear para DTO */}).ToListAsync();
-        }
+            if (user == null || user.Profile == null)
+                return NotFound(new { message = "Perfil não encontrado." });
 
-        private async Task<List<TopicSummaryDto>> LoadCreatedTopicsDtoAsync(int profileId)
-        {
-            return await _context.Topics.Where(t => t.CreatedBy == profileId && !t.IsPersonal)
-                 .Include(t => t.Category)
-                 .Include(t => t.Creator.User)
-                 .OrderByDescending(t => t.CreatedAt)
-                 .Select(t => new TopicSummaryDto { /* Mapear para DTO */ }).ToListAsync();
-        }
-
-        private async Task<FriendshipStatusDto> GetFriendshipStatusAsync(int otherUserId)
-        {
-            var currentUser = await GetCurrentUserAsync();
-            if (currentUser == null) return new FriendshipStatusDto { Status = "not_logged_in", Message = "Não autenticado." };
-            if (currentUser.Id == otherUserId) return new FriendshipStatusDto { Status = "self", Message = "Este é o seu próprio perfil." };
-
-            var friendship = await _context.Friendships
-                .FirstOrDefaultAsync(f => (f.User1Id == currentUser.Id && f.User2Id == otherUserId) || (f.User1Id == otherUserId && f.User2Id == currentUser.Id));
-
-            if (friendship == null) return new FriendshipStatusDto { Status = "not_friends", Message = "Sem relação de amizade." };
-
-            switch (friendship.Status)
+            var profileDto = new ProfileDto
             {
-                case FriendshipStatus.Accepted: return new FriendshipStatusDto { Status = "friends", FriendshipId = friendship.Id, Message = "São amigos." };
-                case FriendshipStatus.Pending:
-                    return friendship.User1Id == currentUser.Id
-                        ? new FriendshipStatusDto { Status = "pending_sent", FriendshipId = friendship.Id, Message = "Pedido enviado." }
-                        : new FriendshipStatusDto { Status = "pending_received", FriendshipId = friendship.Id, Message = "Recebeu um pedido." };
-                default: return new FriendshipStatusDto { Status = "not_friends", Message = "Sem amizade ativa." };
+                Id = user.Profile.Id,
+                Name = user.Profile.Name,
+                Type = user.Profile.Type,
+                Bio = user.Profile.Bio,
+                ProfilePicture = user.Profile.ProfilePicture,
+                Username = user.Username,
+                CreatedAt = user.Profile.CreatedAt,
+                // O estado de amizade é "self", ou pode ser removido se não for usado na view do próprio perfil
+                FriendshipStatus = new FriendshipStatusDto { Status = "self" }
+            };
+
+            // O resto da sua lógica para obter posts, tópicos criados e tópicos guardados
+            // permanece aqui, pois pertence ao perfil do próprio utilizador.
+
+            var personalTopic = await _context.Topics
+                .AsNoTracking()
+                .Include(t => t.Posts)
+                .Where(t => t.CreatedBy == user.Profile.Id && t.IsPersonal)
+                .FirstOrDefaultAsync();
+
+            if (personalTopic != null && personalTopic.Posts.Any())
+            {
+                profileDto.PersonalTopicPosts = personalTopic.Posts
+                    .OrderByDescending(p => p.CreatedAt)
+                    .Select(p => new TopicPostDto { Id = p.Id, Content = p.Content, CreatedAt = p.CreatedAt, PostImageUrl = p.PostImageUrl })
+                    .ToList();
             }
-        }
 
-        private async Task<string> SaveImage(IFormFile imageFile)
-        {
-            string uploadsFolder = Path.Combine(_env.WebRootPath, "images", "profile");
-            Directory.CreateDirectory(uploadsFolder);
-            string uniqueFileName = Guid.NewGuid().ToString() + Path.GetExtension(imageFile.FileName);
-            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-            using (var stream = new FileStream(filePath, FileMode.Create)) { await imageFile.CopyToAsync(stream); }
-            return "/images/profile/" + uniqueFileName;
-        }
+            profileDto.CreatedTopics = await _context.Topics
+                .AsNoTracking()
+                .Where(t => t.CreatedBy == user.Profile.Id && !t.IsPersonal)
+                .OrderByDescending(t => t.CreatedAt)
+                .Select(t => new TopicSummaryDto { Id = t.Id, Title = t.Title, TopicImageUrl = t.TopicImageUrl, CreatedAt = t.CreatedAt })
+                .ToListAsync();
 
-        private void DeleteImage(string imageUrl)
-        {
-            if (string.IsNullOrEmpty(imageUrl) || imageUrl == "/images/defaultuser.png") return;
-            var filePath = Path.Combine(_env.WebRootPath, imageUrl.TrimStart('/'));
-            if (System.IO.File.Exists(filePath)) { try { System.IO.File.Delete(filePath); } catch (Exception ex) { Console.WriteLine(ex.Message); } }
+            profileDto.SavedTopics = await _context.SavedTopics
+                .AsNoTracking()
+                .Where(st => st.ProfileId == user.Profile.Id && st.Topic != null)
+                .Include(st => st.Topic)
+                .OrderByDescending(st => st.SavedAt)
+                .Select(st => new SavedTopicDto { TopicId = st.Topic.Id, Title = st.Topic.Title, TopicImageUrl = st.Topic.TopicImageUrl, SavedAt = st.SavedAt })
+                .ToListAsync();
+
+            return Ok(profileDto);
         }
-        #endregion
     }
 }

@@ -13,7 +13,6 @@ using System.Threading.Tasks;
 
 namespace projetodweb_connectify.Controllers.API
 {
-    //[ApiExplorerSettings(IgnoreApi = true)]
     [Route("api/events")]
     [ApiController]
     public class EventsApiController : ControllerBase
