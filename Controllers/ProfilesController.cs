@@ -29,4 +29,18 @@ public class ProfilesController : Controller
         return View();
     }
 
+    [HttpGet("Search")] // Responde a /Profiles/Search
+    public IActionResult Search()
+    {
+        return View();
+    }
+
+
+    // Rota alterada para ser mais específica
+    [HttpGet("profile/{username}")]
+    public IActionResult UserProfile(string username)
+    {
+        ViewData["ProfileUsername"] = username;
+        return View(); // Retorna a view UserProfile.cshtml
+    }
 }

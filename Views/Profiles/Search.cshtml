@@ -1,0 +1,173 @@
+﻿@{
+    ViewData["Title"] = "Explorar Perfis";
+}
+
+<h1 class="mb-4">@ViewData["Title"]</h1>
+
+<!-- Secção para mostrar um estado de carregamento -->
+<div id="loading-state" class="text-center mt-5">
+    <div class="spinner-border" role="status">
+        <span class="visually-hidden">A carregar...</span>
+    </div>
+    <p class="mt-2">A carregar perfis...</p>
+</div>
+
+<!-- Container onde os cartões dos perfis serão inseridos -->
+<div id="profiles-container" class="row" style="display: none;">
+    <!-- Os cartões de perfil serão adicionados aqui pelo JavaScript -->
+</div>
+
+<!-- Secção para mostrar erros -->
+<div id="error-state" class="text-danger" style="display: none;">
+    <p>Ocorreu um erro ao carregar os perfis. Por favor, tente novamente mais tarde.</p>
+</div>
+
+@section Scripts {
+    <style>
+        /*
+             * PALETA DE CORES AZUL
+             * Definimos as cores como variáveis para ser fácil de gerir e garantir consistência.
+            */
+        :root {
+            --color-background: #fafafa; /* Fundo branco/cinza claro */
+            --color-primary-dark: #1D3461; /* Azul mais escuro (texto principal, títulos) */
+            --color-primary-medium: #376996; /* Azul médio (hovers de botão) */
+            --color-secondary-light: #6290C8; /* Azul claro (bordas) */
+            --color-secondary-lightest: #829CBC; /* Azul mais claro/acinzentado (texto secundário) */
+            --color-text-on-dark: #ffffff; /* Texto branco para botões e overlays */
+        }
+
+        /* Estilo geral da página para consistência */
+        body {
+            background-color: var(--color-background);
+        }
+
+        h1 {
+            color: var(--color-primary-dark);
+        }
+
+        /* Cartão de Perfil com a nova paleta */
+        .profile-card {
+            background-color: #ffffff; /* O cartão em si continua branco para se destacar */
+            border: 1px solid var(--color-secondary-light); /* Borda temática azul claro */
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+            .profile-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 8px 20px rgba(98, 144, 200, 0.15); /* Sombra suave com a cor da paleta */
+            }
+
+        .profile-card-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0 auto 15px auto;
+            border: 2px solid var(--color-secondary-light); /* Borda azul claro */
+        }
+
+        .profile-card-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--color-primary-dark); /* Texto principal em azul escuro */
+            margin-bottom: 5px;
+        }
+
+        .profile-card-username {
+            font-size: 0.9rem;
+            color: var(--color-secondary-lightest); /* Texto secundário em azul acinzentado */
+            margin-bottom: 15px;
+        }
+
+        .profile-card-bio {
+            font-size: 0.9rem;
+            color: var(--color-primary-dark); /* Bio com a cor do texto principal para legibilidade */
+            opacity: 0.8; /* Ligeiramente mais suave que o nome */
+            flex-grow: 1;
+            margin-bottom: 20px;
+        }
+
+        .profile-card-link {
+            margin-top: auto;
+            display: block;
+            padding: 8px 20px;
+            background-color: var(--color-primary-dark); /* Botão em azul escuro */
+            color: var(--color-text-on-dark); /* Texto do botão em branco */
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+
+            .profile-card-link:hover {
+                background-color: var(--color-primary-medium); /* Hover para azul médio */
+                color: var(--color-text-on-dark);
+            }
+    </style>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const loadingDiv = document.getElementById('loading-state');
+            const profilesContainer = document.getElementById('profiles-container');
+            const errorDiv = document.getElementById('error-state');
+
+            fetch('/api/profiles')
+                .then(response => {
+                    if (!response.ok) {
+                        return Promise.reject(response);
+                    }
+                    return response.json();
+                })
+                .then(profiles => {
+                    loadingDiv.style.display = 'none';
+                    profilesContainer.style.display = 'flex';
+
+                    if (profiles && profiles.length > 0) {
+                        renderProfiles(profiles);
+                    } else {
+                        profilesContainer.innerHTML = '<p class="text-center col-12">Não foram encontrados outros perfis.</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao buscar os perfis:', error);
+                    loadingDiv.style.display = 'none';
+                    errorDiv.style.display = 'block';
+                });
+
+            function renderProfiles(profiles) {
+                profilesContainer.innerHTML = '';
+
+                profiles.forEach(profile => {
+                    const profileCardCol = document.createElement('div');
+                    profileCardCol.className = 'col-lg-3 col-md-4 col-sm-6 mb-4';
+
+                    const profileUrl = `/profile/${profile.username}`; // Adiciona o prefixo
+                    const profileAvatar = profile.profilePicture || '/images/defaultuser.png';
+                    const shortBio = profile.bio && profile.bio.length > 100
+                                   ? profile.bio.substring(0, 100) + '...'
+                                   : profile.bio || 'Sem biografia.';
+
+                    // A correção do @@ já está aplicada aqui
+                    profileCardCol.innerHTML = `
+                        <div class="profile-card">
+                            <img src="${profileAvatar}" alt="Foto de ${profile.name}" class="profile-card-avatar" />
+                            <h5 class="profile-card-name">${profile.name}</h5>
+                            <p class="profile-card-username">@@${profile.username}</p>
+                            <p class="profile-card-bio">${shortBio}</p>
+                            <a href="${profileUrl}" class="profile-card-link">Ver Perfil</a>
+                        </div>
+                    `;
+
+                    profilesContainer.appendChild(profileCardCol);
+                });
+            }
+        });
+    </script>
+}

@@ -3,16 +3,15 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using projetodweb_connectify.Data;
 using projetodweb_connectify.Models;
-using projetodweb_connectify.Models.DTOs; // Importar os DTOs
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.ComponentModel.DataAnnotations; // <-- CORREÇÃO 1: Adicionar este using
 
-namespace projetodweb_connectify.Controllers.API
+namespace projetodweb_connectify.Controllers
 {
-    [Route("api/friendships")]
+    [Authorize]
+    [Route("api/[controller]")]
     [ApiController]
-    [Authorize] // Todas as ações aqui exigem autenticação
     public class FriendshipsApiController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -22,191 +21,197 @@ namespace projetodweb_connectify.Controllers.API
             _context = context;
         }
 
+        // DTO (Data Transfer Object) para o pedido de envio de amizade
+        public class SendFriendRequestDto
+        {
+            [Required] // Este atributo agora será reconhecido
+            public int TargetUserId { get; set; }
+        }
+
         /// <summary>
-        /// Obtém a lista de amigos aceites do utilizador atual.
+        /// Obtém todas as amizades (aceites, pendentes, etc.) do utilizador atual.
         /// </summary>
-        [HttpGet("friends")]
-        public async Task<ActionResult<IEnumerable<FriendshipDto>>> GetFriends()
+        [HttpGet]
+        [ProducesResponseType(typeof(IEnumerable<Friendship>), 200)]
+        public async Task<IActionResult> GetMyFriendships([FromQuery] FriendshipStatus? status)
         {
             var currentUser = await GetCurrentUserAsync();
             if (currentUser == null) return Unauthorized();
 
-            var friends = await _context.Friendships
-                .Where(f => f.Status == FriendshipStatus.Accepted && (f.User1Id == currentUser.Id || f.User2Id == currentUser.Id))
-                .Include(f => f.User1.Profile)
-                .Include(f => f.User2.Profile)
-                .Select(f => new FriendshipDto
-                {
-                    FriendshipId = f.Id,
-                    Status = f.Status,
-                    RequestDate = f.RequestDate,
-                    // Determina qual dos dois utilizadores é o "amigo"
-                    FriendUserId = f.User1Id == currentUser.Id ? f.User2Id : f.User1Id,
-                    FriendUsername = f.User1Id == currentUser.Id ? f.User2.Username : f.User1.Username,
-                    FriendProfileImageUrl = f.User1Id == currentUser.Id ? f.User2.Profile.ProfilePicture : f.User1.Profile.ProfilePicture
-                })
-                .OrderBy(dto => dto.FriendUsername)
-                .ToListAsync();
+            // CORREÇÃO 2: A ordem da consulta foi alterada.
+            // Primeiro fazemos os Includes e ThenIncludes, e SÓ DEPOIS aplicamos o Where.
+            var query = _context.Friendships
+                .Include(f => f.User1)
+                    .ThenInclude(u => u.Profile) // Agora isto funciona
+                .Include(f => f.User2)
+                    .ThenInclude(u => u.Profile) // E isto também
+                .Where(f => f.User1Id == currentUser.Id || f.User2Id == currentUser.Id); // Filtro vem depois
 
-            return Ok(friends);
-        }
-
-        /// <summary>
-        /// Obtém a lista de pedidos de amizade pendentes recebidos pelo utilizador atual.
-        /// </summary>
-        [HttpGet("pending")]
-        public async Task<ActionResult<IEnumerable<FriendshipDto>>> GetPendingRequests()
-        {
-            var currentUser = await GetCurrentUserAsync();
-            if (currentUser == null) return Unauthorized();
-
-            var pendingRequests = await _context.Friendships
-                .Where(f => f.User2Id == currentUser.Id && f.Status == FriendshipStatus.Pending)
-                .Include(f => f.User1.Profile)
-                .Select(f => new FriendshipDto
-                {
-                    FriendshipId = f.Id,
-                    FriendUserId = f.User1Id,
-                    FriendUsername = f.User1.Username,
-                    FriendProfileImageUrl = f.User1.Profile.ProfilePicture,
-                    Status = f.Status,
-                    RequestDate = f.RequestDate
-                })
-                .OrderByDescending(dto => dto.RequestDate)
-                .ToListAsync();
-
-            return Ok(pendingRequests);
-        }
-
-        /// <summary>
-        /// Envia um pedido de amizade para outro utilizador.
-        /// </summary>
-        /// <param name="targetUserId">O ID do utilizador a quem enviar o pedido.</param>
-        [HttpPost("request/{targetUserId}")]
-        public async Task<IActionResult> SendFriendRequest(int targetUserId)
-        {
-            var currentUser = await GetCurrentUserAsync();
-            if (currentUser == null) return Unauthorized(new { message = "Utilizador não autenticado." });
-            if (currentUser.Id == targetUserId) return BadRequest(new { message = "Não pode adicionar-se a si mesmo." });
-
-            var existing = await _context.Friendships
-                .FirstOrDefaultAsync(f => (f.User1Id == currentUser.Id && f.User2Id == targetUserId) || (f.User1Id == targetUserId && f.User2Id == currentUser.Id));
-
-            if (existing != null)
+            if (status.HasValue)
             {
-                return Conflict(new { message = "Já existe uma relação (amizade ou pedido pendente) com este utilizador." });
+                query = query.Where(f => f.Status == status.Value);
             }
 
-            var friendship = new Friendship { User1Id = currentUser.Id, User2Id = targetUserId, Status = FriendshipStatus.Pending, RequestDate = DateTime.UtcNow };
-            _context.Friendships.Add(friendship);
+            var friendships = await query.OrderByDescending(f => f.RequestDate).ToListAsync();
+
+            return Ok(friendships);
+        }
+
+        /// <summary>
+        /// Obtém o estado da amizade com um utilizador específico.
+        /// </summary>
+        [HttpGet("status/{otherUserId}")]
+        [ProducesResponseType(typeof(object), 200)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> GetFriendshipStatus(int otherUserId)
+        {
+            var currentUser = await GetCurrentUserAsync();
+            if (currentUser == null) return Unauthorized();
+
+            if (currentUser.Id == otherUserId)
+                return Ok(new { status = "self", message = "Este é o seu próprio perfil." });
+
+            var friendship = await _context.Friendships
+                .FirstOrDefaultAsync(f => (f.User1Id == currentUser.Id && f.User2Id == otherUserId) ||
+                                          (f.User1Id == otherUserId && f.User2Id == currentUser.Id));
+
+            if (friendship == null)
+                return Ok(new { status = "not_friends", message = "Sem relação de amizade existente." });
+
+            string specificStatus;
+            switch (friendship.Status)
+            {
+                case FriendshipStatus.Accepted:
+                    specificStatus = "friends";
+                    break;
+                case FriendshipStatus.Pending:
+                    specificStatus = friendship.User1Id == currentUser.Id ? "pending_sent" : "pending_received";
+                    break;
+                case FriendshipStatus.Rejected:
+                    specificStatus = friendship.User1Id == currentUser.Id ? "rejected_by_them" : "rejected_by_you";
+                    break;
+                default:
+                    specificStatus = "unknown";
+                    break;
+            }
+
+            return Ok(new { status = specificStatus, friendshipId = friendship.Id });
+        }
+
+
+        /// <summary>
+        /// Envia um novo pedido de amizade para outro utilizador.
+        /// </summary>
+        [HttpPost]
+        [ProducesResponseType(typeof(Friendship), 201)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> SendFriendRequest([FromBody] SendFriendRequestDto request)
+        {
+            var currentUser = await GetCurrentUserAsync();
+            if (currentUser == null) return Unauthorized();
+
+            if (currentUser.Id == request.TargetUserId)
+                return BadRequest(new { message = "Não pode enviar um pedido de amizade para si mesmo." });
+
+            var targetUser = await _context.Users.FindAsync(request.TargetUserId);
+            if (targetUser == null)
+                return NotFound(new { message = "Utilizador alvo não encontrado." });
+
+            var existingFriendship = await _context.Friendships
+                .FirstOrDefaultAsync(f => (f.User1Id == currentUser.Id && f.User2Id == request.TargetUserId) ||
+                                          (f.User1Id == request.TargetUserId && f.User2Id == currentUser.Id));
+
+            if (existingFriendship != null)
+            {
+                if (existingFriendship.Status == FriendshipStatus.Accepted)
+                    return BadRequest(new { message = "Já são amigos." });
+                if (existingFriendship.Status == FriendshipStatus.Pending)
+                    return BadRequest(new { message = "Já existe um pedido de amizade pendente." });
+
+                _context.Friendships.Remove(existingFriendship);
+            }
+
+            var newFriendship = new Friendship
+            {
+                User1Id = currentUser.Id,
+                User2Id = request.TargetUserId,
+                Status = FriendshipStatus.Pending,
+                RequestDate = DateTime.UtcNow
+            };
+
+            _context.Friendships.Add(newFriendship);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Pedido de amizade enviado.", friendshipId = friendship.Id });
+            return CreatedAtAction(nameof(GetMyFriendships), new { id = newFriendship.Id }, newFriendship);
         }
 
         /// <summary>
         /// Aceita um pedido de amizade pendente.
         /// </summary>
-        /// <param name="friendshipId">O ID da amizade (o pedido).</param>
-        [HttpPost("accept/{friendshipId}")]
-        public async Task<IActionResult> AcceptFriendRequest(int friendshipId)
+        [HttpPost("{id}/accept")]
+        [ProducesResponseType(204)]
+        [ProducesResponseType(403)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> AcceptFriendRequest(int id)
         {
             var currentUser = await GetCurrentUserAsync();
             if (currentUser == null) return Unauthorized();
 
             var friendship = await _context.Friendships
-                .FirstOrDefaultAsync(f => f.Id == friendshipId && f.User2Id == currentUser.Id && f.Status == FriendshipStatus.Pending);
+                .FirstOrDefaultAsync(f => f.Id == id && f.Status == FriendshipStatus.Pending);
 
-            if (friendship == null) return NotFound(new { message = "Pedido de amizade não encontrado ou não autorizado." });
+            if (friendship == null)
+                return NotFound(new { message = "Pedido de amizade não encontrado ou já foi respondido." });
+
+            if (friendship.User2Id != currentUser.Id)
+                return Forbid();
 
             friendship.Status = FriendshipStatus.Accepted;
             friendship.AcceptanceDate = DateTime.UtcNow;
+
             await _context.SaveChangesAsync();
-            return Ok(new { message = "Pedido de amizade aceite." });
+
+            return NoContent();
         }
 
         /// <summary>
-        /// Rejeita um pedido de amizade pendente. A ação remove o registo do pedido.
+        /// Remove uma amizade, cancela um pedido enviado ou rejeita um pedido recebido.
         /// </summary>
-        /// <param name="friendshipId">O ID do pedido de amizade a rejeitar.</param>
-        [HttpPost("reject/{friendshipId}")]
-        public async Task<IActionResult> RejectFriendRequest(int friendshipId)
+        [HttpDelete("{id}")]
+        [ProducesResponseType(204)]
+        [ProducesResponseType(403)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> DeleteFriendship(int id)
         {
             var currentUser = await GetCurrentUserAsync();
             if (currentUser == null) return Unauthorized();
 
-            var friendship = await _context.Friendships
-                .FirstOrDefaultAsync(f => f.Id == friendshipId && f.User2Id == currentUser.Id && f.Status == FriendshipStatus.Pending);
+            var friendship = await _context.Friendships.FindAsync(id);
 
-            if (friendship == null) return NotFound(new { message = "Pedido de amizade não encontrado ou não autorizado." });
+            if (friendship == null)
+                return NotFound();
+
+            if (friendship.User1Id != currentUser.Id && friendship.User2Id != currentUser.Id)
+                return Forbid();
 
             _context.Friendships.Remove(friendship);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Pedido de amizade rejeitado." });
+            return NoContent();
         }
 
-        /// <summary>
-        /// Remove uma amizade existente ou cancela um pedido enviado.
-        /// </summary>
-        /// <param name="friendshipId">O ID da amizade a remover/cancelar.</param>
-        [HttpDelete("{friendshipId}")]
-        public async Task<IActionResult> RemoveOrCancelFriendship(int friendshipId)
-        {
-            var currentUser = await GetCurrentUserAsync();
-            if (currentUser == null) return Unauthorized();
-
-            var friendship = await _context.Friendships
-                .FirstOrDefaultAsync(f => f.Id == friendshipId && (f.User1Id == currentUser.Id || f.User2Id == currentUser.Id));
-
-            if (friendship == null) return NotFound(new { message = "Amizade não encontrada." });
-
-            // Apenas o remetente pode cancelar um pedido pendente, mas ambos podem terminar uma amizade aceite.
-            if (friendship.Status == FriendshipStatus.Pending && friendship.User2Id == currentUser.Id)
-            {
-                return Forbid("Não pode cancelar um pedido que recebeu. Deve aceitar ou rejeitar.");
-            }
-
-            _context.Friendships.Remove(friendship);
-            await _context.SaveChangesAsync();
-            return NoContent(); // Sucesso
-        }
-
-        /// <summary>
-        /// Verifica o estado da amizade com outro utilizador.
-        /// </summary>
-        /// <param name="otherUserId">O ID do outro utilizador.</param>
-        [HttpGet("status/{otherUserId}")]
-        public async Task<ActionResult<FriendshipStatusDto>> GetFriendshipStatus(int otherUserId)
-        {
-            var currentUser = await GetCurrentUserAsync();
-            if (currentUser == null) return Unauthorized();
-            if (currentUser.Id == otherUserId) return Ok(new FriendshipStatusDto { Status = "self", Message = "Este é o seu próprio perfil." });
-
-            var friendship = await _context.Friendships
-                .FirstOrDefaultAsync(f => (f.User1Id == currentUser.Id && f.User2Id == otherUserId) || (f.User1Id == otherUserId && f.User2Id == currentUser.Id));
-
-            if (friendship == null) return Ok(new FriendshipStatusDto { Status = "not_friends", Message = "Sem relação de amizade." });
-
-            switch (friendship.Status)
-            {
-                case FriendshipStatus.Accepted:
-                    return Ok(new FriendshipStatusDto { Status = "friends", FriendshipId = friendship.Id, Message = "São amigos." });
-                case FriendshipStatus.Pending:
-                    var status = friendship.User1Id == currentUser.Id ? "pending_sent" : "pending_received";
-                    var message = status == "pending_sent" ? "Pedido enviado." : "Recebeu um pedido.";
-                    return Ok(new FriendshipStatusDto { Status = status, FriendshipId = friendship.Id, Message = message });
-                default: // Rejected, Blocked etc.
-                    return Ok(new FriendshipStatusDto { Status = "not_friends", Message = "Sem amizade ativa." });
-            }
-        }
-
-        // Helper para obter o nosso Users customizado
+        // Helper
         private async Task<Users?> GetCurrentUserAsync()
         {
             var username = User.Identity?.Name;
-            if (string.IsNullOrEmpty(username)) return null;
-            return await _context.Users.Include(u => u.Profile).FirstOrDefaultAsync(u => u.Username == username);
+            if (string.IsNullOrEmpty(username))
+            {
+                return null;
+            }
+            return await _context.Users
+                                 .Include(u => u.Profile)
+                                 .FirstOrDefaultAsync(u => u.Username == username);
         }
     }
 }

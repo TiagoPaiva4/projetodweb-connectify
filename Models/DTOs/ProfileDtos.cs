@@ -18,5 +18,21 @@ namespace projetodweb_connectify.Models.DTOs
         public List<TopicSummaryDto> CreatedTopics { get; set; } = new List<TopicSummaryDto>();
 
         public List<SavedTopicDto> SavedTopics { get; set; } = new List<SavedTopicDto>();
+
+        public FriendshipStatusDto FriendshipStatus { get; set; }
+    }
+
+    /// <summary>
+    /// DTO leve para representar um perfil numa lista de utilizadores.
+    /// </summary>
+    public class ProfileSummaryDto
+    {
+        public string Username { get; set; }
+        public string Name { get; set; }
+        public string? ProfilePicture { get; set; }
+        public string? Bio { get; set; }
+        public string Type { get; set; }
+
+        public FriendshipStatusDto FriendshipStatus { get; set; }
     }
 }
