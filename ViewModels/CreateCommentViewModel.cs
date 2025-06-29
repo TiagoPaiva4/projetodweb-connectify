@@ -25,6 +25,6 @@ namespace projetodweb_connectify.ViewModels
         /// <summary>
         /// O URL para o qual o utilizador será redirecionado após a submissão do formulário.
         /// </summary>
-        public string? ReturnUrl { get; aget; }
+        public string? ReturnUrl { get; set; }
     }
 }
