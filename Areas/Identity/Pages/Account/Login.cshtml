@@ -61,7 +61,7 @@
 
         .login-image-container {
             flex: 1;
-            background-image: url('/images/banner.png'); /* !! IMPORTANTE: Coloque sua imagem aqui !! */
+            background-image: url('/images/banner.png'); 
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -76,7 +76,7 @@
         .form-check {
             margin-bottom: 1.5rem;
             text-align: left;
-            padding-left: 0; /* Remover padding padrão para alinhar */
+            padding-left: 0; 
         }
 
         .form-check-label {
@@ -148,7 +148,7 @@
         <div class="login-form-container">
             <div class="login-form-content">
 
-                <img src="/images/logo.png" alt="Connectify Logo" class="login-logo" /> <!-- !! IMPORTANTE: Coloque seu logo aqui !! -->
+                <img src="/images/logo.png" alt="Connectify Logo" class="login-logo" /> 
 
                 <form id="account" method="post">
                     <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
@@ -163,7 +163,6 @@
                         <span asp-validation-for="Input.Password" class="text-danger"></span>
                     </div>
 
-                    <!-- ATUALIZADO: Checkbox "Lembrar-me" adicionado de volta e estilizado -->
                     <div class="form-check">
                         <input class="form-check-input" asp-for="Input.RememberMe" />
                         <label class="form-check-label" asp-for="Input.RememberMe">
@@ -175,7 +174,6 @@
                         <button id="login-submit" type="submit" class="btn btn-login">Login</button>
                     </div>
 
-                    <!-- ATUALIZADO: Links adicionais adicionados de volta -->
                     <div class="login-options">
                         <p>
                             <a id="forgot-password" asp-page="./ForgotPassword">Esqueceu-se da sua password?</a>

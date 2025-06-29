@@ -4,11 +4,8 @@
     ViewData["Title"] = "Próximos Eventos";
 }
 
-<!-- =================================================================
-     CSS INTEGRADO - COM CARDS CLICÁVEIS
-     ================================================================= -->
 <style>
-    /* 1. Definição da Paleta de Cores (sem alterações) */
+    /* 1. Definição da Paleta de Cores */
     :root {
         --color-background: #fafafa;
         --color-primary-dark: #1D3461;
@@ -21,12 +18,12 @@
         --color-danger: #dc3545;
     }
 
-    /* 2. Estilos gerais da página (sem alterações) */
+    /* 2. Estilos gerais da página */
     .event-index-page {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
 
-    /* 3. Cabeçalho da Página (sem alterações) */
+    /* 3. Cabeçalho da Página */
     .page-header h1 {
         color: var(--color-primary-dark);
         font-weight: 700;
@@ -47,9 +44,6 @@
             transform: translateY(-2px);
         }
 
-    /* ========================================================== */
-    /* ALTERAÇÃO #1: PREPARAR O CARD PARA O LINK ESTICADO         */
-    /* ========================================================== */
     .event-card {
         position: relative; /* Essencial para o "stretched-link" funcionar */
         background-color: #ffffff;
@@ -84,7 +78,7 @@
         font-weight: 600;
     }
 
-    /* 5. Lista de Informações com Ícones (sem alterações) */
+    /* 5. Lista de Informações com Ícones */
     .info-list li {
         color: var(--color-text-secondary);
         font-size: 0.9rem;
@@ -96,10 +90,6 @@
         text-align: center;
     }
 
-    /* ========================================================== */
-    /* ALTERAÇÃO #2: A REGRA DO "STRETCHED LINK"                  */
-    /* ========================================================== */
-    /* Esta pseudo-classe ::after estica o link para preencher o seu parente com position:relative */
     .stretched-link::after {
         position: absolute;
         top: 0;
@@ -118,7 +108,6 @@
         margin-top: auto; /* Empurra para o fundo se houver espaço */
         padding-top: 1rem;
         border-top: 1px solid #f0f0f0;
-        /* ALTERAÇÃO #3: Elevar os links de ação para ficarem clicáveis */
         position: relative; /* Necessário para que o z-index funcione */
         z-index: 2; /* Mais alto que o z-index do stretched-link */
     }
@@ -145,7 +134,7 @@
                 filter: brightness(0.8);
             }
 
-    /* 8. Estilo para quando não há eventos (sem alterações) */
+    /* 8. Estilo para quando não há eventos */
     .no-events-placeholder {
         border: 2px dashed #e0e0e0;
         border-radius: 8px;
@@ -155,7 +144,7 @@
 </style>
 
 <div class="event-index-page">
-    <!-- Cabeçalho da Página (sem alterações) -->
+    <!-- Cabeçalho da Página  -->
     <div class="d-flex justify-content-between align-items-center mb-4 page-header">
         <h1 class="mb-0">@ViewData["Title"]</h1>
         <a asp-action="Create" class="btn btn-create">
@@ -185,16 +174,13 @@
                              class="card-img-top event-card-img" alt="@item.Title">
 
                         <div class="card-body pb-3">
-                            <!-- ========================================================== -->
-                            <!-- ALTERAÇÃO #4: O TÍTULO AGORA É O LINK ESTICADO           -->
-                            <!-- ========================================================== -->
                             <h5 class="card-title">
                                 <a asp-action="Details" asp-route-id="@item.Id" class="stretched-link text-decoration-none text-reset">
                                     @item.Title
                                 </a>
                             </h5>
 
-                            <!-- Lista de Informações (sem alterações) -->
+                            <!-- Lista de Informações -->
                             <ul class="list-unstyled mt-3 mb-4 info-list">
                                 <li>
                                     <i class="fas fa-calendar-alt me-2"></i>

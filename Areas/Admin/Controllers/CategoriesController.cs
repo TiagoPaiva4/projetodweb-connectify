@@ -41,8 +41,7 @@ namespace projetodweb_connectify.Areas.Admin.Controllers
 
             var category = await _context.Categories
                 .Include(c => c.Topics)
-                .FirstOrDefaultAsync(m => m.Id == id); // CORRIGIDO: Usar m.Id
-            // O comentário anterior dizia "Assumindo que sua PK é CategoryId", o que estava incorreto.
+                .FirstOrDefaultAsync(m => m.Id == id); 
 
             if (category == null)
             {
@@ -68,10 +67,8 @@ namespace projetodweb_connectify.Areas.Admin.Controllers
 
             if (ModelState.IsValid)
             {
-                // ... (lógica de upload de imagem permanece a mesma) ...
                 if (categoryImageFile != null && categoryImageFile.Length > 0)
                 {
-                    // ... (código de upload) ...
                     string uploadsFolder = Path.Combine(_wwwRootPath, "images", "categories");
                     if (!Directory.Exists(uploadsFolder))
                     {
@@ -92,12 +89,12 @@ namespace projetodweb_connectify.Areas.Admin.Controllers
                     {
                         Console.WriteLine($"Erro ao carregar imagem da categoria (Admin): {ex.Message}");
                         ModelState.AddModelError("categoryImageFile", "Erro ao carregar a imagem.");
-                        category.CategoryImageUrl = "/images/categories/default_category_image.png"; // Imagem padrão do seu código
+                        category.CategoryImageUrl = "/images/categories/default_category_image.png"; // Imagem padrão 
                     }
                 }
                 else
                 {
-                    category.CategoryImageUrl = "/images/categories/default_category_image.png"; // Imagem padrão do seu código
+                    category.CategoryImageUrl = "/images/categories/default_category_image.png"; // Imagem padrão 
                 }
 
 
@@ -118,7 +115,6 @@ namespace projetodweb_connectify.Areas.Admin.Controllers
             }
             // FindAsync usa a chave primária definida no modelo, que é 'Id'
             var category = await _context.Categories.FindAsync(id);
-            // O comentário anterior dizia "PK é CategoryId", o que estava incorreto.
 
             if (category == null)
             {
@@ -132,8 +128,8 @@ namespace projetodweb_connectify.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         // CORRIGIDO: O Bind deve usar 'Id' para corresponder à PK do modelo
         public async Task<IActionResult> Edit(int routeId, [Bind("Id,Name,Description,CategoryImageUrl")] Category categoryViewModel, IFormFile? categoryImageFile)
-        {                                   // ^^^ Renomeado parâmetro de rota para evitar conflito com categoryViewModel.Id
-            if (routeId != categoryViewModel.Id) // CORRIGIDO: Comparar o Id da rota com o Id do modelo bindado
+        {                                 
+            if (routeId != categoryViewModel.Id) 
             {
                 return NotFound();
             }
@@ -153,7 +149,6 @@ namespace projetodweb_connectify.Areas.Admin.Controllers
                     categoryToUpdate.Name = categoryViewModel.Name;
                     categoryToUpdate.Description = categoryViewModel.Description;
 
-                    // ... (lógica de upload/atualização de imagem permanece a mesma) ...
                     if (categoryImageFile != null && categoryImageFile.Length > 0)
                     {
                         // Apagar imagem antiga se existir e não for a padrão
@@ -191,7 +186,7 @@ namespace projetodweb_connectify.Areas.Admin.Controllers
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!CategoryExists(categoryViewModel.Id)) // CORRIGIDO: Usar Id
+                    if (!CategoryExists(categoryViewModel.Id)) 
                     {
                         return NotFound();
                     }
@@ -214,8 +209,7 @@ namespace projetodweb_connectify.Areas.Admin.Controllers
             }
 
             var category = await _context.Categories
-                .FirstOrDefaultAsync(m => m.Id == id); // CORRIGIDO: Usar m.Id
-            // O comentário anterior dizia "PK é CategoryId", o que estava incorreto.
+                .FirstOrDefaultAsync(m => m.Id == id); 
 
             if (category == null)
             {
@@ -231,11 +225,9 @@ namespace projetodweb_connectify.Areas.Admin.Controllers
         {
             // FindAsync usa a PK, que é 'Id'
             var category = await _context.Categories.FindAsync(id);
-            // O comentário anterior dizia "PK é CategoryId", o que estava incorreto.
 
             if (category != null)
             {
-                // CORRIGIDO: Usar category.Id na verificação de tópicos
                 var hasTopics = await _context.Topics.AnyAsync(t => t.CategoryId == category.Id);
                 var fkOnTopic = _context.Model.FindEntityType(typeof(Topic))?.GetForeignKeys()
                                   .FirstOrDefault(fk => fk.PrincipalEntityType.ClrType == typeof(Category) &&
@@ -250,8 +242,7 @@ namespace projetodweb_connectify.Areas.Admin.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
-                // ... (lógica de apagar imagem permanece a mesma) ...
-                string defaultCategoryImage = "/images/categories/default_category_image.png"; // Imagem padrão do seu código
+                string defaultCategoryImage = "/images/categories/default_category_image.png"; // Imagem padrão
                 if (!string.IsNullOrEmpty(category.CategoryImageUrl) && category.CategoryImageUrl != defaultCategoryImage)
                 {
                     string imagePath = Path.Combine(_wwwRootPath, category.CategoryImageUrl.TrimStart('/'));
@@ -275,8 +266,7 @@ namespace projetodweb_connectify.Areas.Admin.Controllers
 
         private bool CategoryExists(int id)
         {
-            return _context.Categories.Any(e => e.Id == id); // CORRIGIDO: Usar e.Id
-            // O comentário anterior dizia "PK é CategoryId", o que estava incorreto.
+            return _context.Categories.Any(e => e.Id == id); 
         }
     }
 }

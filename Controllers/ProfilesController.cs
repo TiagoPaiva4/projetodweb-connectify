@@ -4,13 +4,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using projetodweb_connectify.Data;
 using projetodweb_connectify.Models;
-using System.IO; // Necessário para trabalhar com ficheiros
-using System.Net.Http;
+using System.IO; // Necessário para interagir com o sistema de ficheiros.
 using System.Threading.Tasks;
 
 namespace projetodweb_connectify.Controllers
 {
     [Authorize]
+    // Oculta este controlador da documentação da API (Swagger), pois serve para renderizar Views.
     [ApiExplorerSettings(IgnoreApi = true)]
     public class ProfilesController : Controller
     {
@@ -23,18 +23,28 @@ namespace projetodweb_connectify.Controllers
             _userManager = userManager;
         }
 
+        /// <summary>
+        /// Apresenta a página de perfil do utilizador autenticado.
+        /// </summary>
         [HttpGet]
         public IActionResult MyProfile()
         {
             return View();
         }
 
+        /// <summary>
+        /// Apresenta a página de pesquisa de utilizadores.
+        /// </summary>
         [HttpGet("Search")]
         public IActionResult Search()
         {
             return View();
         }
 
+        /// <summary>
+        /// Apresenta o perfil público de um utilizador específico.
+        /// </summary>
+        /// <param name="username">O nome de utilizador do perfil a ser exibido.</param>
         [HttpGet("profile/{username}")]
         public IActionResult UserProfile(string username)
         {
@@ -42,26 +52,21 @@ namespace projetodweb_connectify.Controllers
             return View();
         }
 
-    
-
-        // ==================================================================
-        // MÉTODO 1: PARA MOSTRAR O FORMULÁRIO DE EDIÇÃO (HTTP GET)
-        // ==================================================================
         /// <summary>
         /// GET: /Profiles/Edit
-        /// Apresenta o formulário para editar o perfil do utilizador autenticado.
+        /// Apresenta o formulário para editar os dados do perfil do utilizador autenticado.
         /// </summary>
         [HttpGet]
         public async Task<IActionResult> Edit()
         {
-            // Obter o NOME DE UTILIZADOR do utilizador logado
+            // Obter o nome de utilizador (username) a partir do cookie de autenticação.
             var username = _userManager.GetUserName(User);
             if (string.IsNullOrEmpty(username))
             {
                 return Unauthorized("Utilizador não autenticado.");
             }
 
-            // Usar o username para encontrar o nosso utilizador da aplicação (que tem um ID int)
+            // Com o username, encontrar a nossa entidade 'Users' que contém o ID numérico.
             var appUser = await _context.Users
                                         .AsNoTracking()
                                         .FirstOrDefaultAsync(u => u.Username == username);
@@ -70,7 +75,7 @@ namespace projetodweb_connectify.Controllers
                 return NotFound("Utilizador da aplicação não encontrado.");
             }
 
-            // Agora usamos o ID inteiro do nosso utilizador para encontrar o perfil
+            // Usar o ID do utilizador para encontrar o perfil correspondente.
             var profile = await _context.Profiles.FirstOrDefaultAsync(p => p.UserId == appUser.Id);
 
             if (profile == null)
@@ -78,37 +83,36 @@ namespace projetodweb_connectify.Controllers
                 return NotFound("Perfil não encontrado para este utilizador.");
             }
 
-            // Passa o objeto 'profile' para a View.
-            // A sua View 'Edit.cshtml' vai usar este objeto para preencher os campos do formulário.
             return View(profile);
         }
 
-        // ==================================================================
-        // MÉTODO 2: PARA PROCESSAR O FORMULÁRIO SUBMETIDO (HTTP POST)
-        // ==================================================================
         /// <summary>
         /// POST: /Profiles/Edit
-        /// Processa os dados submetidos do formulário de edição.
+        /// Processa os dados submetidos do formulário de edição do perfil.
         /// </summary>
+        /// <param name="id">O ID do perfil a ser editado.</param>
+        /// <param name="profile">O objeto de perfil com os novos dados do formulário.</param>
+        /// <param name="ProfilePicture">O ficheiro de imagem de perfil (opcional).</param>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Bio")] Profile profile, IFormFile? ProfilePicture)
         {
-            // Validação 1: O ID do formulário deve corresponder ao ID na rota.
+            // Validação 1: O ID do perfil no URL deve corresponder ao ID do perfil enviado no formulário.
             if (id != profile.Id)
             {
                 return NotFound();
             }
 
-            // Validação 2: Garantir que o utilizador a editar é o dono do perfil.
+            // Validação 2: Garantir que o utilizador autenticado é o proprietário do perfil que tenta editar.
             var username = _userManager.GetUserName(User);
             var appUser = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Username == username);
 
+            // Obter o perfil original da base de dados (sem tracking) para comparar e reter dados não editáveis.
             var originalProfile = await _context.Profiles.AsNoTracking().FirstOrDefaultAsync(p => p.Id == id);
 
+            // Se o perfil não pertence ao utilizador autenticado, a edição é proibida.
             if (appUser == null || originalProfile == null || originalProfile.UserId != appUser.Id)
             {
-                // Se o perfil não existe ou não pertence ao utilizador logado, proíbe a ação.
                 return Forbid();
             }
 
@@ -116,7 +120,7 @@ namespace projetodweb_connectify.Controllers
             {
                 try
                 {
-                    // Lógica para o upload da imagem de perfil
+                    // Lógica para o upload da nova imagem de perfil.
                     if (ProfilePicture != null && ProfilePicture.Length > 0)
                     {
                         string uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images/profiles");
@@ -124,8 +128,11 @@ namespace projetodweb_connectify.Controllers
                         {
                             Directory.CreateDirectory(uploadsFolder);
                         }
+
+                        // Criar um nome de ficheiro único para evitar conflitos de nomes.
                         string uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(ProfilePicture.FileName);
                         string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
                         using (var fileStream = new FileStream(filePath, FileMode.Create))
                         {
                             await ProfilePicture.CopyToAsync(fileStream);
@@ -134,16 +141,15 @@ namespace projetodweb_connectify.Controllers
                     }
                     else
                     {
-                        // Se nenhuma imagem nova foi enviada, mantém a antiga.
+                        // Se não for enviada uma nova imagem, manter a imagem de perfil existente.
                         profile.ProfilePicture = originalProfile.ProfilePicture;
                     }
 
-                    // Preenche os campos que não vêm do formulário para não os perder.
+                    // Reatribuir valores que não vêm do formulário para evitar que sejam perdidos.
                     profile.UserId = originalProfile.UserId;
                     profile.CreatedAt = originalProfile.CreatedAt;
-                    profile.Type = originalProfile.Type; // Manter o tipo de perfil
+                    profile.Type = originalProfile.Type;
 
-                    // Atualiza a entidade na base de dados
                     _context.Update(profile);
                     await _context.SaveChangesAsync();
                 }
@@ -158,13 +164,12 @@ namespace projetodweb_connectify.Controllers
                         throw;
                     }
                 }
-                // Após guardar com sucesso, redireciona para a página de perfil.
+
                 return RedirectToAction(nameof(MyProfile));
             }
 
-            // Se o modelo não for válido, retorna para a mesma view,
-            // mostrando os erros de validação. O 'profile' que é passado de volta
-            // contém os dados que o utilizador inseriu para que não os perca.
+            // Se o modelo não for válido, devolve a mesma view com os dados que o utilizador
+            // já tinha inserido, para que não os perca e possa corrigir os erros de validação.
             return View(profile);
         }
     }
