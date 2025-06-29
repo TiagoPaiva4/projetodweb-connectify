@@ -6,7 +6,7 @@
     string defaultTopicImage = Url.Content("~/images/topics/default_topic_image.png");
     string topicImageUrl = string.IsNullOrEmpty(Model.TopicImageUrl) ? defaultTopicImage : Url.Content(Model.TopicImageUrl);
 
-    // Obter os valores do ViewBag (com verificação para evitar erros se não estiverem definidos)
+    // Obter os valores do ViewBag, com verificação para evitar erros caso não estejam definidos.
     bool isTopicCreator = ViewBag.IsCurrentUserTheCreator ?? false;
     int? loggedInUserProfileId = ViewBag.CurrentUserProfileId as int?;
 }
@@ -15,6 +15,7 @@
     <div class="row">
         <div class="col-md-10 offset-md-1">
 
+            <!-- Card de Informação do Tópico -->
             <div class="card shadow-sm mb-4">
                 <img src="@topicImageUrl" alt="Imagem do Tópico: @Model.Title" class="card-img-top img-fluid" style="max-height: 400px; object-fit: cover;" onerror="this.onerror=null; this.src='@defaultTopicImage';" />
                 <div class="card-body">
@@ -34,7 +35,7 @@
                             @if (Model.Creator != null && Model.Creator.User != null)
                             {
                                 <a asp-controller="Profiles" asp-action="Details" asp-route-id="@Model.Creator.Id">
-                                    @(Model.Creator.Name ?? Model.Creator.User.Username) @* Prefer Name if available *@
+                                    @(Model.Creator.Name ?? Model.Creator.User.Username)
                                 </a>
                             }
                             else
@@ -58,43 +59,36 @@
                                 <i class="fas fa-trash-alt"></i> Apagar Tópico
                             </a>
                         }
-                        @* Botões de Salvar/Remover (requer lógica adicional no ViewBag ou no modelo se quiser evitar consultas aqui) *@
                     </div>
                 </div>
             </div>
 
+            <!-- Botão para Adicionar Nova Publicação -->
             <div class="mb-3 text-end">
                 <a asp-controller="TopicPosts" asp-action="Create" asp-route-topicId="@Model.Id" class="btn btn-success">
                     <i class="fas fa-plus-circle"></i> Adicionar Nova Publicação
                 </a>
             </div>
 
-            <h3 class="mt-4 mb-3">Publicações no Tópico (@(Model.Posts?.Count ?? 0))</h3> @* Added null check for Count *@
+            <h3 class="mt-4 mb-3">Publicações no Tópico (@(Model.Posts?.Count ?? 0))</h3>
 
+            <!-- Lista de Publicações -->
             @if (Model.Posts != null && Model.Posts.Any())
             {
-                @* Order posts by CreatedAt descending (newest first) before iterating *@
                 @foreach (var post in Model.Posts.OrderByDescending(p => p.CreatedAt))
                 {
                     <div class="card mb-3 shadow-sm">
                         <div class="card-body">
-                            @* ================================= *@
-                            @* == START: Display Post Image == *@
-                            @* ================================= *@
                             @if (!string.IsNullOrEmpty(post.PostImageUrl))
                             {
                                 <div class="mb-3 text-center">
-                                    @* Center the image and add margin bottom *@
-                                    <img src="@Url.Content(post.PostImageUrl)" @* Use Url.Content for safety *@
+                                    <img src="@Url.Content(post.PostImageUrl)"
                                          alt="Imagem da Publicação"
-                                         class="img-fluid rounded" @* Responsive and rounded corners *@
-                                         style="max-height: 500px; object-fit: contain;" @* Limit height, maintain aspect ratio *@
-                                         onerror="this.style.display='none';" /> @* Hide if image fails to load *@
+                                         class="img-fluid rounded"
+                                         style="max-height: 500px; object-fit: contain;"
+                                         onerror="this.style.display='none';" />
                                 </div>
                             }
-                            @* =============================== *@
-                            @* == END: Display Post Image == *@
-                            @* =============================== *@
 
                             <p class="card-text">
                                 @Html.Raw(post.Content?.Replace(Environment.NewLine, "<br />"))
@@ -104,7 +98,8 @@
                                 @if (post.Profile != null)
                                 {
                                     <a asp-controller="Profiles" asp-action="Details" asp-route-id="@post.ProfileId" class="text-decoration-none">
-                                        @(post.Profile.Name ?? post.Profile.User?.Username ?? "Utilizador Desconhecido") @* Display Name, fallback to Username *@
+                                        @* Apresenta o Nome do perfil, com fallback para o Nome de Utilizador. *@
+                                        @(post.Profile.Name ?? post.Profile.User?.Username ?? "Utilizador Desconhecido")
                                     </a>
                                 }
                                 else
@@ -118,11 +113,10 @@
                             {
                                 <div class="mt-2 text-end">
                                     <a asp-controller="TopicPosts" asp-action="Edit" asp-route-id="@post.Id" class="btn btn-sm btn-outline-secondary me-1"><i class="fas fa-pen"></i> Editar</a>
-                                    @* Updated Delete to use a form for POST and anti-forgery token *@
-                                    <form asp-controller="TopicPosts" asp-action="Delete" asp-route-id="@post.Id" method="post" class="d-inline" onsubmit="return confirm('Tem certeza que deseja apagar esta publicação?');">
+
+                                    @* O formulário é usado para garantir que a eliminação é feita via POST e com o token anti-falsificação. *@
+                                    <form asp-controller="TopicPosts" asp-action="Delete" asp-route-id="@post.Id" method="post" class="d-inline" onsubmit="return confirm('Tem a certeza de que deseja apagar esta publicação?');">
                                         @Html.AntiForgeryToken()
-                                        @* Optional: You might want to pass the current TopicId as a returnUrl or similar if needed by the Delete action *@
-                                        @* <input type="hidden" name="returnUrl" value="@Url.Action("Details", "Topics", new { id = Model.Id })" /> *@
                                         <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-times"></i> Apagar</button>
                                     </form>
                                 </div>

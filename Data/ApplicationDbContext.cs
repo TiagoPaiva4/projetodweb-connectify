@@ -2,343 +2,280 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using projetodweb_connectify.Models;
+using System;
 
-namespace projetodweb_connectify.Data;
-/// <summary>
-/// Esta classe representa a Base de Dados associada ao projeto
-/// Se houver mais bases de dados, irão haver tantas classes
-/// deste tipo, quantas as necessárias
-/// 
-/// esta classe é equivalente a CREATE SCHEMA no SQL
-/// </summary>
-public class ApplicationDbContext : IdentityDbContext
+namespace projetodweb_connectify.Data
 {
     /// <summary>
-    /// Construtor
+    /// Representa o contexto da base de dados da aplicação, funcionando como a ponte
+    /// entre os modelos C# (entidades) e a base de dados relacional.
+    /// Herda de IdentityDbContext para incluir as tabelas do sistema de autenticação ASP.NET Core Identity.
     /// </summary>
-    /// <param name="options"></param>
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-        : base(options)
+    public class ApplicationDbContext : IdentityDbContext
     {
-    }
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
-    // Especificar as tabelas associadas à BD
-    /// <summary>
-    /// tabela Users na BD
-    /// </summary>
-    public DbSet<Users> Users { get; set; }
+        // --- Definição das Tabelas ---
 
-    /// <summary>
-    /// tabela Profiles na BD
-    /// </summary>
-    public DbSet<Profile> Profiles { get; set; }
+        /// <summary>
+        /// Tabela Users na BD.
+        /// </summary>
+        public DbSet<Users> Users { get; set; }
 
-    /// <summary>
-    /// tabela Topics na BD
-    /// </summary>
-    public DbSet<Topic> Topics { get; set; }
+        /// <summary>
+        /// Tabela Profiles na BD.
+        /// </summary>
+        public DbSet<Profile> Profiles { get; set; }
 
-    /// <summary>
-    /// tabela Category na BD
-    /// </summary>
-    public DbSet<Category> Categories { get; set; }
+        /// <summary>
+        /// Tabela Categories na BD.
+        /// </summary>
+        public DbSet<Category> Categories { get; set; }
 
-    /// <summary>
-    /// tabela TopicPosts na BD
-    /// </summary>
-    public DbSet<TopicPost> TopicPosts { get; set; }
+        /// <summary>
+        /// Tabela Topics na BD.
+        /// </summary>
+        public DbSet<Topic> Topics { get; set; }
 
-    /// <summary>
-    /// tabela TopicComments na BD
-    /// </summary>
-    public DbSet<TopicComment> TopicComments { get; set; }
-    
-    public DbSet<TopicPostLike> TopicPostLikes { get; set; }
-    
-    public DbSet<TopicCommentLike> TopicCommentLikes { get; set; }
+        /// <summary>
+        /// Tabela TopicPosts na BD.
+        /// </summary>
+        public DbSet<TopicPost> TopicPosts { get; set; }
 
-    /// <summary>
-    /// tabela SavedTopic na BD
-    /// </summary>
-    public DbSet<SavedTopic> SavedTopics { get; set; }
+        /// <summary>
+        /// Tabela TopicComments na BD.
+        /// </summary>
+        public DbSet<TopicComment> TopicComments { get; set; }
 
-    /// <summary>
-    /// tabela Conversation na BD
-    /// </summary>
-    public DbSet<Conversation> Conversations { get; set; }
+        /// <summary>
+        /// Tabela TopicPostLikes na BD.
+        /// </summary>
+        public DbSet<TopicPostLike> TopicPostLikes { get; set; }
 
-    /// <summary>
-    /// tabela Message na BD
-    /// </summary>
-    public DbSet<Message> Messages { get; set; }
+        /// <summary>
+        /// Tabela TopicCommentLikes na BD.
+        /// </summary>
+        public DbSet<TopicCommentLike> TopicCommentLikes { get; set; }
 
+        /// <summary>
+        /// Tabela SavedTopics na BD.
+        /// </summary>
+        public DbSet<SavedTopic> SavedTopics { get; set; }
 
-    /// <summary>
-    /// tabela Friendships na BD
-    /// </summary>
-    public DbSet<Friendship> Friendships { get; set; }
+        /// <summary>
+        /// Tabela Conversations na BD.
+        /// </summary>
+        public DbSet<Conversation> Conversations { get; set; }
 
+        /// <summary>
+        /// Tabela Messages na BD.
+        /// </summary>
+        public DbSet<Message> Messages { get; set; }
 
-    /// <summary>
-    /// tabela Events na BD
-    /// </summary>
-    public DbSet<Event> Events { get; set; }
+        /// <summary>
+        /// Tabela Friendships na BD.
+        /// </summary>
+        public DbSet<Friendship> Friendships { get; set; }
 
+        /// <summary>
+        /// Tabela Events na BD.
+        /// </summary>
+        public DbSet<Event> Events { get; set; }
 
-    /// <summary>
-    /// tabela UserEventAttendances na BD
-    /// </summary>
-    public DbSet<UserEventAttendance> UserEventAttendances { get; set; }
+        /// <summary>
+        /// Tabela UserEventAttendances na BD.
+        /// </summary>
+        public DbSet<UserEventAttendance> UserEventAttendances { get; set; }
 
+        /// <summary>
+        /// Configura o modelo de dados, definindo chaves primárias, chaves estrangeiras,
+        /// relações, índices e dados iniciais (seeding).
+        /// </summary>
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            // É crucial chamar a implementação base primeiro para que o Identity seja configurado corretamente.
+            base.OnModelCreating(modelBuilder);
 
-    /// <summary>
-    /// Método para configurar as relações entre as entidades.
-    /// </summary>
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        // 'importa' todo o comportamento do método, 
-        // aquando da sua definição na SuperClasse
-        base.OnModelCreating(modelBuilder); // Chama a configuração base para IdentityDbContext
+            // --- SEEDING (Dados Iniciais) ---
+            SeedInitialData(modelBuilder);
 
-        // --- Identity Seeding ---
-        modelBuilder.Entity<IdentityRole>().HasData(
-            new IdentityRole { Id = "a", Name = "admin", NormalizedName = "ADMIN", ConcurrencyStamp = Guid.NewGuid().ToString() } // Added ConcurrencyStamp
-        );
+            // --- CONFIGURAÇÃO DAS RELAÇÕES ENTRE ENTIDADES ---
 
-        // criar um utilizador para funcionar como ADMIN
-        // função para codificar a password
-        var hasher = new PasswordHasher<IdentityUser>();
+            // Relação 1-para-1 entre Users e Profile.
+            modelBuilder.Entity<Profile>()
+                .HasOne(p => p.User)
+                .WithOne(u => u.Profile)
+                .HasForeignKey<Profile>(p => p.UserId)
+                .OnDelete(DeleteBehavior.Cascade); // Se um utilizador for apagado, o seu perfil também deve ser.
 
+            // Relação 1-para-Muitos entre Category e Topic.
+            modelBuilder.Entity<Topic>()
+                .HasOne(t => t.Category)
+                .WithMany(c => c.Topics)
+                .HasForeignKey(t => t.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict); // Impede que uma categoria seja apagada se tiver tópicos associados.
 
-        // criação do utilizador
-        modelBuilder.Entity<IdentityUser>().HasData(
-            new IdentityUser
+            // Relação 1-para-Muitos entre Profile (Criador) e Topic.
+            modelBuilder.Entity<Topic>()
+                .HasOne(t => t.Creator)
+                .WithMany() // Um perfil pode criar muitos tópicos. Não é necessária uma lista de navegação inversa.
+                .HasForeignKey(t => t.CreatedBy)
+                .OnDelete(DeleteBehavior.Restrict); // Impede que um perfil seja apagado se for criador de tópicos.
+
+            // Relação 1-para-Muitos entre Topic e TopicPost.
+            modelBuilder.Entity<TopicPost>()
+               .HasOne(tp => tp.Topic)
+               .WithMany(t => t.Posts)
+               .HasForeignKey(tp => tp.TopicId)
+               .OnDelete(DeleteBehavior.Cascade); // Se um tópico for apagado, as suas publicações também são.
+
+            // Relação 1-para-Muitos entre Profile (Autor) e TopicPost.
+            modelBuilder.Entity<TopicPost>()
+               .HasOne(tp => tp.Profile)
+               .WithMany()
+               .HasForeignKey(tp => tp.ProfileId)
+               .OnDelete(DeleteBehavior.Restrict);
+
+            // Tabela de Junção para Tópicos Guardados (SavedTopic).
+            modelBuilder.Entity<SavedTopic>(entity =>
             {
-                Id = "admin", // This should be a GUID string if not customized
-                UserName = "admin@mail.pt",
-                NormalizedUserName = "ADMIN@MAIL.PT",
-                Email = "admin@mail.pt",
-                NormalizedEmail = "ADMIN@MAIL.PT",
-                EmailConfirmed = true,
-                PasswordHash = hasher.HashPassword(null, "Aa0_aa"),
-                SecurityStamp = Guid.NewGuid().ToString(), // Ensure these are consistent if data is re-seeded or use fixed values
-                ConcurrencyStamp = Guid.NewGuid().ToString()
-            }
-        );
+                entity.HasKey(st => new { st.ProfileId, st.TopicId }); // Chave primária composta.
 
+                entity.HasOne(st => st.SaverProfile)
+                      .WithMany(p => p.SavedTopics)
+                      .HasForeignKey(st => st.ProfileId)
+                      .OnDelete(DeleteBehavior.Cascade);
 
-        // Associar este utilizador à role ADMIN
-        modelBuilder.Entity<IdentityUserRole<string>>().HasData(
-            new IdentityUserRole<string> { UserId = "admin", RoleId = "a" });
+                entity.HasOne(st => st.Topic)
+                      .WithMany(t => t.Savers)
+                      .HasForeignKey(st => st.TopicId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
 
+            // Tabela de Junção para Amizades (Friendship).
+            modelBuilder.Entity<Friendship>(entity =>
+            {
+                entity.HasKey(f => new { f.User1Id, f.User2Id }); // Chave primária composta.
 
-        // Configure the relationship for FriendshipsInitiated
-        // A User (User1) can initiate many friendships
-        // A Friendship has one User1
-        modelBuilder.Entity<Users>()
-            .HasMany(u => u.FriendshipsInitiated)
-            .WithOne(f => f.User1)
-            .HasForeignKey(f => f.User1Id)
-            .OnDelete(DeleteBehavior.Restrict); // Or .Cascade if you want deleting a user to delete their initiated friendships.
-                                                // Restrict is safer to prevent accidental data loss.
+                entity.HasOne(f => f.User1)
+                      .WithMany(u => u.FriendshipsInitiated)
+                      .HasForeignKey(f => f.User1Id)
+                      .OnDelete(DeleteBehavior.Restrict);
 
-        // Configure the relationship for FriendshipsReceived
-        // A User (User2) can receive many friendships
-        // A Friendship has one User2
-        modelBuilder.Entity<Users>()
-            .HasMany(u => u.FriendshipsReceived)
-            .WithOne(f => f.User2)
-            .HasForeignKey(f => f.User2Id)
-            .OnDelete(DeleteBehavior.Restrict); // Or .Cascade.
+                entity.HasOne(f => f.User2)
+                      .WithMany(u => u.FriendshipsReceived)
+                      .HasForeignKey(f => f.User2Id)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
 
-        // Optional: Add a unique constraint to prevent duplicate pending requests
-        // or duplicate accepted friendships between the same two users.
-        // This ensures UserA can't send multiple requests to UserB while one is pending,
-        // or that they can't be "friends" twice.
-        // You might want to handle this in application logic for more complex scenarios
-        // (e.g., if a rejected request can be re-sent later).
-        // For now, a basic unique constraint on the pair:
-        modelBuilder.Entity<Friendship>()
-            .HasIndex(f => new { f.User1Id, f.User2Id })
-            .IsUnique();
-        // Note: This simple unique index means (User1Id=1, User2Id=2) is different from (User1Id=2, User2Id=1).
-        // Your application logic will need to decide if User1Id is always the requester,
-        // or if you need to check for existing friendships in both directions (e.g., User1Id=A, User2Id=B OR User1Id=B, User2Id=A).
-        // For a request system (User1 sends to User2), this index is fine.
+            // Tabela de Junção para Gostos em Publicações (TopicPostLike).
+            modelBuilder.Entity<TopicPostLike>(entity =>
+            {
+                entity.HasKey(tpl => new { tpl.TopicPostId, tpl.ProfileId }); // Chave primária composta.
 
-        // Configuração para Conversation
-        modelBuilder.Entity<Conversation>()
-            .HasOne(c => c.Participant1)
-            .WithMany() // Users não precisa ter uma coleção de Conversations diretamente
-            .HasForeignKey(c => c.Participant1Id)
-            .OnDelete(DeleteBehavior.Restrict); // Evita que um utilizador seja apagado se tiver conversas
+                entity.HasOne(tpl => tpl.TopicPost)
+                      .WithMany(tp => tp.Likes)
+                      .HasForeignKey(tpl => tpl.TopicPostId)
+                      .OnDelete(DeleteBehavior.Cascade);
 
-        modelBuilder.Entity<Conversation>()
-            .HasOne(c => c.Participant2)
-            .WithMany()
-            .HasForeignKey(c => c.Participant2Id)
-            .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(tpl => tpl.Profile)
+                      .WithMany()
+                      .HasForeignKey(tpl => tpl.ProfileId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
 
-        // Adicionar um índice para buscar conversas rapidamente
-        modelBuilder.Entity<Conversation>()
-            .HasIndex(c => new { c.Participant1Id, c.Participant2Id }).IsUnique();
+            // Tabela de Junção para Gostos em Comentários (TopicCommentLike).
+            modelBuilder.Entity<TopicCommentLike>(entity =>
+            {
+                entity.HasKey(tcl => new { tcl.TopicCommentId, tcl.ProfileId }); // Chave primária composta.
 
+                entity.HasOne(tcl => tcl.TopicComment)
+                      .WithMany(tc => tc.Likes)
+                      .HasForeignKey(tcl => tcl.TopicCommentId)
+                      .OnDelete(DeleteBehavior.Cascade);
 
-        // Configuração para Message
-        modelBuilder.Entity<Message>()
-            .HasOne(m => m.Sender)
-            .WithMany() // Users não precisa ter uma coleção de SentMessages
-            .HasForeignKey(m => m.SenderId)
-            .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(tcl => tcl.Profile)
+                      .WithMany()
+                      .HasForeignKey(tcl => tcl.ProfileId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
 
-        modelBuilder.Entity<Message>()
-            .HasOne(m => m.Recipient)
-            .WithMany() // Users não precisa ter uma coleção de ReceivedMessages
-            .HasForeignKey(m => m.RecipientId)
-            .OnDelete(DeleteBehavior.Restrict);
+            // Relação para Conversas (Conversation).
+            modelBuilder.Entity<Conversation>(entity =>
+            {
+                entity.HasIndex(c => new { c.Participant1Id, c.Participant2Id }).IsUnique();
 
-        // Guarda automaticamente a data e hora em que o utilizador se registou 
-        modelBuilder.Entity<Users>()
-        .Property(u => u.CreatedAt)
-        .HasDefaultValueSql("CURRENT_TIMESTAMP"); // Para SQL Server ou SQLite
+                entity.HasOne(c => c.Participant1).WithMany().HasForeignKey(c => c.Participant1Id).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(c => c.Participant2).WithMany().HasForeignKey(c => c.Participant2Id).OnDelete(DeleteBehavior.Restrict);
+            });
 
-        base.OnModelCreating(modelBuilder);
+            // Relação para Mensagens (Message).
+            modelBuilder.Entity<Message>(entity =>
+            {
+                entity.HasOne(m => m.Sender).WithMany().HasForeignKey(m => m.SenderId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(m => m.Recipient).WithMany().HasForeignKey(m => m.RecipientId).OnDelete(DeleteBehavior.Restrict);
+            });
 
-        modelBuilder.Entity<Friendship>()
-        .HasKey(f => new { f.User1Id, f.User2Id });
+            // Relação para Eventos e Criador.
+            modelBuilder.Entity<Event>()
+                .HasOne(e => e.Creator)
+                .WithMany()
+                .HasForeignKey(e => e.CreatorId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<Friendship>()
-            .HasOne(f => f.User1)
-            .WithMany(u => u.FriendshipsInitiated)
-            .HasForeignKey(f => f.User1Id)
-            .OnDelete(DeleteBehavior.Restrict);
+            // Tabela de Junção para Participação em Eventos (UserEventAttendance).
+            modelBuilder.Entity<UserEventAttendance>(entity =>
+            {
+                entity.HasKey(uea => new { uea.UserId, uea.EventId }); // Chave primária composta.
 
-        modelBuilder.Entity<Friendship>()
-            .HasOne(f => f.User2)
-            .WithMany(u => u.FriendshipsReceived)
-            .HasForeignKey(f => f.User2Id)
-            .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(uea => uea.User)
+                      .WithMany(u => u.EventAttendances)
+                      .HasForeignKey(uea => uea.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
 
-        modelBuilder.Entity<Profile>()
-            .HasOne(p => p.User)
-            .WithOne(u => u.Profile)
-            .HasForeignKey<Profile>(p => p.UserId)
-            .OnDelete(DeleteBehavior.Restrict); // evitar que o User apague o perfil
+                entity.HasOne(uea => uea.Event)
+                      .WithMany(e => e.Attendees)
+                      .HasForeignKey(uea => uea.EventId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
 
-        // --- Configure Composite Key for SavedTopic ---
-        modelBuilder.Entity<SavedTopic>()
-            .HasKey(st => new { st.ProfileId, st.TopicId }); 
+            // Configuração do valor padrão para a data de criação do utilizador.
+            modelBuilder.Entity<Users>()
+                .Property(u => u.CreatedAt)
+                .HasDefaultValueSql("GETUTCDATE()"); // Para SQL Server. Use "CURRENT_TIMESTAMP" para SQLite/PostgreSQL.
+        }
 
-        // Profile -> SavedTopic (One-to-Many)
-        modelBuilder.Entity<SavedTopic>()
-            .HasOne(st => st.SaverProfile)
-            .WithMany(p => p.SavedTopics)
-            .HasForeignKey(st => st.ProfileId)
-            .OnDelete(DeleteBehavior.Cascade); // If profile deleted, remove their saved records
+        /// <summary>
+        /// Método auxiliar para popular a base de dados com dados iniciais.
+        /// </summary>
+        private void SeedInitialData(ModelBuilder modelBuilder)
+        {
+            // Criar a Role "admin".
+            modelBuilder.Entity<IdentityRole>().HasData(
+                new IdentityRole { Id = "a", Name = "admin", NormalizedName = "ADMIN", ConcurrencyStamp = Guid.NewGuid().ToString() }
+            );
 
-        // Topic -> SavedTopic (One-to-Many)
-        modelBuilder.Entity<SavedTopic>()
-            .HasOne(st => st.Topic) 
-            .WithMany(t => t.Savers)
-            .HasForeignKey(st => st.TopicId)
-            .OnDelete(DeleteBehavior.Cascade);
+            // Criar um utilizador administrador.
+            var hasher = new PasswordHasher<IdentityUser>();
+            modelBuilder.Entity<IdentityUser>().HasData(
+                new IdentityUser
+                {
+                    Id = "admin",
+                    UserName = "admin@mail.pt",
+                    NormalizedUserName = "ADMIN@MAIL.PT",
+                    Email = "admin@mail.pt",
+                    NormalizedEmail = "ADMIN@MAIL.PT",
+                    EmailConfirmed = true,
+                    PasswordHash = hasher.HashPassword(null, "Aa0_aa"), 
+                    SecurityStamp = Guid.NewGuid().ToString(),
+                    ConcurrencyStamp = Guid.NewGuid().ToString()
+                }
+            );
 
-        // Relação entre Topic e Category (EF Core deve inferir, mas pode ser explícito)
-        modelBuilder.Entity<Topic>()
-            .HasOne(t => t.Category)      // Um tópico tem uma categoria
-            .WithMany(c => c.Topics)      // Uma categoria tem muitos tópicos
-            .HasForeignKey(t => t.CategoryId) // A chave estrangeira em Topic é CategoryId
-            .OnDelete(DeleteBehavior.SetNull); // Ou .SetNull, ou .Cascade dependendo da sua política.
-                                                // Restrict: Impede a exclusão de uma categoria se houver tópicos nela.
-                                                // SetNull: Define CategoryId como null nos tópicos se a categoria for excluída (torna CategoryId anulável no Topic).
-                                                // Cascade: Exclui todos os tópicos da categoria se a categoria for excluída (geralmente não recomendado para categorias).
-
-
-        // --- Optional: Configure other relationships if needed ---
-        modelBuilder.Entity<TopicPost>()
-           .HasOne(tp => tp.Profile) // Assuming Profile is the navigation property name in TopicPost
-           .WithMany() // Profile doesn't need a collection of all TopicPosts it ever made across all topics here.
-           .HasForeignKey(tp => tp.ProfileId)
-           .OnDelete(DeleteBehavior.Restrict); // Prevent profile deletion if they have posts? Or Cascade? Decide based on your rules. Often Restrict is safer here initially.
-
-        modelBuilder.Entity<TopicPost>()
-           .HasOne(tp => tp.Topic)
-           .WithMany(t => t.Posts)
-           .HasForeignKey(tp => tp.TopicId)
-           .OnDelete(DeleteBehavior.Cascade); // If topic deleted, delete its posts
-
-        modelBuilder.Entity<Topic>()
-            .HasOne(t => t.Creator) // Assuming Creator is the navigation property name in Topic
-            .WithMany() // Profile doesn't necessarily need a direct collection of Topics it created here if already handled elsewhere or not needed.
-            .HasForeignKey(t => t.CreatedBy)
-            .OnDelete(DeleteBehavior.Restrict); // Prevent profile deletion if they created topics? Or Cascade? Often Restrict is safer.
-
-
-        // --- Configuração para UserEventAttendance (Relação N-M entre SEU Users e Event) ---
-        modelBuilder.Entity<UserEventAttendance>()
-            .HasKey(uea => new { uea.UserId, uea.EventId }); // <<--- MUDANÇA AQUI
-
-        modelBuilder.Entity<UserEventAttendance>()
-            .HasOne(uea => uea.User)                // UserEventAttendance tem um Users
-            .WithMany(u => u.EventAttendances)   // Users tem muitas EventAttendances
-            .HasForeignKey(uea => uea.UserId)      // <<--- MUDANÇA AQUI
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<UserEventAttendance>()
-            .HasOne(uea => uea.Event)
-            .WithMany(e => e.Attendees)
-            .HasForeignKey(uea => uea.EventId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        // Configuração para a propriedade Creator do Evento
-        modelBuilder.Entity<Event>()
-            .HasOne(e => e.Creator)
-            .WithMany() // Users não precisa de uma coleção de "EventosCriados" diretamente aqui
-            .HasForeignKey(e => e.CreatorId) // Já é int, referenciando Users.Id
-            .OnDelete(DeleteBehavior.Restrict);
-        
-        // Configure the composite key for TopicPostLike.
-        // This means a combination of a PostId and a ProfileId must be unique.
-        // In simple terms: A user can only like a post ONCE.
-        modelBuilder.Entity<TopicPostLike>()
-            .HasKey(tpl => new { tpl.TopicPostId, tpl.ProfileId });
-
-        // Configure the relationship: A Post can have many Likes.
-        modelBuilder.Entity<TopicPostLike>()
-            .HasOne(tpl => tpl.TopicPost)
-            .WithMany(tp => tp.Likes)
-            .HasForeignKey(tpl => tpl.TopicPostId)
-            .OnDelete(DeleteBehavior.Cascade); // If a post is deleted, delete its likes.
-
-        // Configure the relationship: A Profile can have many Post Likes.
-        modelBuilder.Entity<TopicPostLike>()
-            .HasOne(tpl => tpl.Profile)
-            .WithMany() // We don't need a navigation property on Profile for this
-            .HasForeignKey(tpl => tpl.ProfileId)
-            .OnDelete(DeleteBehavior.Restrict); // Do not delete a profile if they have liked posts.
-
-
-        // Configure the composite key for TopicCommentLike.
-        // A user can only like a comment ONCE.
-        modelBuilder.Entity<TopicCommentLike>()
-            .HasKey(tcl => new { tcl.TopicCommentId, tcl.ProfileId });
-
-        // Configure the relationship: A Comment can have many Likes.
-        modelBuilder.Entity<TopicCommentLike>()
-            .HasOne(tcl => tcl.TopicComment)
-            .WithMany(tc => tc.Likes)
-            .HasForeignKey(tcl => tcl.TopicCommentId)
-            .OnDelete(DeleteBehavior.Cascade); // If a comment is deleted, delete its likes.
-
-        // Configure the relationship: A Profile can have many Comment Likes.
-        modelBuilder.Entity<TopicCommentLike>()
-            .HasOne(tcl => tcl.Profile)
-            .WithMany() // We don't need a navigation property on Profile for this
-            .HasForeignKey(tcl => tcl.ProfileId)
-            .OnDelete(DeleteBehavior.Restrict); // Do not delete a profile if they have liked comments.
+            // Associar o utilizador administrador à role "admin".
+            modelBuilder.Entity<IdentityUserRole<string>>().HasData(
+                new IdentityUserRole<string> { UserId = "admin", RoleId = "a" }
+            );
+        }
     }
-
-
 }
-
-

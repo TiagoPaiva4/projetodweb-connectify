@@ -6,7 +6,7 @@ using projetodweb_connectify.Models;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Collections.Generic; // Para List
+using System.Collections.Generic;
 
 namespace projetodweb_connectify.Controllers
 {
@@ -20,44 +20,53 @@ namespace projetodweb_connectify.Controllers
             _context = context;
         }
 
-        // Helper para obter o utilizador atual
+        /// <summary>
+        /// Método auxiliar para obter o utilizador autenticado e os seus dados de perfil.
+        /// </summary>
+        /// <returns>O objeto 'Users' do utilizador atual ou null se não for encontrado.</returns>
         private async Task<Users?> GetCurrentUserAsync()
         {
             var username = User.Identity?.Name;
             if (string.IsNullOrEmpty(username)) return null;
-            // Incluir Profile para mostrar foto e nome
+
+            // O Include(u => u.Profile) é importante para ter acesso a dados como a foto de perfil.
             return await _context.Users.Include(u => u.Profile)
                                  .FirstOrDefaultAsync(u => u.Username == username);
         }
 
-        // GET: Messages  (ou Messages/Index)
-        // Lista as conversas do utilizador atual
-        // Adicionar uma forma de o _Layout.cshtml passar um otherUserId inicial, se houver
-        // Modifique a action Index original do MessagesController
-        public async Task<IActionResult> Index(int? chatWith = null) // Nome do parâmetro da query string
+        /// <summary>
+        /// Apresenta a página principal de mensagens, listando todas as conversas do utilizador.
+        /// </summary>
+        /// <param name="chatWith">Parâmetro opcional para abrir uma conversa específica ao carregar a página.</param>
+        public async Task<IActionResult> Index(int? chatWith = null)
         {
             var currentUser = await GetCurrentUserAsync();
-            if (currentUser == null) return Challenge();
+            if (currentUser == null) return Challenge(); // Se não estiver autenticado, desafia para o login.
 
             var conversations = await _context.Conversations
                 .Where(c => c.Participant1Id == currentUser.Id || c.Participant2Id == currentUser.Id)
-                .Include(c => c.Participant1).ThenInclude(u => u.Profile)
-                .Include(c => c.Participant2).ThenInclude(u => u.Profile)
-                .Include(c => c.Messages.OrderByDescending(m => m.SentAt).Take(1))
-                .OrderByDescending(c => c.LastMessageAt)
+                .Include(c => c.Participant1).ThenInclude(u => u.Profile) // Carrega dados do primeiro participante.
+                .Include(c => c.Participant2).ThenInclude(u => u.Profile) // Carrega dados do segundo participante.
+                .Include(c => c.Messages.OrderByDescending(m => m.SentAt).Take(1)) // Pega na última mensagem para preview.
+                .OrderByDescending(c => c.LastMessageAt) // Ordena as conversas pela mais recente.
                 .ToListAsync();
 
             ViewBag.CurrentUserId = currentUser.Id;
+
+            // Se um ID de utilizador for passado na URL, prepara-o para ser usado pelo JavaScript e abrir o chat.
             if (chatWith.HasValue && chatWith.Value != currentUser.Id)
             {
-                ViewBag.InitialChatOtherUserId = chatWith.Value; // Passa para a view
+                ViewBag.InitialChatOtherUserId = chatWith.Value;
             }
+
             return View(conversations);
         }
 
-
-        // GET: Messages/Chat/{otherUserId}
-        // Mostra a conversa com um utilizador específico
+        /// <summary>
+        /// Carrega a página de conversação completa com um utilizador específico.
+        /// Esta action carrega uma view completa e não é para ser chamada via AJAX.
+        /// </summary>
+        /// <param name="otherUserId">O ID do outro utilizador na conversa.</param>
         public async Task<IActionResult> Chat(int otherUserId)
         {
             var currentUser = await GetCurrentUserAsync();
@@ -76,32 +85,33 @@ namespace projetodweb_connectify.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // Determinar Participant1Id e Participant2Id (convenção: menor ID primeiro)
+            // Garante uma chave de conversação consistente (menor ID primeiro) para evitar duplicados.
             int p1Id = Math.Min(currentUser.Id, otherUserId);
             int p2Id = Math.Max(currentUser.Id, otherUserId);
 
             var conversation = await _context.Conversations
-                .Include(c => c.Messages.OrderBy(m => m.SentAt)) // Ordenar mensagens pela data de envio
-                    .ThenInclude(m => m.Sender) // Para saber quem enviou cada mensagem
-                        .ThenInclude(s => s.Profile) // Para foto do remetente na mensagem
+                .Include(c => c.Messages.OrderBy(m => m.SentAt))
+                    .ThenInclude(m => m.Sender)
+                        .ThenInclude(s => s.Profile)
                 .FirstOrDefaultAsync(c => c.Participant1Id == p1Id && c.Participant2Id == p2Id);
 
             if (conversation == null)
             {
-                // Criar uma nova conversa se não existir
+                // Se a conversa não existe, cria-a.
                 conversation = new Conversation
                 {
                     Participant1Id = p1Id,
                     Participant2Id = p2Id,
                     CreatedAt = DateTime.UtcNow,
-                    LastMessageAt = DateTime.UtcNow // Pode ser a data de criação inicialmente
+                    LastMessageAt = DateTime.UtcNow
                 };
                 _context.Conversations.Add(conversation);
-                await _context.SaveChangesAsync(); // Salvar para obter o Conversation.Id
+                // É necessário guardar para que a conversação obtenha um ID, essencial para o envio de mensagens.
+                await _context.SaveChangesAsync();
             }
             else
             {
-                // Marcar mensagens como lidas pelo currentUser nesta conversa
+                // Se a conversa existe, marca as mensagens por ler como lidas.
                 var unreadMessages = conversation.Messages
                     .Where(m => m.RecipientId == currentUser.Id && m.ReadAt == null)
                     .ToList();
@@ -110,6 +120,7 @@ namespace projetodweb_connectify.Controllers
                 {
                     msg.ReadAt = DateTime.UtcNow;
                 }
+
                 if (unreadMessages.Any())
                 {
                     await _context.SaveChangesAsync();
@@ -118,20 +129,23 @@ namespace projetodweb_connectify.Controllers
 
             ViewBag.OtherUser = otherUser;
             ViewBag.CurrentUserId = currentUser.Id;
-            return View(conversation); // Passar o objeto Conversation para a View
+            return View(conversation);
         }
 
-        // GET: Messages/ChatPartial/{otherUserId} - Retorna APENAS a partial view do chat
-        // Esta será chamada por AJAX
+        /// <summary>
+        /// Action chamada via AJAX para carregar ou atualizar o conteúdo de uma conversação sem recarregar a página inteira.
+        /// </summary>
+        /// <param name="otherUserId">O ID do outro utilizador na conversa.</param>
+        /// <returns>Uma PartialView com o conteúdo do chat.</returns>
         [HttpGet]
         public async Task<IActionResult> ChatPartial(int otherUserId)
         {
             var currentUser = await GetCurrentUserAsync();
-            if (currentUser == null) return Unauthorized(); // Ou uma PartialView de erro
+            if (currentUser == null) return Unauthorized();
 
+            // Validação de segurança para o caso de a UI permitir esta chamada indevidamente.
             if (currentUser.Id == otherUserId)
             {
-                // Não deveria acontecer se a UI impedir, mas como segurança
                 return PartialView("_ErrorPartial", "Não pode conversar consigo mesmo.");
             }
 
@@ -173,51 +187,33 @@ namespace projetodweb_connectify.Controllers
 
             ViewBag.OtherUser = otherUser;
             ViewBag.CurrentUserId = currentUser.Id;
-            // O nome da PartialView deve corresponder ao que você tem no Views/Messages/Chat.cshtml
-            // Mas aqui, vamos criar uma nova PartialView específica para o conteúdo do chat
+            // Devolve a PartialView que contém a janela de chat.
             return PartialView("_ChatContentPartial", conversation);
         }
 
-        // POST: Messages/SendMessage
+        /// <summary>
+        /// Processa o envio de uma nova mensagem. Suporta tanto submissões de formulário tradicionais como chamadas AJAX.
+        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SendMessage(int conversationId, int recipientUserId, string messageContent)
         {
-            if (string.IsNullOrWhiteSpace(messageContent) || messageContent.Length > 2000)
-            {
-                TempData["ErrorMessage"] = "A mensagem não pode estar vazia ou exceder 2000 caracteres.";
-                // Precisamos do otherUserId para redirecionar de volta para o chat correto
-                var convForRedirect = await _context.Conversations.FindAsync(conversationId);
-                if (convForRedirect != null)
-                {
-                    var currentUserSenderId = (await GetCurrentUserAsync())?.Id;
-                    var otherIdForRedirect = convForRedirect.Participant1Id == currentUserSenderId ? convForRedirect.Participant2Id : convForRedirect.Participant1Id;
-                    return RedirectToAction(nameof(Chat), new { otherUserId = otherIdForRedirect });
-                }
-                return RedirectToAction(nameof(Index)); // Fallback
-            }
-
             var currentUser = await GetCurrentUserAsync();
-            if (currentUser == null) return Json(new { success = false, message = "Não autorizado." }); // Retornar JSON para AJAX
+            if (currentUser == null) return Unauthorized(new { success = false, message = "Não autorizado." });
 
             if (string.IsNullOrWhiteSpace(messageContent) || messageContent.Length > 2000)
             {
-                // Para AJAX, retornar um erro JSON
-                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                // Verifica se a requisição foi feita via AJAX.
+                bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+                if (isAjax)
                 {
                     return Json(new { success = false, message = "A mensagem não pode estar vazia ou exceder 2000 caracteres." });
                 }
-                TempData["ErrorMessage"] = "A mensagem não pode estar vazia ou exceder 2000 caracteres.";
-                // Redirecionamento normal se não for AJAX (código existente)
-                var convForRedirect = await _context.Conversations.FindAsync(conversationId);
-                if (convForRedirect != null)
-                {
-                    var otherIdForRedirect = convForRedirect.Participant1Id == currentUser.Id ? convForRedirect.Participant2Id : convForRedirect.Participant1Id;
-                    return RedirectToAction(nameof(ChatPartial), new { otherUserId = otherIdForRedirect }); // Redireciona para a partial
-                }
-                return RedirectToAction(nameof(Index));
-            }
 
+                // Fallback para formulário tradicional.
+                TempData["ErrorMessage"] = "A mensagem não pode estar vazia ou exceder 2000 caracteres.";
+                return RedirectToAction(nameof(Chat), new { otherUserId = recipientUserId });
+            }
 
             var conversation = await _context.Conversations
                                     .FirstOrDefaultAsync(c => c.Id == conversationId &&
@@ -225,10 +221,7 @@ namespace projetodweb_connectify.Controllers
 
             if (conversation == null)
             {
-                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
-                    return Json(new { success = false, message = "Conversa não encontrada." });
-                TempData["ErrorMessage"] = "Conversa não encontrada ou não tem permissão.";
-                return RedirectToAction(nameof(Index));
+                return Json(new { success = false, message = "Conversa não encontrada ou sem permissão." });
             }
 
             var message = new Message
@@ -244,26 +237,8 @@ namespace projetodweb_connectify.Controllers
             conversation.LastMessageAt = message.SentAt;
             await _context.SaveChangesAsync();
 
-            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
-            {
-                // Para AJAX, idealmente retornaria a partial da nova mensagem ou um sinal de sucesso.
-                // Por simplicidade, podemos retornar sucesso e o cliente AJAX recarrega o chat.
-                // Ou, melhor ainda, retornar a PartialView da conversa atualizada:
-                // ViewData["OtherUser"] = await _context.Users.Include(u => u.Profile).FirstOrDefaultAsync(u => u.Id == recipientUserId);
-                // ViewData["CurrentUserId"] = currentUser.Id;
-                // var updatedConversation = await _context.Conversations
-                //    .Include(c => c.Messages.OrderBy(m => m.SentAt)).ThenInclude(m => m.Sender).ThenInclude(s => s.Profile)
-                //    .FirstOrDefaultAsync(c => c.Id == conversationId);
-                // return PartialView("_ChatContentPartial", updatedConversation);
-                return Json(new { success = true, message = "Mensagem enviada." }); // Cliente recarrega o chat
-            }
-
-            // Redirecionamento normal se não for AJAX
-            return RedirectToAction("ChatPartial", new { otherUserId = recipientUserId }); // Ou Chat, dependendo da sua estrutura
+            // Abordagem atual (simples): Devolve um JSON de sucesso e o cliente é responsável por recarregar os dados.
+            return Json(new { success = true, message = "Mensagem enviada." });
         }
-
-        
-
-
     }
 }

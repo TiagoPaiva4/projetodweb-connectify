@@ -3,11 +3,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using projetodweb_connectify.Data;
 using projetodweb_connectify.Models;
-using System.Security.Claims; // Required for getting the logged-in user's ID
 
 namespace projetodweb_connectify.Controllers
 {
-    [Authorize] // IMPORTANT: Ensures only logged-in users can perform these actions.
+    // IMPORTANTE: Garante que apenas utilizadores autenticados podem executar estas ações.
+    [Authorize]
     public class LikesController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -18,66 +18,65 @@ namespace projetodweb_connectify.Controllers
         }
 
         /// <summary>
-        /// A helper method to get the current user's Profile ID.
-        /// This is the corrected version that handles the string-to-int ID conversion.
+        /// Método auxiliar para obter o ID do Perfil do utilizador atual.
+        /// Resolve o problema de obter o ID (inteiro) do Perfil a partir do nome de utilizador (string) da identidade.
         /// </summary>
-        /// <returns>The integer ID of the current user's Profile, or null if not found.</returns>
+        /// <returns>O ID (inteiro) do Perfil do utilizador atual, ou null se não for encontrado.</returns>
         private int? GetCurrentProfileId()
         {
-            // Step 1: Get the USERNAME from the login cookie. This is our reliable link.
+            // Passo 1: Obter o NOME DE UTILIZADOR a partir do cookie de autenticação. Este é o nosso vínculo fiável.
             var identityUserName = User.Identity?.Name;
-    
-            // If we can't get a username, they are not properly logged in.
+
+            // Se não for possível obter um nome de utilizador, o utilizador não está devidamente autenticado.
             if (string.IsNullOrEmpty(identityUserName))
             {
                 return null;
             }
 
-            // Step 2: Find the user in YOUR custom 'Users' table that has this username.
-            // This assumes the 'Username' column in your 'Users' table matches the login name.
+            // Passo 2: Encontrar o utilizador na tabela personalizada 'Users' que corresponde a este nome de utilizador.
             var appUser = _context.Users.FirstOrDefault(u => u.Username == identityUserName);
-    
-            // If no user is found, it means there's a data mismatch.
+
+            // Se nenhum utilizador for encontrado, significa que existe uma inconsistência de dados.
             if (appUser == null)
             {
                 return null;
             }
 
-            // Step 3: Now that we have your custom user (with its 'int' ID), find the associated profile.
-            // This is a correct int-to-int comparison.
+            // Passo 3: Com o ID do nosso utilizador, encontrar o perfil associado.
+            // Esta é uma comparação correta de 'int' para 'int'.
             var profile = _context.Profiles.FirstOrDefault(p => p.UserId == appUser.Id);
-    
-            // Step 4: Return the Profile's ID. If no profile exists for that user, this will return null.
+
+            // Passo 4: Devolver o ID do Perfil. Se não existir perfil, o resultado será nulo.
             return profile?.Id;
         }
 
         /// <summary>
-        /// Handles both liking and unliking a post.
+        /// Gere a ação de 'gostar' e 'não gostar' de uma publicação.
         /// </summary>
-        /// <param name="id">The ID of the TopicPost to like/unlike.</param>
+        /// <param name="id">O ID da publicação (TopicPost) a interagir.</param>
         [HttpPost]
-        [ValidateAntiForgeryToken] // Security measure against CSRF attacks.
+        [ValidateAntiForgeryToken] // Medida de segurança contra ataques CSRF.
         public async Task<IActionResult> TogglePostLike(int id)
         {
             var profileId = GetCurrentProfileId();
             if (profileId == null)
             {
-                // If we can't get a profile ID, the user is not authorized.
-                return Unauthorized(new { message = "You must be logged in to like a post." });
+                // Se não for possível obter um ID de perfil, o utilizador não tem autorização.
+                return Unauthorized(new { message = "É necessário estar autenticado para gostar de uma publicação." });
             }
 
-            // Check if a "like" from this profile for this post already exists.
+            // Verificar se já existe um 'gosto' deste perfil para esta publicação.
             var existingLike = await _context.TopicPostLikes
                 .FirstOrDefaultAsync(l => l.TopicPostId == id && l.ProfileId == profileId.Value);
 
             if (existingLike != null)
             {
-                // If it exists, the user is "unliking" the post. Remove it.
+                // Se já existe, o utilizador está a anular o 'gosto'. Remove-se o 'gosto' existente.
                 _context.TopicPostLikes.Remove(existingLike);
             }
             else
             {
-                // If it doesn't exist, the user is "liking" the post. Add a new one.
+                // Caso contrário, o utilizador está a 'gostar' da publicação. Adiciona-se um novo 'gosto'.
                 var newLike = new TopicPostLike
                 {
                     TopicPostId = id,
@@ -86,19 +85,19 @@ namespace projetodweb_connectify.Controllers
                 _context.TopicPostLikes.Add(newLike);
             }
 
-            await _context.SaveChangesAsync(); // Commit the change to the database.
+            await _context.SaveChangesAsync(); // Grava as alterações na base de dados.
 
-            // Get the new, updated count of likes for the post.
+            // Obter a nova contagem atualizada de 'gostos' para a publicação.
             var newLikeCount = await _context.TopicPostLikes.CountAsync(l => l.TopicPostId == id);
-            
-            // Return the new count to the front-end.
+
+            // Devolver a nova contagem para o front-end (via JSON).
             return Json(new { count = newLikeCount });
         }
 
         /// <summary>
-        /// Handles both liking and unliking a comment.
+        /// Gere a ação de 'gostar' e 'não gostar' de um comentário.
         /// </summary>
-        /// <param name="id">The ID of the TopicComment to like/unlike.</param>
+        /// <param name="id">O ID do comentário (TopicComment) a interagir.</param>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleCommentLike(int id)
@@ -106,21 +105,21 @@ namespace projetodweb_connectify.Controllers
             var profileId = GetCurrentProfileId();
             if (profileId == null)
             {
-                return Unauthorized(new { message = "You must be logged in to like a comment." });
+                return Unauthorized(new { message = "É necessário estar autenticado para gostar de um comentário." });
             }
 
-            // Check if a "like" from this profile for this comment already exists.
+            // Verificar se já existe um 'gosto' deste perfil para este comentário.
             var existingLike = await _context.TopicCommentLikes
                 .FirstOrDefaultAsync(l => l.TopicCommentId == id && l.ProfileId == profileId.Value);
 
             if (existingLike != null)
             {
-                // Unlike the comment.
+                // Anular o 'gosto' no comentário.
                 _context.TopicCommentLikes.Remove(existingLike);
             }
             else
             {
-                // Like the comment.
+                // Dar 'gosto' ao comentário.
                 var newLike = new TopicCommentLike
                 {
                     TopicCommentId = id,
@@ -131,10 +130,10 @@ namespace projetodweb_connectify.Controllers
 
             await _context.SaveChangesAsync();
 
-            // Get the new, updated count of likes for the comment.
+            // Obter a nova contagem atualizada de 'gostos' para o comentário.
             var newLikeCount = await _context.TopicCommentLikes.CountAsync(l => l.TopicCommentId == id);
-            
-            // Return the new count to the front-end.
+
+            // Devolver a nova contagem para o front-end.
             return Json(new { count = newLikeCount });
         }
     }
