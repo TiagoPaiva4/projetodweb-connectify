@@ -1,4 +1,8 @@
-﻿<!DOCTYPE html>
+﻿@{
+    // VERIFICAÇÃO: Vemos se a página atual pertence à área de "Identity"
+    var isAuthPage = ViewContext.RouteData.Values["area"]?.ToString() == "Identity";
+}
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -9,245 +13,323 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     @await RenderSectionAsync("Styles", required: false)
     <style>
+        :root {
+            --color-background: #fafafa;
+            --color-primary-dark: #1D3461;
+            --color-primary-medium: #376996;
+            --color-secondary-light: #6290C8;
+            --color-secondary-lightest: #829CBC;
+            --color-text-on-dark: #ffffff;
+            --color-success: #198754;
+            --color-warning: #ffc107;
+            --color-danger: #dc3545;
+        }
+
+        /* --- ESTILOS GERAIS --- */
         body {
-            padding-left: 260px; /* Ajuste conforme a largura da sidebar + espaçamento */
-            background-color: #f8f9fa; /* Cor de fundo clara padrão do Bootstrap ou #fff */
-            color: #212529; /* Cor de texto escura padrão do Bootstrap */
+            background-color: var(--color-background);
+            color: var(--color-primary-dark);
+            transition: padding-left 0.3s ease;
+        }
+
+        .main-content.container {
+            max-width: 1140px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* --- ESTILOS PARA SIDEBAR (ECRÃS GRANDES) --- */
+        body:not(.auth-page) {
+            padding-left: 260px;
         }
 
         .sidebar {
             position: fixed;
             top: 0;
             left: 0;
-            width: 240px; /* Largura da sidebar */
+            width: 240px;
             height: 100vh;
-            background-color: #ffffff; /* Fundo branco para a sidebar */
-            border-right: 1px solid #dee2e6; /* Borda padrão do Bootstrap */
+            background-color: #ffffff;
+            border-right: 1px solid #e0e0e0;
             padding: 20px 12px;
             display: flex;
             flex-direction: column;
-            z-index: 1030;
-            transition: width 0.3s ease;
+            z-index: 1040;
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(0);
         }
-
-        .sidebar-logo {
-            font-size: 28px;
-            color: #212529; /* Cor do logo para tema claro */
-            padding: 12px 12px 36px 12px;
-            text-decoration: none;
-        }
-
-            .sidebar-logo:hover {
-                color: #0d6efd; /* Cor do link ao passar o mouse */
-            }
-
 
         .sidebar-nav {
             list-style: none;
             padding: 0;
             margin: 0;
             flex-grow: 1;
+            overflow-y: auto;
         }
 
-        .sidebar-nav-item {
-            margin-bottom: 8px;
+        .sidebar-nav-link.active {
+            background-color: var(--color-primary-dark);
+            color: var(--color-text-on-dark);
+            font-weight: bold;
         }
 
-        .sidebar-nav-link {
-            display: flex;
-            align-items: center;
-            padding: 12px;
-            border-radius: 8px;
-            color: #495057; /* Cor de texto do link (cinza escuro) */
-            text-decoration: none;
-            transition: background-color 0.2s ease, color 0.2s ease;
-        }
-
-            .sidebar-nav-link:hover,
-            .sidebar-nav-link.active {
-                background-color: #e9ecef; /* Fundo claro ao passar o mouse/ativo */
-                color: #0d6efd; /* Cor do link Bootstrap primário */
+            .sidebar-nav-link.active i, .sidebar-nav-link:hover i {
+                color: var(--color-text-on-dark);
             }
-
-            .sidebar-nav-link.active {
-                font-weight: bold;
-                color: #000; /* Ou #212529 para texto mais escuro no ativo */
-            }
-
-                .sidebar-nav-link.active i {
-                    color: #000; /* Ícone preto no ativo */
-                }
-
-
-            .sidebar-nav-link i {
-                font-size: 20px;
-                margin-right: 16px;
-                width: 24px;
-                text-align: center;
-                color: #6c757d; /* Cor do ícone (cinza) */
-            }
-
-            .sidebar-nav-link:hover i {
-                color: #0d6efd; /* Cor do ícone ao passar o mouse */
-            }
-
-
-        .sidebar-nav-text {
-            font-size: 16px;
-        }
 
         .sidebar-bottom {
             margin-top: auto;
         }
 
-        .main-content {
-            padding-top: 20px;
-            padding-right: 20px; /* Adicione padding à direita para não colar na borda */
-            padding-bottom: 60px;
+        /* --- AJUSTES DE COMPACTAÇÃO DA SIDEBAR PARA EVITAR SCROLL --- */
+
+        .sidebar-logo {
+            display: block;
+            padding: 20px 0; 
+            text-align: center;
         }
 
+        .sidebar-logo-img {
+            max-height: 50px; /* ALTERADO: Reduzido de 60px para 50px */
+            width: auto;
+        }
+
+        .sidebar-nav-item {
+            margin-bottom: 5px;
+        }
+
+        .sidebar-nav-link {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            border-radius: 8px;
+            color: var(--color-primary-medium);
+            text-decoration: none;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+            .sidebar-nav-link:hover {
+                background-color: rgba(98, 144, 200, 0.1);
+                color: var(--color-secondary-light);
+            }
+
+            .sidebar-nav-link i {
+                font-size: 19px;
+                margin-right: 15px;
+                width: 24px;
+                text-align: center;
+                color: var(--color-secondary-lightest);
+                transition: color 0.2s ease;
+            }
+
+        .sidebar-nav-text {
+            font-size: 15px;
+        }
+
+
+        /* --- ESTILOS PARA FOOTER (ECRÃS GRANDES) --- */
         .footer {
             position: fixed;
-            left: 240px; /* Ajuste conforme a largura da sidebar */
+            left: 240px;
             bottom: 0;
-            width: calc(100% - 240px); /* Largura restante */
-            background-color: #f8f9fa; /* Cor de fundo clara */
-            color: #6c757d; /* Cor de texto do footer */
-            border-top: 1px solid #dee2e6;
+            width: calc(100% - 240px);
+            background-color: var(--color-background);
+            color: var(--color-secondary-lightest);
+            border-top: 1px solid #e0e0e0;
             z-index: 1020;
-            padding: 1rem 0; /* Adiciona padding ao footer */
+            padding: 1rem 0;
+            transition: all 0.3s ease;
         }
 
             .footer a {
-                color: #0d6efd; /* Cor dos links no footer */
+                color: var(--color-primary-medium);
+                font-weight: 500;
             }
 
-        /* Ajustes para _LoginPartial na sidebar (tema claro) */
-        .sidebar .dropdown-menu {
-            background-color: #ffffff;
-            border: 1px solid #dee2e6;
+        /* --- ESTILOS PARA PÁGINAS DE AUTENTICAÇÃO (SEM SIDEBAR) --- */
+        body.auth-page {
+            padding-left: 0;
         }
 
-        .sidebar .dropdown-item {
-            color: #212529;
-        }
-
-            .sidebar .dropdown-item:hover {
-                background-color: #e9ecef;
-                color: #000;
+            body.auth-page .footer {
+                left: 0;
+                width: 100%;
             }
 
-        .sidebar .btn-link {
-            color: #495057;
-            text-decoration: none;
-            padding: 12px;
-            display: block;
-            width: 100%;
-            text-align: left;
+        /* --- ESTILOS RESPONSIVOS PARA ECRÃS PEQUENOS (ex: < 992px) --- */
+        .mobile-header {
+            display: none;
         }
 
-            .sidebar .btn-link:hover {
-                background-color: #e9ecef;
-                color: #0d6efd;
+        @@media (max-width: 991.98px) {
+            body:not(.auth-page) {
+                padding-left: 0;
+                padding-top: 60px;
             }
 
-        .sidebar form {
-            margin-bottom: 8px;
-        }
+            .sidebar {
+                transform: translateX(-100%);
+                box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            }
 
-        /* Se quiser que o conteúdo principal use o container padrão do Bootstrap para centralizar */
-        .main-content.container {
-            max-width: 1140px; /* Ou outro valor do Bootstrap para lg/xl */
-            margin-left: auto;
-            margin-right: auto;
-        }
+            body.sidebar-open .sidebar {
+                transform: translateX(0);
+            }
 
+            .main-content {
+                padding-top: 20px;
+                padding-right: 15px;
+                padding-left: 15px;
+                padding-bottom: 80px;
+            }
+
+            .footer {
+                left: 0;
+                width: 100%;
+            }
+
+            .mobile-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 60px;
+                background-color: #ffffff;
+                border-bottom: 1px solid #e0e0e0;
+                padding: 0 15px;
+                z-index: 1035;
+            }
+
+            .sidebar-toggle-button {
+                font-size: 24px;
+                background: none;
+                border: none;
+                color: var(--color-primary-dark);
+                cursor: pointer;
+            }
+
+            .mobile-header-logo {
+                height: 35px;
+            }
+
+            .sidebar-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0, 0, 0, 0.5);
+                z-index: 1039;
+                opacity: 0;
+                visibility: hidden;
+                transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+            }
+
+            body.sidebar-open .sidebar-overlay {
+                opacity: 1;
+                visibility: visible;
+            }
+        }
     </style>
-    <link href="https://fonts.googleapis.com/css2?family=Lobster+Two:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
 </head>
-<body>
-    <div class="sidebar">
-        <a class="sidebar-logo" asp-area="" asp-controller="Home" asp-action="Index">
-            Connectify
-        </a>
+<body class="@(isAuthPage ? "auth-page" : "")">
 
-        <ul class="sidebar-nav">
-            <li class="sidebar-nav-item">
-                <a class="sidebar-nav-link" asp-area="" asp-controller="Home" asp-action="Index">
-                    <i class="fas fa-home"></i>
-                    <span class="sidebar-nav-text">Página inicial</span>
-                </a>
-            </li>
-            <li class="sidebar-nav-item">
-                <a class="sidebar-nav-link" asp-area="" asp-controller="Profiles" asp-action="Search">
-                    <i class="fas fa-search"></i>
-                    <span class="sidebar-nav-text">Pesquisa</span>
-                </a>
-            </li>
-            <li class="sidebar-nav-item">
-                <a class="sidebar-nav-link" asp-area="" asp-controller="Topics" asp-action="Index">
-                    <i class="far fa-compass"></i>
-                    <span class="sidebar-nav-text">Explorar Tópicos</span>
-                </a>
-            </li>
-            <li class="sidebar-nav-item">
-                <a class="sidebar-nav-link" asp-area="" asp-controller="Events" asp-action="Index">
-                    <i class="fas fa-calendar-days"></i>
-                    <span class="sidebar-nav-text">Eventos</span>
-                </a>
-            </li>
-            <li class="sidebar-nav-item">
-                <a class="sidebar-nav-link" asp-controller="Messages" asp-action="Index">
-                    <i class="far fa-paper-plane"></i>
-                    <span class="sidebar-nav-text">Mensagens</span>
-                </a>
-            </li>
-            <li class="sidebar-nav-item">
-                <a class="sidebar-nav-link" asp-area="" asp-controller="Friendships" asp-action="Index">
-                    <i class="fas fa-user-group"></i> 
-                    <span class="sidebar-nav-text">Conexões</span> 
-                </a>
-            </li>
-            <li class="sidebar-nav-item">
-                <a class="sidebar-nav-link" asp-area="" asp-controller="Topics" asp-action="Create">
-                    <i class="far fa-plus-square"></i>
-                    <span class="sidebar-nav-text">Criar Tópico</span>
-                </a>
-            </li>
-            </li>
-            <li class="sidebar-nav-item">
-                <a class="sidebar-nav-link" asp-area="" asp-controller="Profiles" asp-action="MyProfile">
-                    <i class="far fa-user-circle"></i>
-                    <span class="sidebar-nav-text">Perfil</span>
-                </a>
-            </li>
-        </ul>
+    @if (!isAuthPage)
+    {
+        <header class="mobile-header">
+            <button class="sidebar-toggle-button" id="sidebarToggle" aria-label="Toggle navigation">
+                <i class="fas fa-bars"></i>
+            </button>
+            <a asp-area="" asp-controller="Home" asp-action="Index">
+                <img src="~/images/logo.png" alt="Connectify Logo" class="mobile-header-logo" />
+            </a>
+            <div></div>
+        </header>
 
-        <div class="sidebar-bottom">
-            <partial name="_LoginPartial" />
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-            <div class="sidebar-nav-item dropdown">
-                <a class="sidebar-nav-link dropdown-toggle" href="#" id="moreDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="fas fa-bars"></i>
-                    <span class="sidebar-nav-text">Mais</span>
-                </a>
-                <ul class="dropdown-menu" aria-labelledby="moreDropdown">
-                    @* Removido dropdown-menu-dark *@
-                    <li><a class="dropdown-item" href="#">Configurações</a></li>
-                    <li><a class="dropdown-item" href="#">Sua atividade</a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li>
-                        @* Espaço para logout se não estiver no _LoginPartial *@
-                    </li>
-                </ul>
+        <div class="sidebar">
+            <a class="sidebar-logo" asp-area="" asp-controller="Home" asp-action="Index">
+                <img src="~/images/logo.png" alt="Connectify Logo" class="sidebar-logo-img" />
+            </a>
+
+            <ul class="sidebar-nav">
+                <li class="sidebar-nav-item">
+                    <a class="sidebar-nav-link" asp-area="" asp-controller="Home" asp-action="Index">
+                        <i class="fas fa-home"></i>
+                        <span class="sidebar-nav-text">Página inicial</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a class="sidebar-nav-link" asp-area="" asp-controller="Profiles" asp-action="Search">
+                        <i class="fas fa-search"></i>
+                        <span class="sidebar-nav-text">Pesquisa</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a class="sidebar-nav-link" asp-area="" asp-controller="Topics" asp-action="Index">
+                        <i class="far fa-compass"></i>
+                        <span class="sidebar-nav-text">Explorar Tópicos</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a class="sidebar-nav-link" asp-area="" asp-controller="Events" asp-action="Index">
+                        <i class="fas fa-calendar-days"></i>
+                        <span class="sidebar-nav-text">Eventos</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a class="sidebar-nav-link" asp-controller="Messages" asp-action="Index">
+                        <i class="far fa-paper-plane"></i>
+                        <span class="sidebar-nav-text">Mensagens</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a class="sidebar-nav-link" asp-area="" asp-controller="Friendships" asp-action="Index">
+                        <i class="fas fa-user-group"></i>
+                        <span class="sidebar-nav-text">Conexões</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a class="sidebar-nav-link" asp-area="" asp-controller="Topics" asp-action="Create">
+                        <i class="far fa-plus-square"></i>
+                        <span class="sidebar-nav-text">Criar Tópico</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a class="sidebar-nav-link" asp-area="" asp-controller="Profiles" asp-action="MyProfile">
+                        <i class="far fa-user-circle"></i>
+                        <span class="sidebar-nav-text">Perfil</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="sidebar-bottom">
+                <partial name="_LoginPartial" />
+
+                <div class="sidebar-nav-item dropdown">
+                    <a class="sidebar-nav-link dropdown-toggle" href="#" id="moreDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-bars"></i>
+                        <span class="sidebar-nav-text">Mais</span>
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="moreDropdown">
+                        <li><a class="dropdown-item" href="#">Configurações</a></li>
+                        <li><a class="dropdown-item" href="#">Sua atividade</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            @* Espaço para logout se não estiver no _LoginPartial *@
+                        </li>
+                    </ul>
+                </div>
             </div>
         </div>
-    </div>
+    }
 
-    @* Alterado para main-content container para centralizar o conteúdo *@
     <div class="main-content container">
         <main role="main" class="pb-3">
-            @* Incluir o _AlertsPartial aqui se você o tiver *@
             @if (TempData["SuccessMessage"] != null)
             {
                 <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -276,7 +358,6 @@
 
     <footer class="border-top footer text-muted">
         <div class="container">
-            @* Mantido container para o footer centralizado *@
             © @DateTime.Now.Year - Connectify - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
         </div>
     </footer>
@@ -284,52 +365,63 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+
     @await RenderSectionAsync("Scripts", required: false)
 
-
     <script>
-        // Script para adicionar a classe 'active' ao link da página atual
         $(function () {
-            var currentPath = location.pathname;
-            var currentSearch = location.search; // Para considerar query strings se necessário
+            // LÓGICA PARA ABRIR/FECHAR SIDEBAR EM MOBILE
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+            const body = document.body;
 
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', function () {
+                    body.classList.toggle('sidebar-open');
+                });
+            }
+
+            if (sidebarOverlay) {
+                sidebarOverlay.addEventListener('click', function () {
+                    body.classList.remove('sidebar-open');
+                });
+            }
+
+            // SCRIPT PARA MARCAR LINK ATIVO NA SIDEBAR
+            var currentPath = location.pathname;
             $('.sidebar-nav-link').each(function () {
                 var $this = $(this);
                 var linkHref = $this.attr('href');
 
-                // Remove trailing slash from currentPath if it's not just "/"
+                if (!linkHref) return;
+
                 var normalizedCurrentPath = currentPath;
                 if (normalizedCurrentPath !== '/' && normalizedCurrentPath.endsWith('/')) {
                     normalizedCurrentPath = normalizedCurrentPath.slice(0, -1);
                 }
-                // Remove trailing slash from linkHref if it's not just "/"
+
                 var normalizedLinkHref = linkHref;
-                 if (normalizedLinkHref !== '/' && normalizedLinkHref.endsWith('/')) {
+                if (normalizedLinkHref !== '/' && normalizedLinkHref.endsWith('/')) {
                     normalizedLinkHref = normalizedLinkHref.slice(0, -1);
                 }
 
-
-                // Lógica para link ativo
-                // 1. Home exato
-                if (normalizedLinkHref === "/" && (normalizedCurrentPath === "/" || normalizedCurrentPath.toLowerCase().endsWith("/home") || normalizedCurrentPath.toLowerCase().endsWith("/home/index")) ) {
-                     $this.addClass('active');
-                     return; // Sair do loop se encontrou o link exato da home
+                if (normalizedLinkHref === "/" && (normalizedCurrentPath === "/" || normalizedCurrentPath.toLowerCase().endsWith("/home") || normalizedCurrentPath.toLowerCase().endsWith("/home/index"))) {
+                    $this.addClass('active');
+                    return;
                 }
-                // 2. Outros links (não home)
+
                 if (normalizedLinkHref !== "/" && normalizedCurrentPath.toLowerCase().startsWith(normalizedLinkHref.toLowerCase())) {
-                     // Para ser mais preciso, verifique se é um match exato ou se é uma sub-página
-                     if (normalizedCurrentPath.toLowerCase() === normalizedLinkHref.toLowerCase() ||
-                         normalizedCurrentPath.toLowerCase().startsWith(normalizedLinkHref.toLowerCase() + '/') ||
-                         (normalizedCurrentPath.toLowerCase() + '/').startsWith(normalizedLinkHref.toLowerCase() + '/index/') ) { // Para casos como /Controller e /Controller/Index
+                    if (normalizedCurrentPath.toLowerCase() === normalizedLinkHref.toLowerCase() ||
+                        normalizedCurrentPath.toLowerCase().startsWith(normalizedLinkHref.toLowerCase() + '/') ||
+                        (normalizedCurrentPath.toLowerCase() + '/').startsWith(normalizedLinkHref.toLowerCase() + '/index/')) {
                         $this.addClass('active');
                     }
                 }
             });
 
-            // Se nenhum link ativo foi encontrado e estamos na raiz, ativar o link da Página Inicial
             if (currentPath === '/' && !$('.sidebar-nav-link.active').length) {
-                 $('.sidebar-nav-link').filter(function() {
-                    return $(this).find('.fa-home').length > 0;
+                $('.sidebar-nav-link').filter(function () {
+                    return $(this).attr('href') === '/';
                 }).addClass('active');
             }
         });

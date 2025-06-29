@@ -2,82 +2,203 @@
 @model LoginModel
 
 @{
-    ViewData["Title"] = "Log in";
+    ViewData["Title"] = "Login";
+    Layout = null;
 }
 
-<h1>@ViewData["Title"]</h1>
-<div class="row">
-    <div class="col-md-4">
-        <section>
-            <form id="account" method="post">
-                <h2>Use a local account to log in.</h2>
-                <hr />
-                <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
-                <div class="form-floating mb-3">
-                    <input asp-for="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
-                    <label asp-for="Input.Email" class="form-label">Email</label>
-                    <span asp-validation-for="Input.Email" class="text-danger"></span>
-                </div>
-                <div class="form-floating mb-3">
-                    <input asp-for="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="password" />
-                    <label asp-for="Input.Password" class="form-label">Password</label>
-                    <span asp-validation-for="Input.Password" class="text-danger"></span>
-                </div>
-                <div class="checkbox mb-3">
-                    <label asp-for="Input.RememberMe" class="form-label">
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Connectify</title>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    <style>
+        :root {
+            --color-background: #fafafa;
+            --color-primary-dark: #1D3461;
+            --color-primary-medium: #376996;
+            --color-secondary-light: #6290C8;
+            --color-secondary-lightest: #829CBC;
+            --color-text-on-dark: #ffffff;
+            --color-success: #198754;
+            --color-warning: #ffc107;
+            --color-danger: #dc3545;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        .login-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .login-form-container {
+            flex: 0 0 40%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            background-color: var(--color-background);
+        }
+
+        .login-form-content {
+            max-width: 380px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .login-logo {
+            max-width: 300px;
+        }
+
+        .login-image-container {
+            flex: 1;
+            background-image: url('/images/banner.png'); /* !! IMPORTANTE: Coloque sua imagem aqui !! */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        /* Estilo para o 'Lembrar-me' */
+        .form-check {
+            margin-bottom: 1.5rem;
+            text-align: left;
+            padding-left: 0; /* Remover padding padrão para alinhar */
+        }
+
+        .form-check-label {
+            font-size: 0.9rem;
+        }
+
+        .form-control {
+            border-radius: 8px;
+            padding: 12px 15px;
+            border: 1px solid #ccc;
+            height: auto;
+        }
+
+            .form-control:focus {
+                border-color: var(--color-primary-medium);
+                box-shadow: 0 0 0 0.2rem rgba(55, 105, 150, 0.25);
+            }
+
+        .btn-login {
+            background-color: var(--color-primary-medium);
+            border-color: var(--color-primary-medium);
+            color: var(--color-text-on-dark);
+            font-weight: bold;
+            padding: 12px;
+            border-radius: 8px;
+            width: 100%;
+            transition: background-color 0.2s;
+        }
+
+            .btn-login:hover {
+                background-color: var(--color-primary-dark);
+                border-color: var(--color-primary-dark);
+                color: var(--color-text-on-dark);
+            }
+
+        /* NOVO: Estilos para a seção de links de opções */
+        .login-options {
+            margin-top: 2rem;
+            font-size: 0.85rem;
+        }
+
+            .login-options p {
+                margin-bottom: 0.6rem;
+            }
+
+            .login-options a {
+                color: var(--color-primary-medium);
+                text-decoration: none;
+            }
+
+                .login-options a:hover {
+                    text-decoration: underline;
+                }
+
+        @@media (max-width: 768px) {
+            .login-image-container {
+                display: none;
+            }
+
+            .login-form-container {
+                flex: 0 0 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-container">
+        <div class="login-form-container">
+            <div class="login-form-content">
+
+                <img src="/images/logo.png" alt="Connectify Logo" class="login-logo" /> <!-- !! IMPORTANTE: Coloque seu logo aqui !! -->
+
+                <form id="account" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+
+                    <div class="form-group">
+                        <input asp-for="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="Email" />
+                        <span asp-validation-for="Input.Email" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <input asp-for="Input.Password" type="password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="Password" />
+                        <span asp-validation-for="Input.Password" class="text-danger"></span>
+                    </div>
+
+                    <!-- ATUALIZADO: Checkbox "Lembrar-me" adicionado de volta e estilizado -->
+                    <div class="form-check">
                         <input class="form-check-input" asp-for="Input.RememberMe" />
-                        @Html.DisplayNameFor(m => m.Input.RememberMe)
-                    </label>
-                </div>
-                <div>
-                    <button id="login-submit" type="submit" class="w-100 btn btn-lg btn-primary">Log in</button>
-                </div>
-                <div>
-                    <p>
-                        <a id="forgot-password" asp-page="./ForgotPassword">Forgot your password?</a>
-                    </p>
-                    <p>
-                        <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl">Register as a new user</a>
-                    </p>
-                    <p>
-                        <a id="resend-confirmation" asp-page="./ResendEmailConfirmation">Resend email confirmation</a>
-                    </p>
-                </div>
-            </form>
-        </section>
-    </div>
-    <div class="col-md-6 col-md-offset-2">
-        <section>
-            <h3>Use another service to log in.</h3>
-            <hr />
-            @{
-                if ((Model.ExternalLogins?.Count ?? 0) == 0)
-                {
+                        <label class="form-check-label" asp-for="Input.RememberMe">
+                            Lembrar-me
+                        </label>
+                    </div>
+
                     <div>
+                        <button id="login-submit" type="submit" class="btn btn-login">Login</button>
+                    </div>
+
+                    <!-- ATUALIZADO: Links adicionais adicionados de volta -->
+                    <div class="login-options">
                         <p>
-                            There are no external authentication services configured. See this <a href="https://go.microsoft.com/fwlink/?LinkID=532715">article
-                            about setting up this ASP.NET application to support logging in via external services</a>.
+                            <a id="forgot-password" asp-page="./ForgotPassword">Esqueceu-se da sua password?</a>
+                        </p>
+                        <p>
+                            <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl">Registar um novo utilizador</a>
+                        </p>
+                        <p>
+                            <a id="resend-confirmation" asp-page="./ResendEmailConfirmation">Reenviar email de confirmação</a>
                         </p>
                     </div>
-                }
-                else
-                {
-                    <form id="external-account" asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl" method="post" class="form-horizontal">
-                        <div>
-                            <p>
-                                @foreach (var provider in Model.ExternalLogins!)
-                                {
-                                    <button type="submit" class="btn btn-primary" name="provider" value="@provider.Name" title="Log in using your @provider.DisplayName account">@provider.DisplayName</button>
-                                }
-                            </p>
-                        </div>
-                    </form>
-                }
-            }
-        </section>
+                </form>
+            </div>
+        </div>
+        <div class="login-image-container">
+            <!-- Esta div está vazia de propósito, a imagem é um background CSS -->
+        </div>
     </div>
-</div>
 
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-}
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    @section Scripts {
+        <partial name="_ValidationScriptsPartial" />
+    }
+</body>
+</html>

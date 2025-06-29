@@ -4,63 +4,232 @@
     ViewData["Title"] = "Criar Novo Tópico";
 }
 
-<h1>@ViewData["Title"]</h1>
+<!-- Painel de Criação Principal -->
+<div class="create-topic-panel">
+    <form asp-action="Create" method="post" enctype="multipart/form-data">
 
-<h4>Tópico</h4>
-<hr />
-<div class="row">
-    <div class="col-md-6">
-        <form asp-action="Create" method="post" enctype="multipart/form-data">
-            <div asp-validation-summary="All" class="text-danger"></div>
+        <!-- ======================= INÍCIO DA ALTERAÇÃO 1 ======================= -->
+        <!-- O botão "Criar Tópico" foi removido daqui e o link "Voltar" foi adicionado -->
+        <header class="panel-header">
+            <h1 class="panel-title">@ViewData["Title"]</h1>
+            <!-- LINK MOVIDO DA PARTE INFERIOR DA PÁGINA PARA AQUI -->
+            <a asp-action="Index" class="link-secondary text-decoration-none">Voltar à Lista de Tópicos</a>
+        </header>
+        <!-- ======================= FIM DA ALTERAÇÃO 1 ======================= -->
+        <!-- Corpo do Painel com Duas Colunas -->
+        <div class="panel-body row g-0">
 
-            <div class="form-group mb-3">
-                <label asp-for="Title" class="control-label"></label>
-                <input asp-for="Title" class="form-control" />
-                <span asp-validation-for="Title" class="text-danger"></span>
+            <!-- Coluna Esquerda: Upload de Imagem -->
+            <div class="col-md-7 image-upload-area">
+                <div class="upload-prompt" id="upload-prompt-container">
+                    <label for="topicImageFile" class="upload-label">
+                        <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                        <span class="upload-text">Arraste a imagem para aqui ou clique para selecionar</span>
+                        <small class="upload-subtext">Formatos suportados: JPG, PNG, GIF</small>
+                    </label>
+                </div>
+
+                <input type="file" name="topicImageFile" id="topicImageFile" class="d-none" accept="image/png, image/jpeg, image/gif" />
+
+                <div class="image-preview-container" id="image-preview-container">
+                    <img id="image-preview" src="#" alt="Pré-visualização da imagem" />
+                </div>
             </div>
 
-            @* CAMPO PARA CATEGORIA *@
-            <div class="form-group mb-3">
-                <label asp-for="CategoryId" class="control-label"></label>
-                @* 
-                    asp-for="CategoryId" liga este select à propriedade CategoryId do seu modelo Topic.
-                    class="form-select" é para estilo Bootstrap 5 (se usar BS4, seria form-control).
-                    asp-items="ViewBag.CategoryId" popula as opções do dropdown com os dados
-                    que você preparou no controller (new SelectList(..., "Id", "Name")).
-                *@
-                <select asp-for="CategoryId" class="form-select" asp-items="ViewBag.CategoryId">
-                    <option value="">-- Selecione uma Categoria --</option>
-                </select>
-                <span asp-validation-for="CategoryId" class="text-danger"></span>
-            </div>
+            <!-- Coluna Direita: Campos do Formulário -->
+            <div class="col-md-5 form-fields-area">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
-            <div class="form-group mb-3">
-                <label asp-for="Description" class="control-label"></label>
-                <textarea asp-for="Description" class="form-control" rows="5"></textarea>
-                <span asp-validation-for="Description" class="text-danger"></span>
-            </div>
+                <div class="form-group mb-4">
+                    <label asp-for="Title" class="form-label fw-bold"></label>
+                    <input asp-for="Title" class="form-control" placeholder="Dê um título ao seu tópico..." />
+                    <span asp-validation-for="Title" class="text-danger"></span>
+                </div>
 
-            <div class="form-group mb-3">
-                <label asp-for="TopicImageUrl" class="control-label"></label>
-                <input type="file" name="topicImageFile" class="form-control" accept="image/png, image/jpeg, image/gif" />
-                <span asp-validation-for="TopicImageUrl" class="text-danger"></span>
-                <small class="form-text text-muted">Opcional. Se não fornecer uma imagem, uma padrão será usada.</small>
-            </div>
+                <div class="form-group mb-4">
+                    <label asp-for="CategoryId" class="form-label fw-bold">Categoria</label>
+                    <select asp-for="CategoryId" class="form-select" asp-items="ViewBag.CategoryId">
+                        <option value="">Selecione uma Categoria</option>
+                    </select>
+                    <span asp-validation-for="CategoryId" class="text-danger"></span>
+                </div>
 
-            <div class="form-group">
-                <input type="submit" value="Criar Tópico" class="btn btn-primary" />
-                <a asp-action="Index" class="btn btn-secondary ms-2">Cancelar</a>
+                <div class="form-group mb-4">
+                    <label asp-for="Description" class="form-label fw-bold">Descrição</label>
+                    <textarea asp-for="Description" class="form-control" rows="6" placeholder="Escreva uma descrição detalhada..."></textarea>
+                    <span asp-validation-for="Description" class="text-danger"></span>
+                </div>
+
+                <!-- ======================= INÍCIO DA ALTERAÇÃO 2 ======================= -->
+                <!-- BOTÃO MOVIDO DO CABEÇALHO PARA AQUI -->
+                <div class="form-group mt-5 d-grid">
+                    <button type="submit" class="btn btn-primary-custom btn-lg">Criar Tópico</button>
+                </div>
+                <!-- ======================= FIM DA ALTERAÇÃO 2 ======================= -->
+
             </div>
-        </form>
-    </div>
+        </div>
+    </form>
 </div>
 
-<div class="mt-3">
-    <a asp-action="Index">Voltar à Lista de Tópicos</a>
-</div>
-
+<!-- O link "Voltar" foi removido daqui -->
 @section Scripts {
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('topicImageFile');
+            const previewContainer = document.getElementById('image-preview-container');
+            const previewImage = document.getElementById('image-preview');
+            const uploadPrompt = document.getElementById('upload-prompt-container');
+
+            fileInput.addEventListener('change', function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+
+                    reader.onload = function(e) {
+                        previewImage.setAttribute('src', e.target.result);
+                        previewContainer.style.display = 'flex';
+                        uploadPrompt.style.display = 'none';
+                    }
+
+                    reader.readAsDataURL(file);
+                }
+            });
+        });
+    </script>
 }
+
+<!-- O CSS permanece exatamente o mesmo, não precisa de alterações. -->
+<style>
+    :root {
+        --color-primary-dark: #1D3461;
+        --color-primary-medium: #376996;
+        --color-secondary-light: #6290C8;
+        --color-background-light: #f8f9fa;
+    }
+
+    h1:first-of-type {
+        display: none;
+    }
+
+    .create-topic-panel {
+        background-color: #fff;
+        border-radius: 12px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        max-width: 900px;
+        margin: 2rem auto;
+        border: 1px solid #dee2e6;
+    }
+
+    .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .panel-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--color-primary-dark);
+        margin: 0;
+    }
+
+    .btn-primary-custom {
+        background-color: var(--color-primary-medium);
+        border-color: var(--color-primary-medium);
+        color: #fff;
+        font-weight: 600;
+        padding: 0.5rem 1.25rem;
+        border-radius: 8px;
+    }
+
+        .btn-primary-custom:hover {
+            background-color: var(--color-primary-dark);
+            border-color: var(--color-primary-dark);
+        }
+
+    .panel-body {
+        min-height: 500px;
+    }
+
+    .image-upload-area {
+        background-color: var(--color-background-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        border-right: 1px solid #e9ecef;
+    }
+
+    .upload-prompt, .image-preview-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .upload-label {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        color: var(--color-primary-medium);
+        cursor: pointer;
+        padding: 2rem;
+        width: 100%;
+        height: 100%;
+    }
+
+    .upload-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+    }
+
+    .upload-text {
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    .upload-subtext {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-top: 0.5rem;
+    }
+
+    .image-preview-container {
+        display: none;
+        padding: 1rem;
+    }
+
+    #image-preview {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        border-radius: 8px;
+    }
+
+    .form-fields-area {
+        padding: 2rem;
+    }
+
+    .form-control, .form-select {
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+    }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--color-secondary-light);
+            box-shadow: 0 0 0 0.25rem rgba(30, 52, 97, 0.25);
+        }
+</style>

@@ -16,9 +16,13 @@ namespace projetodweb_connectify.Models.DTOs
         public string Username { get; set; }
         public DateTime CreatedAt { get; set; }
         public List<TopicPostDto> PersonalTopicPosts { get; set; } = new List<TopicPostDto>();
+        public int? PersonalTopicId { get; set; }
         public List<TopicSummaryDto> CreatedTopics { get; set; } = new List<TopicSummaryDto>();
         public List<SavedTopicDto> SavedTopics { get; set; } = new List<SavedTopicDto>();
         public string FriendshipStatus { get; set; } // Mudei para string para simplificar
+
+        
+        public int FriendsCount { get; set; } // <-- Nova propriedade para a contagem de amigos
     }
 
     /// <summary>

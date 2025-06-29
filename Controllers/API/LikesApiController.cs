@@ -11,7 +11,7 @@ namespace projetodweb_connectify.Controllers.API
 {
     [Route("api/likes")]
     [ApiController]
-    [Authorize] // Exige que o utilizador esteja autenticado para todas as ações
+    [Authorize] 
     public class LikesApiController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -79,7 +79,6 @@ namespace projetodweb_connectify.Controllers.API
             return Ok(result);
         }
 
-        // POST: api/likes/comment/10
         /// <summary>
         /// Adiciona ou remove um "like" de um comentário.
         /// </summary>
@@ -144,7 +143,6 @@ namespace projetodweb_connectify.Controllers.API
             var identityUserName = User.Identity?.Name;
             if (string.IsNullOrEmpty(identityUserName)) return null;
 
-            // Esta consulta pode ser otimizada para evitar duas chamadas à BD
             var profileId = _context.Users
                 .Where(u => u.Username == identityUserName)
                 .Select(u => u.Profile.Id) // Seleciona diretamente o ID do perfil associado

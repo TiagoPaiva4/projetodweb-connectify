@@ -12,9 +12,7 @@ using projetodweb_connectify.Models;
 namespace projetodweb_connectify.Controllers
 {
     [Authorize]
-    // REMOVA [Route("api/[controller]")] e [ApiController] DA CLASSE SE ESTE CONTROLLER
-    // VAI SERVIR VIEWS MVC TRADICIONAIS E TAMBÉM TER ENDPOINTS DE API SEPARADOS.
-    // public class FriendshipsController : Controller // << DEVE HERDAR DE CONTROLLER
+    [ApiExplorerSettings(IgnoreApi = true)]
     public class FriendshipsController : Controller // Exemplo: Controller para Views e APIs
     {
         private readonly ApplicationDbContext _context;

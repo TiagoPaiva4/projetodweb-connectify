@@ -15,7 +15,7 @@ namespace projetodweb_connectify.Controllers.API
 {
     [Route("api/topic-posts")]
     [ApiController]
-    [Authorize] // Todas as ações exigem login, exceto as marcadas com [AllowAnonymous]
+    [Authorize] 
     public class TopicPostsApiController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -32,7 +32,7 @@ namespace projetodweb_connectify.Controllers.API
         /// </summary>
         /// <param name="topicId">O ID do tópico.</param>
         [HttpGet("by-topic/{topicId}")]
-        [AllowAnonymous] // Geralmente, a visualização de posts é pública
+        [AllowAnonymous] 
         public async Task<ActionResult<IEnumerable<TopicPostDto>>> GetPostsForTopic(int topicId)
         {
             var currentUserProfileId = await GetCurrentProfileIdAsync();
@@ -40,7 +40,7 @@ namespace projetodweb_connectify.Controllers.API
             var posts = await _context.TopicPosts
                 .Where(p => p.TopicId == topicId)
                 .Include(p => p.Profile).ThenInclude(pr => pr.User)
-                .Include(p => p.Likes) // Incluir os likes para contagem
+                .Include(p => p.Likes) 
                 .OrderBy(p => p.CreatedAt)
                 .Select(p => new TopicPostDto
                 {
@@ -128,7 +128,6 @@ namespace projetodweb_connectify.Controllers.API
             var profileId = await GetCurrentProfileIdAsync();
             if (postToUpdate.ProfileId != profileId)
             {
-                // Adicionar verificação de Admin, se aplicável
                 if (!User.IsInRole("Admin"))
                 {
                     return Forbid(); // Utilizador não é o dono nem admin

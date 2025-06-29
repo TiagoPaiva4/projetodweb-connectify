@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using projetodweb_connectify.Data;
-// Assuming your models are in this namespace
 using System.Security.Claims;
 using projetodweb_connectify.Models;
 
@@ -21,17 +20,16 @@ namespace projetodweb_connectify.Controllers
             _context = context;
         }
 
-        // GET: Events
+        // GET: /Events
+        // Apresenta a lista de todos os eventos.
         public async Task<IActionResult> Index()
         {
-            // FIX: Replaced "@ => @.Creator" with a valid lambda expression "e => e.Creator"
             var applicationDbContext = _context.Events.Include(e => e.Creator);
             return View(await applicationDbContext.ToListAsync());
         }
 
-        // GET: Events/Details/5
-        // CÓDIGO CORRIGIDO PARA O SEU EventsController.cs (NÃO o API Controller)
-
+        // GET: /Events/Details/5
+        // Mostra os detalhes de um evento específico, incluindo os participantes.
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -39,13 +37,10 @@ namespace projetodweb_connectify.Controllers
                 return NotFound();
             }
 
-            // AQUI ESTÁ A CORREÇÃO:
-            // Usamos Include() para carregar a lista de Attendees
-            // e ThenInclude() para carregar o User de cada um dos Attendees
             var eventModel = await _context.Events
-                .Include(e => e.Creator)                      // Inclui os dados do criador do evento
-                .Include(e => e.Attendees)                    // INCLUI A LISTA DE PARTICIPAÇÕES
-                    .ThenInclude(attendance => attendance.User) // PARA CADA PARTICIPAÇÃO, INCLUI OS DADOS DO UTILIZADOR
+                .Include(e => e.Creator)
+                .Include(e => e.Attendees)
+                    .ThenInclude(attendance => attendance.User)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (eventModel == null)
@@ -57,48 +52,42 @@ namespace projetodweb_connectify.Controllers
         }
 
         // GET: /Events/Create
-        // This action is called when a user navigates to the create page.
-        // It responds ONLY to GET requests.
+        // Apresenta o formulário para criar um novo evento.
         [HttpGet]
         public IActionResult Create()
         {
-            // Creates an empty ViewModel to be used by the form.
+            // Cria um ViewModel vazio para ser utilizado pelo formulário.
             var viewModel = new EventCreateViewModel();
             return View(viewModel);
         }
 
         // POST: /Events/Create
-        // This action is called when the user submits the creation form.
-        // It responds ONLY to POST requests.
+        // Processa os dados submetidos do formulário de criação de evento.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(EventCreateViewModel viewModel)
         {
-            // Check if the user-submitted data is valid
-            // (according to the rules in EventCreateViewModel).
+            // Verifica se os dados submetidos pelo utilizador são válidos
+            // (de acordo com as regras definidas no EventCreateViewModel).
             if (ModelState.IsValid)
             {
-                // 1. Get the username of the logged-in user
+                // 1. Obter o nome de utilizador (username) do utilizador autenticado.
                 var identityUsername = User.Identity.Name;
                 if (string.IsNullOrEmpty(identityUsername))
                 {
-                    // If for some reason the user is not logged in, don't continue.
-                    // Challenge() will trigger the authentication flow (e.g., redirect to login page).
+                    // Se o utilizador não estiver autenticado, aciona o fluxo de autenticação (ex: redireciona para a página de login).
                     return Challenge();
                 }
 
-                // 2. Find the user's record in our 'Users' table
+                // 2. Encontrar o registo do utilizador na nossa tabela 'Users'.
                 var creator = await _context.Users.FirstOrDefaultAsync(u => u.Username == identityUsername);
-
                 if (creator == null)
                 {
-                    // Add an error to the model if the user is not found in the database.
-                    ModelState.AddModelError(string.Empty, "Your user profile was not found. Cannot create the event.");
-                    // Return to the view to display the error.
+                    ModelState.AddModelError(string.Empty, "O seu perfil de utilizador não foi encontrado. Não é possível criar o evento.");
                     return View(viewModel);
                 }
 
-                // 3. Map data from the ViewModel to a new 'Event' object
+                // 3. Mapear os dados do ViewModel para um novo objeto 'Event'.
                 var newEvent = new Event
                 {
                     Title = viewModel.Title,
@@ -107,27 +96,27 @@ namespace projetodweb_connectify.Controllers
                     EndDateTime = viewModel.EndDateTime,
                     Location = viewModel.Location,
                     EventImageUrl = viewModel.EventImageUrl,
-
-                    // 4. Fill in the automatic and required data
+                    // Preenche os dados automáticos e obrigatórios.
                     CreatorId = creator.Id,
                     CreatedAt = DateTime.UtcNow
                 };
 
-                // 5. Add the new event to the context and save to the database
+                // 4. Adicionar o novo evento ao contexto e guardar na base de dados.
                 _context.Add(newEvent);
                 await _context.SaveChangesAsync();
 
-                // 6. Show a success message and redirect to the event list
-                TempData["SuccessMessage"] = "Event created successfully!";
+                // 5. Mostrar uma mensagem de sucesso e redirecionar para a lista de eventos.
+                TempData["SuccessMessage"] = "Evento criado com sucesso!";
                 return RedirectToAction(nameof(Index));
             }
 
-            // If ModelState is not valid (e.g., a required field was left blank),
-            // return to the form, keeping the data the user has already filled in.
+            // Se o ModelState não for válido, retorna para o formulário,
+            // mantendo os dados que o utilizador já preencheu.
             return View(viewModel);
         }
 
-        // GET: Events/Edit/5
+        // GET: /Events/Edit/5
+        // Apresenta o formulário para editar um evento existente.
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -144,9 +133,8 @@ namespace projetodweb_connectify.Controllers
             return View(@event);
         }
 
-        // POST: Events/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        // POST: /Events/Edit/5
+        // Processa os dados submetidos do formulário de edição.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,Title,Description,StartDateTime,EndDateTime,Location,EventImageUrl,CreatorId,CreatedAt,UpdatedAt")] Event @event)
@@ -180,7 +168,8 @@ namespace projetodweb_connectify.Controllers
             return View(@event);
         }
 
-        // GET: Events/Delete/5
+        // GET: /Events/Delete/5
+        // Apresenta a página de confirmação para apagar um evento.
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -188,10 +177,10 @@ namespace projetodweb_connectify.Controllers
                 return NotFound();
             }
 
-            // FIX: Replaced "@ => @.Creator" with a valid lambda expression "e => e.Creator"
             var @event = await _context.Events
                 .Include(e => e.Creator)
                 .FirstOrDefaultAsync(m => m.Id == id);
+
             if (@event == null)
             {
                 return NotFound();
@@ -200,7 +189,8 @@ namespace projetodweb_connectify.Controllers
             return View(@event);
         }
 
-        // POST: Events/Delete/5
+        // POST: /Events/Delete/5
+        // Executa a ação de apagar o evento após a confirmação.
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
