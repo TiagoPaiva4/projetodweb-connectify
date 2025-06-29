@@ -5,17 +5,21 @@
 }
 
 <div class="container mt-4">
-    @if (!Model.IsUserAuthenticated)
-    {
-        <div class="alert alert-info text-center">
-            <h4>Bem-vindo ao Connectify!</h4>
-            <p>Faça <a asp-area="Identity" asp-page="/Account/Login">login</a> ou <a asp-area="Identity" asp-page="/Account/Register">registe-se</a> para ver posts de amigos e interagir com a comunidade.</p>
-        </div>
-    }
-
     <div class="row">
         <!-- Coluna Principal do Feed (Centro) -->
         <div class="col-lg-7 col-md-12">
+
+            <!-- Bloco de boas-vindas movido para dentro da coluna do feed -->
+            @if (!Model.IsUserAuthenticated)
+            {
+                    <div class="welcome-box">
+                        <img src="~/images/logo-icon.png" alt="Connectify Icon" class="welcome-icon" />
+                        <h4 class="welcome-title">Bem-vindo à nova geração Connectify!</h4>
+                        <p class="welcome-text">
+                            Faça <a asp-area="Identity" asp-page="/Account/Login">login</a> ou <a asp-area="Identity" asp-page="/Account/Register">registe-se</a> para ver posts e interagir com a comunidade.
+                        </p>
+                    </div>
+            }
 
             <!-- Abas de Navegação -->
             <ul class="nav nav-tabs mb-3" id="feedTabs" role="tablist">
@@ -24,9 +28,9 @@
                 </li>
                 @if (Model.IsUserAuthenticated)
                 {
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="friends-feed-tab" data-bs-toggle="tab" data-bs-target="#friends-feed" type="button" role="tab">Amigos</button>
-                    </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="friends-feed-tab" data-bs-toggle="tab" data-bs-target="#friends-feed" type="button" role="tab">Amigos</button>
+                        </li>
                 }
             </ul>
 
@@ -43,34 +47,34 @@
                     }
                     else
                     {
-                        <div class="text-center p-5 empty-state">
-                            <i class="fas fa-newspaper fa-3x text-muted mb-3"></i>
-                            <p class="lead">Ainda não há publicações para mostrar.</p>
+                            <div class="text-center p-5 empty-state">
+                                <i class="fas fa-newspaper fa-3x text-muted mb-3"></i>
+                                <p class="lead">Ainda não há publicações para mostrar.</p>
                             @if (Model.IsUserAuthenticated)
                             {
-                                <p><a asp-controller="Topics" asp-action="Index" class="btn btn-primary-custom">Explorar Tópicos</a></p>
+                                        <p><a asp-controller="Topics" asp-action="Index" class="btn btn-primary-custom">Explorar Tópicos</a></p>
                             }
-                        </div>
+                            </div>
                     }
                 </div>
 
                 <!-- Aba "Amigos" -->
                 @if (Model.IsUserAuthenticated)
                 {
-                    <div class="tab-pane fade" id="friends-feed" role="tabpanel">
+                        <div class="tab-pane fade" id="friends-feed" role="tabpanel">
                         @if (Model.CurrentUserProfileId == null)
                         {
-                            <div class="alert alert-warning">
-                                Para ver os posts dos seus amigos, primeiro precisa de <a asp-controller="Profiles" asp-action="Create">criar o seu perfil</a>.
-                            </div>
+                                    <div class="alert alert-warning">
+                                        Para ver os posts dos seus amigos, primeiro precisa de <a asp-controller="Profiles" asp-action="Create">criar o seu perfil</a>.
+                                    </div>
                         }
                         else if (!Model.UserHasFriends)
                         {
-                            <div class="text-center p-5 empty-state">
-                                <i class="fas fa-user-friends fa-3x text-muted mb-3"></i>
-                                <p class="lead">Ainda não tem amigos.</p>
-                                <p><a asp-controller="Profiles" asp-action="BrowseUsers" class="btn btn-primary-custom">Encontrar Amigos</a></p>
-                            </div>
+                                    <div class="text-center p-5 empty-state">
+                                        <i class="fas fa-user-friends fa-3x text-muted mb-3"></i>
+                                        <p class="lead">Ainda não tem amigos.</p>
+                                        <p><a asp-controller="Profiles" asp-action="BrowseUsers" class="btn btn-primary-custom">Encontrar Amigos</a></p>
+                                    </div>
                         }
                         else if (Model.FriendsPosts.Any())
                         {
@@ -81,12 +85,12 @@
                         }
                         else
                         {
-                            <div class="text-center p-5 empty-state">
-                                <i class="fas fa-couch fa-3x text-muted mb-3"></i>
-                                <p class="lead">Os seus amigos ainda não publicaram nada.</p>
-                            </div>
+                                    <div class="text-center p-5 empty-state">
+                                        <i class="fas fa-couch fa-3x text-muted mb-3"></i>
+                                        <p class="lead">Os seus amigos ainda não publicaram nada.</p>
+                                    </div>
                         }
-                    </div>
+                        </div>
                 }
             </div>
         </div>
@@ -98,53 +102,49 @@
                 <!-- TÓPICOS RECOMENDADOS -->
                 @if (Model.RecommendedTopics.Any())
                 {
-                    <div class="sidebar-section p-3 bg-white rounded shadow-sm mb-4">
-                        <h5 class="mb-3 section-title">Tópicos Populares</h5>
-                        <ul class="list-unstyled">
+                        <div class="sidebar-section p-3 bg-white rounded shadow-sm mb-4">
+                            <h5 class="mb-3 section-title">Tópicos Populares</h5>
+                            <ul class="list-unstyled">
                             @foreach (var topic in Model.RecommendedTopics.Take(5))
                             {
-                                <li class="mb-3">
-                                    <a asp-controller="Topics" asp-action="Details" asp-route-id="@topic.Id" class="d-flex align-items-center text-decoration-none text-dark sidebar-item-hover">
-                                        <img src="@(topic.TopicImageUrl ?? "/images/default-topic.jpg")" class="rounded me-3" style="width: 50px; height: 50px; object-fit: cover;">
-                                        <div>
-                                            <span class="fw-bold">@topic.Title</span>
-                                            <small class="d-block text-muted">Criado por @(topic.Creator?.Name ?? "Desconhecido")</small>
-                                        </div>
-                                    </a>
-                                </li>
+                                        <li class="mb-3">
+                                            <a asp-controller="Topics" asp-action="Details" asp-route-id="@topic.Id" class="d-flex align-items-center text-decoration-none text-dark sidebar-item-hover">
+                                                <img src="@(topic.TopicImageUrl ?? "/images/default-topic.jpg")" class="rounded me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                                                <div>
+                                                    <span class="fw-bold">@topic.Title</span>
+                                                    <small class="d-block text-muted">Criado por @(topic.Creator?.Name ?? "Desconhecido")</small>
+                                                </div>
+                                            </a>
+                                        </li>
                             }
-                        </ul>
-                    </div>
+                            </ul>
+                        </div>
                 }
 
-                <!-- SUGESTÕES DE AMIZADE COM LINK CORRIGIDO -->
+                <!-- SUGESTÕES DE AMIZADE -->
                 @if (Model.IsUserAuthenticated && Model.FriendshipSuggestions.Any())
                 {
-                    <div class="sidebar-section p-3 bg-white rounded shadow-sm">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="mb-0 section-title">Sugestões para ti</h5>
-                            <a asp-controller="Profiles" asp-action="BrowseUsers" class="small text-decoration-none">Ver todas</a>
-                        </div>
-                        <ul class="list-unstyled">
+                        <div class="sidebar-section p-3 bg-white rounded shadow-sm">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="mb-0 section-title">Sugestões para ti</h5>
+                                <a asp-controller="Profiles" asp-action="BrowseUsers" class="small text-decoration-none">Ver todas</a>
+                            </div>
+                            <ul class="list-unstyled">
                             @foreach (var suggestion in Model.FriendshipSuggestions.Take(4))
                             {
-                                <li class="mb-3 d-flex align-items-center justify-content-between">
-                                    <!-- ======================= A CORREÇÃO ESTÁ AQUI ======================= -->
-                                    <!-- Antes: <a asp-controller="Profiles" asp-action="UserProfile" ... > -->
-                                    <!-- Agora: Usamos um href direto para corresponder à sua rota customizada -->
-                                    <a href="/profile/@suggestion.User.Username" class="d-flex align-items-center text-decoration-none text-dark flex-grow-1 sidebar-item-hover">
-                                        <img src="@(suggestion.ProfilePicture ?? "/images/defaultuser.png")" alt="Foto de @suggestion.Name" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">
-                                        <div class="me-2">
-                                            <span class="fw-bold">@suggestion.Name</span>
-                                            <small class="d-block text-muted">Sugestão</small>
-                                        </div>
-                                    </a>
-                                    <!-- ======================= FIM DA CORREÇÃO ======================= -->
-                                    <button class="btn btn-sm btn-primary-custom follow-suggestion-btn" data-target-userid="@suggestion.User.Id">Conectar</button>
-                                </li>
+                                        <li class="mb-3 d-flex align-items-center justify-content-between">
+                                            <a href="/profile/@suggestion.User.Username" class="d-flex align-items-center text-decoration-none text-dark flex-grow-1 sidebar-item-hover">
+                                                <img src="@(suggestion.ProfilePicture ?? "/images/defaultuser.png")" alt="Foto de @suggestion.Name" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                                                <div class="me-2">
+                                                    <span class="fw-bold">@suggestion.Name</span>
+                                                    <small class="d-block text-muted">Sugestão</small>
+                                                </div>
+                                            </a>
+                                            <button class="btn btn-sm btn-primary-custom follow-suggestion-btn" data-target-userid="@suggestion.User.Id">Conectar</button>
+                                        </li>
                             }
-                        </ul>
-                    </div>
+                            </ul>
+                        </div>
                 }
             </div>
         </div>
@@ -152,74 +152,112 @@
 </div>
 
 @section Scripts {
-    <script>
-        $(document).ready(function () {
-            // SCRIPT DE SEGUIR (agora deve funcionar corretamente pois o botão está separado do link)
-            $('.follow-suggestion-btn').on('click', function (event) {
-                event.preventDefault();
-                event.stopPropagation();
+        <script>
+            $(document).ready(function () {
+                // SCRIPT DE SEGUIR
+                $('.follow-suggestion-btn').on('click', function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
 
-                var button = $(this);
-                var targetUserId = button.data('target-userid');
-                var originalText = button.text();
-                button.prop('disabled', true).text('A enviar...');
+                    var button = $(this);
+                    var targetUserId = button.data('target-userid');
+                    var originalText = button.text();
+                    button.prop('disabled', true).text('A enviar...');
 
-                $.ajax({
-                    url: '/api/friendships/request/' + targetUserId,
-                    type: 'POST',
-                    headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
-                    success: function (response) {
-                        button.text('Pedido Enviado').removeClass('btn-primary-custom').addClass('btn-outline-secondary');
-                    },
-                    error: function (xhr) {
-                        button.prop('disabled', false).text(originalText);
-                        var errorMessage = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : "Erro ao enviar pedido.";
-                        alert(errorMessage);
-                    }
-                });
-            });
-
-            // SCRIPT DE LIKES (inalterado)
-            $('form[data-like-form]').on('submit', function (e) {
-                e.preventDefault();
-                var form = $(this);
-                var button = form.find('.like-button');
-                var icon = button.find('i');
-                var postId = form.data('like-form');
-                var countSpan = $('span[data-like-count="' + postId + '"]');
-                var currentCount = parseInt(countSpan.text());
-                button.prop('disabled', true);
-                $.ajax({
-                    url: form.attr('action'),
-                    type: 'POST',
-                    headers: { 'RequestVerificationToken': form.find('input[name="__RequestVerificationToken"]').val() },
-                    success: function (response) {
-                        if (response.hasLiked) {
-                            button.removeClass('btn-outline-danger').addClass('btn-danger');
-                            icon.removeClass('far fa-heart').addClass('fas fa-heart');
-                            countSpan.text(currentCount + 1);
-                        } else {
-                            button.removeClass('btn-danger').addClass('btn-outline-danger');
-                            icon.removeClass('fas fa-heart').addClass('far fa-heart');
-                            countSpan.text(currentCount - 1);
+                    $.ajax({
+                        url: '/api/friendships/request/' + targetUserId,
+                        type: 'POST',
+                        headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+                        success: function (response) {
+                            button.text('Pedido Enviado').removeClass('btn-primary-custom').addClass('btn-outline-secondary');
+                        },
+                        error: function (xhr) {
+                            button.prop('disabled', false).text(originalText);
+                            var errorMessage = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : "Erro ao enviar pedido.";
+                            alert(errorMessage);
                         }
-                    },
-                    error: function (xhr) {
-                        if(xhr.status === 400) { alert("Erro de validação. Por favor, recarregue a página."); }
-                        else { alert("Ocorreu um erro. Tente novamente."); }
-                    },
-                    complete: function () { button.prop('disabled', false); }
+                    });
+                });
+
+                // SCRIPT DE LIKES
+                $('form[data-like-form]').on('submit', function (e) {
+                    e.preventDefault();
+                    var form = $(this);
+                    var button = form.find('.like-button');
+                    var icon = button.find('i');
+                    var postId = form.data('like-form');
+                    var countSpan = $('span[data-like-count="' + postId + '"]');
+                    var currentCount = parseInt(countSpan.text());
+                    button.prop('disabled', true);
+                    $.ajax({
+                        url: form.attr('action'),
+                        type: 'POST',
+                        headers: { 'RequestVerificationToken': form.find('input[name="__RequestVerificationToken"]').val() },
+                        success: function (response) {
+                            if (response.hasLiked) {
+                                button.removeClass('btn-outline-danger').addClass('btn-danger');
+                                icon.removeClass('far fa-heart').addClass('fas fa-heart');
+                                countSpan.text(currentCount + 1);
+                            } else {
+                                button.removeClass('btn-danger').addClass('btn-outline-danger');
+                                icon.removeClass('fas fa-heart').addClass('far fa-heart');
+                                countSpan.text(currentCount - 1);
+                            }
+                        },
+                        error: function (xhr) {
+                            if(xhr.status === 400) { alert("Erro de validação. Por favor, recarregue a página."); }
+                            else { alert("Ocorreu um erro. Tente novamente."); }
+                        },
+                        complete: function () { button.prop('disabled', false); }
+                    });
                 });
             });
-        });
-    </script>
+        </script>
 }
 
 <style>
-    /* O CSS pode permanecer exatamente o mesmo */
     :root {
         --color-primary-dark: #1D3461;
         --color-primary-medium: #376996;
+    }
+
+    /* CSS para o novo aviso de boas-vindas */
+    .welcome-box {
+        background-color: #E0F7FA; 
+        color: #01579B;
+        border: 1px solid #B2EBF2;
+        border-radius: 12px;
+        text-align: center;
+        padding: 2.5rem 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .welcome-icon {
+        max-width: 60px;
+        margin-bottom: 1rem;
+    }
+
+    .welcome-title {
+        font-weight: 600;
+        color: var(--color-primary-dark);
+        margin-bottom: 0.5rem;
+    }
+
+    .welcome-text {
+        font-size: 1.1rem;
+        color: var(--color-primary-medium);
+        margin-bottom: 0;
+    }
+
+    .welcome-text a {
+        color: var(--color-primary-dark);
+        font-weight: 600;
+        text-decoration: underline;
+    }
+
+    .welcome-text a:hover {
+        color: var(--color-primary-medium);
     }
 
     .section-title {
@@ -233,13 +271,13 @@
         border-bottom: 2px solid transparent;
     }
 
-        .nav-tabs .nav-link.active,
-        .nav-tabs .nav-item.show .nav-link {
-            color: var(--color-primary-medium);
-            border-color: var(--color-primary-medium);
-            background-color: transparent;
-            font-weight: 600;
-        }
+    .nav-tabs .nav-link.active,
+    .nav-tabs .nav-item.show .nav-link {
+        color: var(--color-primary-medium);
+        border-color: var(--color-primary-medium);
+        background-color: transparent;
+        font-weight: 600;
+    }
 
     .btn-primary-custom {
         background-color: var(--color-primary-medium);
@@ -247,11 +285,11 @@
         color: #fff;
     }
 
-        .btn-primary-custom:hover {
-            background-color: var(--color-primary-dark);
-            border-color: var(--color-primary-dark);
-            color: #fff;
-        }
+    .btn-primary-custom:hover {
+        background-color: var(--color-primary-dark);
+        border-color: var(--color-primary-dark);
+        color: #fff;
+    }
 
     .post-card {
         border-radius: 8px;
@@ -279,7 +317,7 @@
         transition: background-color 0.2s ease-in-out;
     }
 
-        .sidebar-item-hover:hover {
-            background-color: #f8f9fa;
-        }
+    .sidebar-item-hover:hover {
+        background-color: #f8f9fa;
+    }
 </style>
