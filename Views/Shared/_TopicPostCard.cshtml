@@ -1,7 +1,15 @@
-﻿@* Views/Shared/_TopicPostCard.cshtml ou Views/Home/_TopicPostCard.cshtml *@
+﻿@* File: Views/Shared/_TopicPostCard.cshtml *@
 @model projetodweb_connectify.Models.TopicPost
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<IdentityUser> SignInManager
+
+@{
+    // We need to get the logged-in user's profile ID from the main view's ViewBag.
+    int? loggedInUserProfileId = ViewContext.ViewBag.CurrentUserProfileId as int?;
+}
 
 <div class="card mb-3 shadow-sm topic-post-card">
+    <!-- Your original card header is perfect. No changes needed. -->
     <div class="card-header bg-light py-2">
         <div class="d-flex align-items-center">
             <a asp-controller="Profiles" asp-action="UserProfile" asp-route-identifier="@Model.Profile?.User?.Username" class="text-decoration-none">
@@ -23,18 +31,80 @@
         </div>
     </div>
 
-    @if (!string.IsNullOrEmpty(Model.PostImageUrl))
-    {
-        <img src="@Model.PostImageUrl" class="card-img-top" alt="Imagem do post" style="max-height: 400px; object-fit: cover;">
-    }
-    <div class="card-body">
-        <p class="card-text">@Html.Raw(Model.Content?.Replace("\n", "<br />"))</p>
+    <!-- ========================================================== -->
+    <!-- == START: CLICKABLE POST BODY (IMAGE AND TEXT)          == -->
+    <!-- ========================================================== -->
+    <a asp-controller="Topics" 
+       asp-action="Details" 
+       asp-route-id="@Model.TopicId" 
+       asp-fragment="post-@Model.Id" 
+       class="text-decoration-none text-dark">
+
+        @if (!string.IsNullOrEmpty(Model.PostImageUrl))
+        {
+            <img src="@Model.PostImageUrl" class="card-img-top" alt="Imagem do post" style="max-height: 400px; object-fit: cover;">
+        }
+        <div class="card-body">
+            <p class="card-text">@Html.Raw(Model.Content?.Replace("\n", "<br />"))</p>
+        </div>
+    </a>
+    <!-- ========================================================== -->
+    <!-- == END: CLICKABLE POST BODY                             == -->
+    <!-- ========================================================== -->
+
+
+    <!-- ========================================================== -->
+    <!-- == START: NEW INTERACTIVE FOOTER                        == -->
+    <!-- ========================================================== -->
+    <div class="card-footer bg-white d-flex text-center p-0"> @* p-0 removes padding *@
+
+        <!-- AJAX LIKE BUTTON -->
+        <div class="flex-grow-1 border-end"> @* Use a border for a nice separator *@
+            @if (SignInManager.IsSignedIn(User))
+            {
+                <form asp-controller="Likes" asp-action="TogglePostLike" asp-route-id="@Model.Id" 
+                      data-like-form="@($"post-feed-{Model.Id}")" class="m-0">
+                    @{
+                        var hasLikedPost = Model.Likes.Any(l => l.ProfileId == loggedInUserProfileId);
+                    }
+                    <button type="submit" 
+                            class="btn btn-link text-decoration-none w-100 py-2 @(hasLikedPost ? "text-primary fw-bold" : "text-muted")">
+                        <i class="fas fa-thumbs-up"></i> 
+                        <span class="ms-1">Gosto</span> 
+                        <span class="ms-1 badge rounded-pill bg-secondary" data-like-count="@($"post-feed-{Model.Id}")">@Model.Likes.Count</span>
+                    </button>
+                </form>
+            }
+            else
+            {
+                <button class="btn btn-link text-decoration-none text-muted w-100 py-2" disabled>
+                    <i class="fas fa-thumbs-up"></i> 
+                    <span class="ms-1">Gosto</span>
+                    <span class="ms-1 badge rounded-pill bg-secondary">@Model.Likes.Count</span>
+                </button>
+            }
+        </div>
+
+        <!-- COMMENT BUTTON (LINK) -->
+        <div class="flex-grow-1">
+            <a asp-controller="Topics" 
+               asp-action="Details" 
+               asp-route-id="@Model.TopicId" 
+               asp-fragment="comment-form-@Model.Id" 
+               class="btn btn-link text-decoration-none text-muted w-100 py-2">
+                <i class="fas fa-comment"></i> 
+                <span class="ms-1">Comentar</span>
+                <span class="ms-1 badge rounded-pill bg-secondary">@Model.Comments.Count</span>
+            </a>
+        </div>
+
     </div>
-    <div class="card-footer bg-light py-2">
-        <a asp-controller="Topics" asp-action="Details" asp-route-id="@Model.TopicId" class="btn btn-sm btn-outline-primary">Ver Post & Comentários</a>
-        @* Adicionar botões de Like, etc. aqui no futuro *@
-    </div>
+    <!-- ========================================================== -->
+    <!-- == END: NEW INTERACTIVE FOOTER                          == -->
+    <!-- ========================================================== -->
 </div>
+
+<!-- Your original style block is good to keep -->
 <style>
     .topic-post-card .card-header, .topic-post-card .card-footer {
         border-top: 1px solid rgba(0,0,0,.125);
