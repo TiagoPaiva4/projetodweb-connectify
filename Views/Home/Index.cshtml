@@ -1,6 +1,6 @@
 ﻿@model projetodweb_connectify.Models.Feed
 @{
-    ViewData["Title"] = "Feed Principal";
+    ViewData["Title"] = "Connectify";
     ViewData["LoggedInUserProfileId"] = Model.CurrentUserProfileId;
 }
 
@@ -112,7 +112,7 @@
                                                 <img src="@(topic.TopicImageUrl ?? "/images/default-topic.jpg")" class="rounded me-3" style="width: 50px; height: 50px; object-fit: cover;">
                                                 <div>
                                                     <span class="fw-bold">@topic.Title</span>
-                                                    <small class="d-block text-muted">Criado por @(topic.Creator?.Name ?? "Desconhecido")</small>
+                                            <small class="d-block text-muted">Criado por @(topic.Creator?.Name ?? "Desconhecido")</small>
                                                 </div>
                                             </a>
                                         </li>

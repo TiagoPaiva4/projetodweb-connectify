@@ -7,6 +7,7 @@ using projetodweb_connectify.Models.DTOs;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace projetodweb_connectify.Controllers.API
 {
@@ -217,6 +218,8 @@ namespace projetodweb_connectify.Controllers.API
             if (user == null || user.Profile == null)
                 return NotFound(new { message = "Perfil não encontrado." });
 
+  
+
             // ======================= INÍCIO DA ALTERAÇÃO =======================
             // 1. Contar o número de amizades aceites para este utilizador.
             //    Uma amizade é contada se o status for 'Accepted' e o ID do utilizador
@@ -229,6 +232,12 @@ namespace projetodweb_connectify.Controllers.API
                 );
             // ======================= FIM DA ALTERAÇÃO =======================
 
+            var personalTopic = await _context.Topics
+                .AsNoTracking()
+                .Include(t => t.Posts)
+                .Where(t => t.CreatedBy == user.Profile.Id && t.IsPersonal)
+                .FirstOrDefaultAsync();
+
             var profileDto = new ProfileDto
             {
                 Id = user.Profile.Id,
@@ -238,17 +247,14 @@ namespace projetodweb_connectify.Controllers.API
                 ProfilePicture = user.Profile.ProfilePicture,
                 Username = user.Username,
                 CreatedAt = user.Profile.CreatedAt,
+                PersonalTopicId = personalTopic?.Id,
                 FriendsCount = friendsCount
             };
 
             // O resto da sua lógica para obter posts, tópicos criados e tópicos guardados
             // permanece aqui, pois pertence ao perfil do próprio utilizador.
 
-            var personalTopic = await _context.Topics
-                .AsNoTracking()
-                .Include(t => t.Posts)
-                .Where(t => t.CreatedBy == user.Profile.Id && t.IsPersonal)
-                .FirstOrDefaultAsync();
+          
 
             if (personalTopic != null && personalTopic.Posts.Any())
             {

@@ -1,410 +1,528 @@
 ﻿@{
-	ViewData["Title"] = "O Meu Perfil";
+    ViewData["Title"] = "O Meu Perfil";
 }
 
 <!-- Secção para mostrar um estado de carregamento -->
 <div id="loading-state" class="text-center mt-5">
-	<div class="spinner-border" role="status">
-		<span class="visually-hidden">A carregar...</span>
-	</div>
-	<p class="mt-2">A carregar perfil...</p>
+    <div class="spinner-border" role="status">
+        <span class="visually-hidden">A carregar...</span>
+    </div>
+    <p class="mt-2">A carregar perfil...</p>
 </div>
 
 <!-- Secção do perfil, inicialmente escondida -->
 <div id="profile-content" style="display: none;">
-	<!-- Cabeçalho do Perfil -->
-	<header class="profile-header">
-		<div class="profile-avatar-container">
-			<img id="profile-picture" src="" alt="Foto de Perfil" class="profile-avatar" />
-		</div>
-		<div class="profile-info">
-			<div class="profile-info-header">
-				<h2 id="profile-username" class="profile-username"></h2>
-				<a href="@Url.Action("Edit", "Profiles")" class="btn-edit-profile">Editar perfil</a>
-			</div>
+    <!-- Cabeçalho do Perfil -->
+    <header class="profile-header">
+        <div class="profile-avatar-container">
+            <img id="profile-picture" src="" alt="Foto de Perfil" class="profile-avatar" />
+        </div>
+        <div class="profile-info">
+            <div class="profile-info-header">
+                <h2 id="profile-username" class="profile-username"></h2>
 
-			<!-- ESTATÍSTICAS ATUALIZADAS -->
-			<ul class="profile-stats">
-				<li><span id="topics-count" class="stat-number">0</span> tópicos criados</li>
-				<li><span id="friends-count" class="stat-number">0</span> conexões</li>
-			</ul>
+                <!-- BOTÃO PARA CRIAR POST (SÓ APARECE SE O TÓPICO PESSOAL EXISTIR) -->
+                <button id="create-personal-post-btn" class="btn-create-post" style="display: none;">Criar Publicação</button>
+                <a href="@Url.Action("Edit", "Profiles")" class="btn-edit-profile">Editar perfil</a>
+            </div>
 
-			<div class="profile-bio">
-				<strong id="profile-name"></strong>
-				<p id="profile-bio"></p>
-			</div>
-		</div>
-	</header>
+            <!-- ESTATÍSTICAS -->
+            <ul class="profile-stats">
+                <li><span id="topics-count" class="stat-number">0</span> tópicos criados</li>
+                <li><span id="friends-count" class="stat-number">0</span> conexões</li>
+            </ul>
 
-	<!-- Abas de Navegação (Tabs) -->
-	<div class="profile-tabs">
-		<button class="tab-button active" data-target="#personal-posts-container">
-			<i class="fas fa-th"></i> MURAL
-		</button>
-		<button class="tab-button" data-target="#created-topics-container">
-			<i class="fas fa-list-ul"></i> TÓPICOS CRIADOS
-		</button>
-		<button class="tab-button" data-target="#saved-topics-container">
-			<i class="fas fa-bookmark"></i> GUARDADOS
-		</button>
-	</div>
+            <div class="profile-bio">
+                <strong id="profile-name"></strong>
+                <p id="profile-bio"></p>
+            </div>
 
-	<!-- Conteúdo das Abas -->
-	<div class="profile-tab-content">
-		<!-- Painel 1: Mural Pessoal (Posts) -->
-		<div id="personal-posts-container" class="tab-content-panel active">
-			<!-- As publicações do mural serão inseridas aqui como uma grelha -->
-		</div>
+        </div>
+    </header>
 
-		<!-- Painel 2: Tópicos Criados -->
-		<div id="created-topics-container" class="tab-content-panel">
-			<!-- Os tópicos criados serão inseridos aqui como uma grelha -->
-		</div>
+    <!-- Abas de Navegação (Tabs) -->
+    <div class="profile-tabs">
+        <button class="tab-button active" data-target="#personal-posts-container">
+            <i class="fas fa-th"></i> MURAL
+        </button>
+        <button class="tab-button" data-target="#created-topics-container">
+            <i class="fas fa-list-ul"></i> TÓPICOS CRIADOS
+        </button>
+        <button class="tab-button" data-target="#saved-topics-container">
+            <i class="fas fa-bookmark"></i> GUARDADOS
+        </button>
+    </div>
 
-		<!-- Painel 3: Tópicos Guardados -->
-		<div id="saved-topics-container" class="tab-content-panel">
-			<!-- O conteúdo será preenchido pelo JavaScript -->
-		</div>
-	</div>
+    <!-- Conteúdo das Abas -->
+    <div class="profile-tab-content">
+        <!-- Painel 1: Mural Pessoal (Posts) -->
+        <div id="personal-posts-container" class="tab-content-panel active">
+            <!-- As publicações do mural serão inseridas aqui via JS -->
+        </div>
+
+        <!-- Painel 2: Tópicos Criados -->
+        <div id="created-topics-container" class="tab-content-panel">
+            <!-- Os tópicos criados serão inseridos aqui via JS -->
+        </div>
+
+        <!-- Painel 3: Tópicos Guardados -->
+        <div id="saved-topics-container" class="tab-content-panel">
+            <!-- O conteúdo será preenchido pelo JavaScript -->
+        </div>
+    </div>
 </div>
 
 <!-- Secção para mostrar erros -->
 <div id="error-state" class="text-danger" style="display: none;">
-	<p>Ocorreu um erro ao carregar o perfil. Por favor, tente novamente mais tarde.</p>
+    <p>Ocorreu um erro ao carregar o perfil. Por favor, tente novamente mais tarde.</p>
+</div>
+
+<!-- Modal para Criar um Novo Post (usando Bootstrap) -->
+<div class="modal fade" id="createPostModal" tabindex="-1" aria-labelledby="createPostModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createPostModalLabel">Nova Publicação no Mural</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="create-post-form">
+                    <div class="mb-3">
+                        <textarea class="form-control" id="post-content-input" rows="4" placeholder="Em que estás a pensar?" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="post-image-input" class="form-label">Adicionar imagem (opcional)</label>
+                        <input class="form-control" type="file" id="post-image-input" accept="image/*">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" form="create-post-form" class="btn btn-primary" id="submit-post-btn">Publicar</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 
 @section Scripts {
-	<style>
-		:root {
-			--color-background: #fafafa;
-			--color-primary-dark: #1D3461;
-			--color-primary-medium: #376996;
-			--color-secondary-light: #6290C8;
-			--color-secondary-lightest: #829CBC;
-			--color-text-on-dark: #ffffff;
-		}
+    <style>
+        :root {
+            --color-background: #fafafa;
+            --color-primary-dark: #1D3461;
+            --color-primary-medium: #376996;
+            --color-secondary-light: #6290C8;
+            --color-secondary-lightest: #829CBC;
+            --color-text-on-dark: #ffffff;
+        }
 
-		body {
-			background-color: var(--color-background);
-			color: var(--color-primary-dark);
-		}
+        body {
+            background-color: var(--color-background);
+            color: var(--color-primary-dark);
+        }
 
-		.profile-header {
-			display: flex;
-			align-items: center;
-			margin-bottom: 40px;
-			padding: 20px;
-			max-width: 975px; /* Alinhamento com o estilo do Instagram */
-			margin-left: auto;
-			margin-right: auto;
-		}
+        .profile-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            max-width: 975px;
+            margin-left: auto;
+            margin-right: auto;
+        }
 
-		.profile-avatar-container {
-			margin-right: 60px;
-			flex-shrink: 0;
-		}
+        .profile-avatar-container {
+            margin-right: 60px;
+            flex-shrink: 0;
+        }
 
-		.profile-avatar {
-			width: 150px;
-			height: 150px;
-			border-radius: 50%;
-			object-fit: cover;
-			border: 2px solid var(--color-secondary-light);
-		}
+        .profile-avatar {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--color-secondary-light);
+        }
 
-		.profile-info {
-			flex-grow: 1;
-		}
+        .profile-info {
+            flex-grow: 1;
+        }
 
-		.profile-info-header {
-			display: flex;
-			align-items: center;
-			margin-bottom: 20px;
-		}
+        .profile-info-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 10px; /* Espaço entre os botões */
+        }
 
-		.profile-username {
-			font-size: 28px;
-			font-weight: 300;
-			margin: 0;
-			margin-right: 20px;
-		}
+        .profile-username {
+            font-size: 28px;
+            font-weight: 300;
+            margin: 0;
+        }
 
-		.btn-edit-profile {
-			background-color: #efefef;
-			color: #000;
-			border: 1px solid #dbdbdb;
-			border-radius: 8px;
-			padding: 7px 16px;
-			font-weight: 600;
-			cursor: pointer;
-			text-decoration: none;
-			transition: background-color 0.2s ease-in-out;
-		}
+        .btn-create-post {
+            background-color: var(--color-primary-medium);
+            color: var(--color-text-on-dark);
+            border: 1px solid var(--color-primary-medium);
+            border-radius: 8px;
+            padding: 7px 16px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease-in-out;
+        }
 
-			.btn-edit-profile:hover {
-				background-color: #dbdbdb;
-			}
+            .btn-create-post:hover {
+                background-color: var(--color-primary-dark);
+            }
 
-		.profile-stats {
-			display: flex;
-			list-style: none;
-			padding: 0;
-			margin: 0 0 20px 0;
-		}
+        .btn-edit-profile {
+            background-color: #efefef;
+            color: #000;
+            border: 1px solid #dbdbdb;
+            border-radius: 8px;
+            padding: 7px 16px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background-color 0.2s ease-in-out;
+        }
 
-			.profile-stats li {
-				margin-right: 40px;
-				font-size: 16px;
-			}
+            .btn-edit-profile:hover {
+                background-color: #dbdbdb;
+            }
 
-			.profile-stats .stat-number {
-				font-weight: 600;
-			}
+        .profile-stats {
+            display: flex;
+            list-style: none;
+            padding: 0;
+            margin: 0 0 20px 0;
+        }
 
-		.profile-bio strong {
-			font-weight: 600;
-		}
+            .profile-stats li {
+                margin-right: 40px;
+                font-size: 16px;
+            }
 
-		.profile-bio p {
-			margin-top: 5px;
-			white-space: pre-wrap;
-		}
+            .profile-stats .stat-number {
+                font-weight: 600;
+            }
 
-		.profile-tabs {
-			display: flex;
-			justify-content: center;
-			border-top: 1px solid #dbdbdb;
-		}
+        .profile-bio strong {
+            font-weight: 600;
+        }
 
-		.tab-button {
-			background: none;
-			border: none;
-			color: #8e8e8e;
-			padding: 18px 20px;
-			font-size: 12px;
-			font-weight: 600;
-			letter-spacing: 1px;
-			cursor: pointer;
-			border-top: 1px solid transparent;
-			margin-top: -1px;
-			text-transform: uppercase;
-		}
+        .profile-bio p {
+            margin-top: 5px;
+            white-space: pre-wrap;
+        }
 
-			.tab-button .fas {
-				margin-right: 6px;
-			}
+        .profile-tabs {
+            display: flex;
+            justify-content: center;
+            border-top: 1px solid #dbdbdb;
+        }
 
-			.tab-button.active {
-				color: var(--color-primary-dark);
-				border-top: 1px solid var(--color-primary-dark);
-			}
+        .tab-button {
+            background: none;
+            border: none;
+            color: #8e8e8e;
+            padding: 18px 20px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            cursor: pointer;
+            border-top: 1px solid transparent;
+            margin-top: -1px;
+            text-transform: uppercase;
+        }
 
-		.profile-tab-content {
-			max-width: 975px;
-			margin: 0 auto;
-		}
+            .tab-button .fas {
+                margin-right: 6px;
+            }
 
-			.profile-tab-content .tab-content-panel {
-				display: none;
-			}
+            .tab-button.active {
+                color: var(--color-primary-dark);
+                border-top: 1px solid var(--color-primary-dark);
+            }
 
-				.profile-tab-content .tab-content-panel.active {
-					display: grid;
-					grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-					gap: 28px;
-					padding-top: 20px;
-				}
+        .profile-tab-content {
+            max-width: 975px;
+            margin: 0 auto;
+        }
 
-		.grid-item {
-			position: relative;
-			width: 100%;
-			aspect-ratio: 1 / 1;
-			cursor: pointer;
-		}
+            .profile-tab-content .tab-content-panel {
+                display: none;
+            }
 
-			.grid-item img {
-				width: 100%;
-				height: 100%;
-				object-fit: cover;
-				border-radius: 4px;
-			}
+                .profile-tab-content .tab-content-panel.active {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                    gap: 28px;
+                    padding-top: 20px;
+                }
 
-			.grid-item .overlay {
-				position: absolute;
-				top: 0;
-				left: 0;
-				right: 0;
-				bottom: 0;
-				background-color: rgba(0, 0, 0, 0.5);
-				color: var(--color-text-on-dark);
-				display: flex;
-				flex-direction: column;
-				justify-content: center;
-				align-items: center;
-				opacity: 0;
-				transition: opacity 0.3s ease;
-			}
+        .grid-item {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            cursor: pointer;
+        }
 
-			.grid-item:hover .overlay {
-				opacity: 1;
-			}
+            .grid-item img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                border-radius: 4px;
+            }
 
-		.overlay-text {
-			font-weight: bold;
-			text-align: center;
-			padding: 10px;
-		}
+            .grid-item .overlay {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: rgba(0, 0, 0, 0.5);
+                color: var(--color-text-on-dark);
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            }
 
-		.empty-state {
-			grid-column: 1 / -1;
-			text-align: center;
-			padding: 50px 20px;
-			color: #8e8e8e;
-		}
+            .grid-item:hover .overlay {
+                opacity: 1;
+            }
 
-		.empty-state-icon {
-			font-size: 40px;
-			color: #262626;
-			border: 2px solid #262626;
-			width: 80px;
-			height: 80px;
-			border-radius: 50%;
-			display: inline-flex;
-			align-items: center;
-			justify-content: center;
-			margin-bottom: 20px;
-		}
-	</style>
+        .overlay-text {
+            font-weight: bold;
+            text-align: center;
+            padding: 10px;
+        }
 
-	<script>
-		document.addEventListener('DOMContentLoaded', function () {
-			const loadingDiv = document.getElementById('loading-state');
-			const profileDiv = document.getElementById('profile-content');
-			const errorDiv = document.getElementById('error-state');
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 50px 20px;
+            color: #8e8e8e;
+        }
 
-			const postsContainer = document.getElementById('personal-posts-container');
-			const createdTopicsContainer = document.getElementById('created-topics-container');
-			const savedTopicsContainer = document.getElementById('saved-topics-container');
+        .empty-state-icon {
+            font-size: 40px;
+            color: #262626;
+            border: 2px solid #262626;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+    </style>
 
-			const tabButtons = document.querySelectorAll('.tab-button');
-			const tabPanels = document.querySelectorAll('.tab-content-panel');
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const loadingDiv = document.getElementById('loading-state');
+            const profileDiv = document.getElementById('profile-content');
+            const errorDiv = document.getElementById('error-state');
 
-			tabButtons.forEach(button => {
-				button.addEventListener('click', () => {
-					tabButtons.forEach(btn => btn.classList.remove('active'));
-					tabPanels.forEach(panel => panel.classList.remove('active'));
+            const postsContainer = document.getElementById('personal-posts-container');
+            const createdTopicsContainer = document.getElementById('created-topics-container');
+            const savedTopicsContainer = document.getElementById('saved-topics-container');
 
-					button.classList.add('active');
-					const targetPanel = document.querySelector(button.dataset.target);
-					targetPanel.classList.add('active');
-				});
-			});
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabPanels = document.querySelectorAll('.tab-content-panel');
 
-			fetch('/api/profiles/me')
-				.then(response => response.ok ? response.json() : Promise.reject(response))
-				.then(data => {
-					document.getElementById('profile-picture').src = data.profilePicture || '/images/default-avatar.png';
-					document.getElementById('profile-username').textContent = data.username;
-					document.getElementById('profile-name').textContent = data.name;
-					document.getElementById('profile-bio').innerHTML = data.bio ? data.bio.replace(/\n/g, '<br>') : '';
+            const createPostBtn = document.getElementById('create-personal-post-btn');
+            const createPostModal = new bootstrap.Modal(document.getElementById('createPostModal'));
+            const createPostForm = document.getElementById('create-post-form');
+            const submitPostBtn = document.getElementById('submit-post-btn');
 
-					// Preencher as novas estatísticas
-					document.getElementById('topics-count').textContent = data.createdTopics.length;
-					document.getElementById('friends-count').textContent = data.friendsCount;
+            let personalTopicId = null;
 
-					// Renderizar o conteúdo de todas as abas
-					renderPersonalPosts(data.personalTopicPosts);
-					renderCreatedTopics(data.createdTopics);
-					renderSavedTopics(data.savedTopics);
+            // Lógica para alternar abas
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    tabPanels.forEach(panel => panel.classList.remove('active'));
+                    button.classList.add('active');
+                    document.querySelector(button.dataset.target).classList.add('active');
+                });
+            });
 
-					loadingDiv.style.display = 'none';
-					profileDiv.style.display = 'block';
-				})
-				.catch(error => {
-					console.error('Erro ao buscar o perfil:', error);
-					loadingDiv.style.display = 'none';
-					errorDiv.style.display = 'block';
-				});
+            // Buscar e renderizar dados do perfil
+            fetch('/api/profiles/me')
+                .then(response => response.ok ? response.json() : Promise.reject(response))
+                .then(data => {
+                    document.getElementById('profile-picture').src = data.profilePicture || '/images/default-avatar.png';
+                    document.getElementById('profile-username').textContent = data.username;
+                    document.getElementById('profile-name').textContent = data.name;
+                    document.getElementById('profile-bio').innerHTML = data.bio ? data.bio.replace(/\n/g, '<br>') : '';
+                    document.getElementById('topics-count').textContent = data.createdTopics.length;
+                    document.getElementById('friends-count').textContent = data.friendsCount;
 
-			function renderPersonalPosts(posts) {
-				postsContainer.innerHTML = '';
-				if (posts && posts.length > 0) {
-					posts.forEach(post => {
-						const postImage = post.postImageUrl || '/images/default-post.png';
-						const postCard = document.createElement('div');
-						postCard.className = 'grid-item';
-						postCard.innerHTML = `
-							<img src="${postImage}" alt="Publicação" />
-							<div class="overlay">
-								<p class="overlay-text">${post.content.substring(0, 50)}...</p>
-							</div>
-						`;
-						postsContainer.appendChild(postCard);
-					});
-				} else {
-					postsContainer.innerHTML = `
-						<div class="empty-state">
-							<div class="empty-state-icon"><i class="fas fa-camera"></i></div>
-							<h2>Sem publicações no mural</h2>
-							<p>As publicações que fizer no seu mural pessoal aparecerão aqui.</p>
-						</div>`;
-				}
-			}
+                    // Guardar o ID do tópico pessoal e mostrar o botão de criar post
+                    if (data.personalTopicId) {
+                        personalTopicId = data.personalTopicId;
+                        createPostBtn.style.display = 'inline-block';
+                    }
 
-			function renderCreatedTopics(topics) {
-				createdTopicsContainer.innerHTML = '';
-				if (topics && topics.length > 0) {
-					topics.forEach(topic => {
-						const topicLink = `/Topics/Details/${topic.id}`;
-						const topicImage = topic.topicImageUrl || '/images/default-topic.png';
-						const topicCard = document.createElement('a');
-						topicCard.href = topicLink;
-						topicCard.className = 'grid-item';
-						topicCard.innerHTML = `
-							<img src="${topicImage}" alt="Imagem do Tópico" />
-							<div class="overlay">
-								<span class="overlay-text">${topic.title}</span>
-							</div>
-						`;
-						createdTopicsContainer.appendChild(topicCard);
-					});
-				} else {
-					createdTopicsContainer.innerHTML = `
-						<div class="empty-state">
-							<div class="empty-state-icon"><i class="fas fa-plus-circle"></i></div>
-							<h2>Nenhum Tópico Criado</h2>
-							<p>Crie o seu primeiro tópico para que ele apareça aqui.</p>
-						</div>`;
-				}
-			}
+                    renderPersonalPosts(data.personalTopicPosts);
+                    renderCreatedTopics(data.createdTopics);
+                    renderSavedTopics(data.savedTopics);
 
-			function renderSavedTopics(savedTopics) {
-				savedTopicsContainer.innerHTML = '';
-				if (savedTopics && savedTopics.length > 0) {
-					savedTopics.forEach(saved => {
-						const topicLink = `/Topics/Details/${saved.topicId}`;
-						const topicImage = saved.topicImageUrl || '/images/default-topic.png';
-						const topicCard = document.createElement('a');
-						topicCard.href = topicLink;
-						topicCard.className = 'grid-item';
-						topicCard.innerHTML = `
-							<img src="${topicImage}" alt="Imagem do Tópico" />
-							<div class="overlay">
-								<span class="overlay-text">${saved.title}</span>
-							</div>
-						`;
-						savedTopicsContainer.appendChild(topicCard);
-					});
-				} else {
-					savedTopicsContainer.innerHTML = `
-						<div class="empty-state">
-							<div class="empty-state-icon"><i class="fas fa-bookmark"></i></div>
-							<h2>Nenhum Tópico Guardado</h2>
-							<p>Guarde tópicos que queira rever mais tarde e eles aparecerão aqui.</p>
-						</div>`;
-				}
-			}
-		});
-	</script>
+                    loadingDiv.style.display = 'none';
+                    profileDiv.style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Erro ao buscar o perfil:', error);
+                    loadingDiv.style.display = 'none';
+                    errorDiv.style.display = 'block';
+                });
+
+            // Abrir o modal ao clicar no botão
+            createPostBtn.addEventListener('click', () => {
+                createPostModal.show();
+            });
+
+            // Submeter o formulário de criação de post
+            createPostForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                if (!personalTopicId) {
+                    alert("Erro: ID do tópico pessoal não encontrado.");
+                    return;
+                }
+
+                const content = document.getElementById('post-content-input').value;
+                const imageFile = document.getElementById('post-image-input').files[0];
+
+                if (!content.trim()) {
+                    alert("Por favor, escreva algo na sua publicação.");
+                    return;
+                }
+
+                submitPostBtn.disabled = true;
+                submitPostBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> A publicar...';
+
+                const formData = new FormData();
+                formData.append('TopicId', personalTopicId);
+                formData.append('Content', content);
+                if (imageFile) {
+                    formData.append('PostImageFile', imageFile);
+                }
+
+                fetch('/api/topic-posts', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) return response.json().then(err => Promise.reject(err));
+                    return response.json();
+                })
+                .then(newPost => {
+                    addPostToGrid(newPost);
+                    createPostModal.hide();
+                    createPostForm.reset();
+                })
+                .catch(error => {
+                    console.error('Erro ao criar o post:', error);
+                    alert(`Não foi possível criar a publicação: ${error.message || 'Erro desconhecido'}`);
+                })
+                .finally(() => {
+                    submitPostBtn.disabled = false;
+                    submitPostBtn.innerHTML = 'Publicar';
+                });
+            });
+
+            // Função para adicionar um novo post à grelha dinamicamente
+            function addPostToGrid(post) {
+                const emptyState = postsContainer.querySelector('.empty-state');
+                if (emptyState) emptyState.remove();
+
+                const postImage = post.postImageUrl || '/images/default-post.png';
+                const postCard = document.createElement('div');
+                postCard.className = 'grid-item';
+                postCard.innerHTML = `
+                    <img src="${postImage}" alt="Publicação" />
+                    <div class="overlay">
+                        <p class="overlay-text">${post.content.substring(0, 50)}...</p>
+                    </div>
+                `;
+                postsContainer.prepend(postCard);
+            }
+
+            // Funções de renderização das abas
+            function renderPersonalPosts(posts) {
+                postsContainer.innerHTML = '';
+                if (posts && posts.length > 0) {
+                    posts.forEach(post => addPostToGrid(post));
+                } else {
+                    postsContainer.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon"><i class="fas fa-camera"></i></div>
+                            <h2>Sem publicações no mural</h2>
+                            <p>As publicações que fizer no seu mural pessoal aparecerão aqui.</p>
+                        </div>`;
+                }
+            }
+
+            function renderCreatedTopics(topics) {
+                createdTopicsContainer.innerHTML = '';
+                if (topics && topics.length > 0) {
+                    topics.forEach(topic => {
+                        const topicLink = `/Topics/Details/${topic.id}`;
+                        const topicImage = topic.topicImageUrl || '/images/default-topic.png';
+                        const topicCard = document.createElement('a');
+                        topicCard.href = topicLink;
+                        topicCard.className = 'grid-item';
+                        topicCard.innerHTML = `
+                            <img src="${topicImage}" alt="Imagem do Tópico" />
+                            <div class="overlay">
+                                <span class="overlay-text">${topic.title}</span>
+                            </div>
+                        `;
+                        createdTopicsContainer.appendChild(topicCard);
+                    });
+                } else {
+                    createdTopicsContainer.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon"><i class="fas fa-plus-circle"></i></div>
+                            <h2>Nenhum Tópico Criado</h2>
+                            <p>Crie o seu primeiro tópico para que ele apareça aqui.</p>
+                        </div>`;
+                }
+            }
+
+            function renderSavedTopics(savedTopics) {
+                savedTopicsContainer.innerHTML = '';
+                if (savedTopics && savedTopics.length > 0) {
+                    savedTopics.forEach(saved => {
+                        const topicLink = `/Topics/Details/${saved.topicId}`;
+                        const topicImage = saved.topicImageUrl || '/images/default-topic.png';
+                        const topicCard = document.createElement('a');
+                        topicCard.href = topicLink;
+                        topicCard.className = 'grid-item';
+                        topicCard.innerHTML = `
+                            <img src="${topicImage}" alt="Imagem do Tópico" />
+                            <div class="overlay">
+                                <span class="overlay-text">${saved.title}</span>
+                            </div>
+                        `;
+                        savedTopicsContainer.appendChild(topicCard);
+                    });
+                } else {
+                    savedTopicsContainer.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon"><i class="fas fa-bookmark"></i></div>
+                            <h2>Nenhum Tópico Guardado</h2>
+                            <p>Guarde tópicos que queira rever mais tarde e eles aparecerão aqui.</p>
+                        </div>`;
+                }
+            }
+        });
+    </script>
 }
