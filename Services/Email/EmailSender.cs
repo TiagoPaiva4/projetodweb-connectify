@@ -5,55 +5,71 @@ using Microsoft.Extensions.Options;
 
 namespace projetodweb_connectify.Services.Email;
 
+/// <summary>
+/// Serviço responsável pelo envio de emails utilizando as configurações da aplicação.
+/// </summary>
 public class EmailSender : ICustomEmailSender
 {
     private readonly EmailSettings _settings;
     private readonly ILogger<EmailSender> _logger;
 
-    // Constructor with dependency injection
+    // Construtor que recebe as dependências através de injeção.
     public EmailSender(IOptions<EmailSettings> settings, ILogger<EmailSender> logger)
     {
         _settings = settings.Value;
         _logger = logger;
     }
 
+    /// <summary>
+    /// Envia um email de confirmação de registo para um novo utilizador.
+    /// </summary>
+    /// <param name="email">O endereço de email do destinatário.</param>
+    /// <param name="name">O nome do destinatário a ser usado no corpo do email.</param>
+    /// <param name="confirmationLink">A ligação para a confirmação da conta.</param>
     public async Task SendEmailAsync(string email, string name, string confirmationLink)
     {
         Console.WriteLine("SendRegistrationConfirmationAsync called");
-        try 
+        try
         {
+            // Cria a estrutura base da mensagem de email.
             var message = new MimeMessage();
-            
+
             message.From.Add(new MailboxAddress(_settings.FromName, _settings.FromAddress));
             message.To.Add(new MailboxAddress(name, email));
             message.Subject = "Confirm Your Connectify Registration";
 
+            // Utiliza um BodyBuilder para criar facilmente um email com versões HTML e texto simples.
             var builder = new BodyBuilder();
-            
-            // HTML version
+
+            // Define a versão HTML do email.
             builder.HtmlBody = GetConfirmationEmailHtml(name, confirmationLink);
-            
-            // Plain text version
+
+            // Define a versão em texto simples, para clientes de email que não suportam HTML.
             builder.TextBody = GetConfirmationEmailText(name, confirmationLink);
 
             message.Body = builder.ToMessageBody();
 
+            // Configura e utiliza o cliente SMTP para enviar o email.
             using var client = new SmtpClient();
-            
+
             await client.ConnectAsync(_settings.SmtpServer, _settings.Port, SecureSocketOptions.StartTls);
             await client.AuthenticateAsync(_settings.Username, _settings.Password);
             await client.SendAsync(message);
             await client.DisconnectAsync(true);
-            
+
             _logger.LogInformation($"Confirmation email sent to {email}");
         }
         catch (Exception ex)
         {
+            // Em caso de erro, regista a exceção para diagnóstico.
             _logger.LogError(ex, $"Failed to send confirmation email to {email}");
-            throw; // Re-throw for calling code to handle
+            throw; // Relança a exceção para que o código que chamou este método possa lidar com o erro.
         }
     }
 
+    /// <summary>
+    /// Gera o conteúdo HTML para o email de confirmação.
+    /// </summary>
     private string GetConfirmationEmailHtml(string name, string link)
     {
         return $@"
@@ -69,6 +85,9 @@ public class EmailSender : ICustomEmailSender
             </div>";
     }
 
+    /// <summary>
+    /// Gera o conteúdo em texto simples para o email de confirmação.
+    /// </summary>
     private string GetConfirmationEmailText(string name, string link)
     {
         return $@"

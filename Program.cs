@@ -6,7 +6,6 @@ using projetodweb_connectify.Services.Email;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 
 // Builder Tiago
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
@@ -19,8 +18,6 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 // --- CONFIGURAÇÃO DO IDENTITY AJUSTADA ---
-// A configuração do Identity já está quase perfeita.
-// Adicionamos AddRoles<IdentityRole>() que você já tinha, o que é ótimo para o [Authorize(Roles="Admin")] funcionar.
 builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
@@ -95,8 +92,6 @@ var app = builder.Build();
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Connectify API V1");
-        // Opcional: faz com que a página do Swagger seja a página inicial ao executar em desenvolvimento
-        // c.RoutePrefix = string.Empty; 
     });
 
 
@@ -110,7 +105,6 @@ app.UseStaticFiles();
 app.UseRouting();
 
 // --- ATIVAR MIDDLEWARE DE AUTENTICAÇÃO E AUTORIZAÇÃO ---
-// A ordem é importante: Autenticação primeiro, depois Autorização.
 // UseAuthentication identifica quem é o utilizador.
 // UseAuthorization verifica se o utilizador identificado tem permissão para aceder ao recurso.
 app.UseAuthentication(); // Adicionado para garantir que o Identity é ativado
