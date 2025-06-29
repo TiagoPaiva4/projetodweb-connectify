@@ -56,38 +56,48 @@
     <!-- ========================================================== -->
     <!-- == START: NEW INTERACTIVE FOOTER                        == -->
     <!-- ========================================================== -->
-    <div class="card-footer bg-light py-2 d-flex justify-content-around align-items-center">
+    <div class="card-footer bg-white d-flex text-center p-0"> @* p-0 removes padding *@
+
         <!-- AJAX LIKE BUTTON -->
-        @if (SignInManager.IsSignedIn(User))
-        {
-            <form asp-controller="Likes" asp-action="TogglePostLike" asp-route-id="@Model.Id" 
-                  data-like-form="@($"post-feed-{Model.Id}")" class="flex-grow-1 me-1">
-                @{
-                    var hasLikedPost = Model.Likes.Any(l => l.ProfileId == loggedInUserProfileId);
-                }
-                <button type="submit" class="btn btn-sm w-100 @(hasLikedPost ? "btn-primary" : "btn-outline-secondary")">
+        <div class="flex-grow-1 border-end"> @* Use a border for a nice separator *@
+            @if (SignInManager.IsSignedIn(User))
+            {
+                <form asp-controller="Likes" asp-action="TogglePostLike" asp-route-id="@Model.Id" 
+                      data-like-form="@($"post-feed-{Model.Id}")" class="m-0">
+                    @{
+                        var hasLikedPost = Model.Likes.Any(l => l.ProfileId == loggedInUserProfileId);
+                    }
+                    <button type="submit" 
+                            class="btn btn-link text-decoration-none w-100 py-2 @(hasLikedPost ? "text-primary fw-bold" : "text-muted")">
+                        <i class="fas fa-thumbs-up"></i> 
+                        <span class="ms-1">Gosto</span> 
+                        <span class="ms-1 badge rounded-pill bg-secondary" data-like-count="@($"post-feed-{Model.Id}")">@Model.Likes.Count</span>
+                    </button>
+                </form>
+            }
+            else
+            {
+                <button class="btn btn-link text-decoration-none text-muted w-100 py-2" disabled>
                     <i class="fas fa-thumbs-up"></i> 
-                    <span data-like-count="@($"post-feed-{Model.Id}")">@Model.Likes.Count</span>
+                    <span class="ms-1">Gosto</span>
+                    <span class="ms-1 badge rounded-pill bg-secondary">@Model.Likes.Count</span>
                 </button>
-            </form>
-        }
-        else
-        {
-            <div class="flex-grow-1 me-1">
-                 <button class="btn btn-sm btn-outline-secondary w-100" disabled>
-                    <i class="fas fa-thumbs-up"></i> <span>@Model.Likes.Count</span>
-                </button>
-            </div>
-        }
+            }
+        </div>
 
         <!-- COMMENT BUTTON (LINK) -->
-        <a asp-controller="Topics" 
-           asp-action="Details" 
-           asp-route-id="@Model.TopicId" 
-           asp-fragment="comment-form-@Model.Id" 
-           class="btn btn-sm btn-outline-secondary flex-grow-1 ms-1">
-            <i class="fas fa-comment"></i> <span>@Model.Comments.Count</span>
-        </a>
+        <div class="flex-grow-1">
+            <a asp-controller="Topics" 
+               asp-action="Details" 
+               asp-route-id="@Model.TopicId" 
+               asp-fragment="comment-form-@Model.Id" 
+               class="btn btn-link text-decoration-none text-muted w-100 py-2">
+                <i class="fas fa-comment"></i> 
+                <span class="ms-1">Comentar</span>
+                <span class="ms-1 badge rounded-pill bg-secondary">@Model.Comments.Count</span>
+            </a>
+        </div>
+
     </div>
     <!-- ========================================================== -->
     <!-- == END: NEW INTERACTIVE FOOTER                          == -->
