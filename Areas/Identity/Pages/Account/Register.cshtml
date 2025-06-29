@@ -1,52 +1,203 @@
 ﻿@page
 @model RegisterModel
 @{
-    ViewData["Title"] = "Registar"; // Changed to Portuguese
+    ViewData["Title"] = "Registar";
+    Layout = null;
 }
 
-<div class="row justify-content-center">
-    <div class="col-md-6 col-lg-4">
-        @* Adjusted column for better centering on larger screens *@
-        <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post">
-            <h2>Criar nova conta.</h2>
-            <hr />
-            <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Connectify</title>
 
-            <div class="form-floating mb-3">
-                <input asp-for="Input.User.Username" class="form-control" autocomplete="username" aria-required="true" placeholder="Nome de utilizador" />
-                <label asp-for="Input.User.Username">Nome de Utilizador</label> @* Matched with Users.cs Display Name *@
-                <span asp-validation-for="Input.User.Username" class="text-danger"></span>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    <style>
+        :root {
+            --color-background: #f8f9fa;
+            --color-primary-dark: #1D3461;
+            --color-primary-medium: #376996;
+            --color-secondary-light: #6290C8;
+            --color-secondary-lightest: #829CBC;
+            --color-text-on-dark: #ffffff;
+            --color-text-light: #6c757d;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--color-background);
+        }
+
+        .login-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .login-form-container {
+            flex: 0 0 45%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 3rem;
+        }
+
+        .login-form-content {
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .login-logo {
+            display: block;
+            max-width: 300px;
+            margin: 0 auto 2rem auto; /* Diminuí a margem para caberem mais campos */
+        }
+
+        /* Título para a página de registo */
+        .form-title {
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 300;
+            color: var(--color-primary-dark);
+            margin-bottom: 2rem;
+        }
+
+        .login-image-container {
+            flex: 1;
+            background-image: url('/images/banner.png'); /* !! Use a mesma imagem de fundo !! */
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .image-overlay-logo {
+            max-width: 35%;
+            opacity: 0.9;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-control {
+            border-radius: 8px;
+            padding: 12px 15px;
+            border: 1px solid #ced4da;
+            height: auto;
+        }
+
+            .form-control:focus {
+                border-color: var(--color-primary-medium);
+                box-shadow: 0 0 0 0.2rem rgba(55, 105, 150, 0.25);
+            }
+
+        .btn-register { /* Mudado para btn-register por clareza */
+            background-color: var(--color-primary-medium);
+            border-color: var(--color-primary-medium);
+            color: var(--color-text-on-dark);
+            font-weight: 600;
+            padding: 12px;
+            border-radius: 8px;
+            width: 100%;
+            transition: background-color 0.2s;
+            margin-top: 1rem; /* Adicionado espaço acima do botão */
+        }
+
+            .btn-register:hover {
+                background-color: var(--color-primary-dark);
+                border-color: var(--color-primary-dark);
+                color: var(--color-text-on-dark);
+            }
+
+        .login-options {
+            margin-top: 2rem;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+
+            .login-options a {
+                color: var(--color-text-light);
+                text-decoration: none;
+            }
+
+                .login-options a:hover {
+                    text-decoration: underline;
+                    color: var(--color-primary-medium);
+                }
+
+        @@media (max-width: 992px) {
+            .login-image-container {
+                display: none;
+            }
+
+            .login-form-container {
+                flex: 0 0 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-container">
+        <div class="login-form-container">
+            <div class="login-form-content">
+
+                <img src="/images/logo.png" alt="Connectify Logo" class="login-logo" />
+                <h2 class="form-title">Criar nova conta</h2>
+
+                <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+
+                    <div class="form-group">
+                        <input asp-for="Input.User.Username" class="form-control" autocomplete="username" aria-required="true" placeholder="Nome de Utilizador" />
+                        <span asp-validation-for="Input.User.Username" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <input asp-for="Input.Email" class="form-control" autocomplete="email" aria-required="true" placeholder="Email" />
+                        <span asp-validation-for="Input.Email" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <input asp-for="Input.User.Phone" class="form-control" autocomplete="tel" placeholder="Telemóvel (Opcional)" />
+                        <span asp-validation-for="Input.User.Phone" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <input asp-for="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="Password" />
+                        <span asp-validation-for="Input.Password" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="Confirmar Password" />
+                        <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
+                    </div>
+
+                    <button id="registerSubmit" type="submit" class="btn btn-register">Registar</button>
+
+                    <div class="login-options">
+                        <p>
+                            Já tem uma conta? <a asp-page="./Login" asp-route-returnUrl="@Model.ReturnUrl">Faça login aqui</a>
+                        </p>
+                    </div>
+                </form>
             </div>
-
-            <div class="form-floating mb-3">
-                <input asp-for="Input.Email" class="form-control" autocomplete="email" aria-required="true" placeholder="name@example.com" /> @* Changed autocomplete to "email" *@
-                <label asp-for="Input.Email">Email</label>
-                <span asp-validation-for="Input.Email" class="text-danger"></span>
-            </div>
-
-            <div class="form-floating mb-3">
-                <input asp-for="Input.User.Phone" class="form-control" autocomplete="tel" aria-required="false" placeholder="Telemóvel" /> @* Changed autocomplete to "tel", aria-required to false as Phone is nullable *@
-                <label asp-for="Input.User.Phone">Telemóvel</label>  @* Matched with Users.cs Display Name *@
-                <span asp-validation-for="Input.User.Phone" class="text-danger"></span>
-            </div>
-
-            <div class="form-floating mb-3">
-                <input asp-for="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="Password" />
-                <label asp-for="Input.Password">Password</label>
-                <span asp-validation-for="Input.Password" class="text-danger"></span>
-            </div>
-
-            <div class="form-floating mb-3">
-                <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="Confirmar Password" /> @* Changed placeholder *@
-                <label asp-for="Input.ConfirmPassword">Confirmar Password</label>
-                <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
-            </div>
-
-            <button id="registerSubmit" type="submit" class="w-100 btn btn-lg btn-primary">Registar</button>
-        </form>
+        </div>
+        <div class="login-image-container">
+            
+        </div>
     </div>
-</div>
 
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-}
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    @section Scripts {
+        <partial name="_ValidationScriptsPartial" />
+    }
+</body>
+</html>
