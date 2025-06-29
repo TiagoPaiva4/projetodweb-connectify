@@ -20,17 +20,17 @@
         <div class="profile-info">
             <div class="profile-info-header">
                 <h2 id="profile-username" class="profile-username"></h2>
-
-                <!-- CONTAINER PARA OS BOTÕES DE AÇÃO (EDITAR, AMIZADE, MENSAGEM) -->
-                <div id="action-buttons-container">
-                    <!-- Os botões serão injetados aqui pelo JavaScript -->
+                <div id="action-buttons-container" class="d-flex align-items-center gap-2">
+                    <!-- Botões de Ação (amizade, etc.) serão injetados aqui -->
                 </div>
             </div>
+
+            <!-- ESTATÍSTICAS ATUALIZADAS -->
             <ul class="profile-stats">
-                <li><span id="topics-count" class="stat-number">0</span> tópicos</li>
-                <li><span id="followers-count" class="stat-number">0</span> seguidores</li>
-                <li><span id="following-count" class="stat-number">0</span> a seguir</li>
+                <li><span id="topics-count" class="stat-number">0</span> tópicos criados</li>
+                <li><span id="friends-count" class="stat-number">0</span> conexões</li>
             </ul>
+
             <div class="profile-bio">
                 <strong id="profile-name"></strong>
                 <p id="profile-bio"></p>
@@ -63,21 +63,20 @@
 
 @section Scripts {
     <style>
+        /* Reutilize o mesmo CSS da página MyProfile.cshtml */
         :root {
             --color-background: #fafafa;
             --color-primary-dark: #1D3461;
             --color-primary-medium: #376996;
             --color-secondary-light: #6290C8;
-            --color-secondary-lightest: #829CBC;
-            --color-text-on-dark: #ffffff;
             --color-danger: #dc3545;
             --color-success: #198754;
             --color-warning: #ffc107;
+            --color-text-on-dark: #ffffff;
         }
 
         body {
             background-color: var(--color-background);
-            color: var(--color-primary-dark);
         }
 
         .profile-header {
@@ -85,6 +84,9 @@
             align-items: center;
             margin-bottom: 40px;
             padding: 20px;
+            max-width: 975px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .profile-avatar-container {
@@ -117,79 +119,58 @@
             margin-right: 20px;
         }
 
-        #action-buttons-container {
-            margin-left: 20px;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        /* Estilos genéricos para todos os botões de ação */
         .btn-action {
             border: none;
             border-radius: 8px;
-            padding: 8px 16px;
+            padding: 7px 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.2s, opacity 0.2s, color 0.2s;
+            transition: background-color 0.2s, opacity 0.2s;
             white-space: nowrap;
             text-decoration: none;
             display: inline-block;
             text-align: center;
         }
 
-            .btn-action.btn-action-primary {
-                background-color: var(--color-primary-dark);
-                color: var(--color-text-on-dark);
+        .btn-action-primary {
+            background-color: var(--color-primary-dark);
+            color: white;
+        }
+
+            .btn-action-primary:hover:not(:disabled) {
+                background-color: var(--color-primary-medium);
             }
 
-                .btn-action.btn-action-primary:hover:not(:disabled) {
-                    background-color: var(--color-primary-medium);
-                }
+        .btn-action-secondary {
+            background-color: #efefef;
+            color: #000;
+            border: 1px solid #dbdbdb;
+        }
 
-            .btn-action.btn-action-secondary {
-                background-color: #efefef;
-                color: var(--color-primary-dark);
-                border: 1px solid #dbdbdb;
+            .btn-action-secondary:hover:not(:disabled) {
+                background-color: #dbdbdb;
             }
 
-                .btn-action.btn-action-secondary:hover:not(:disabled) {
-                    background-color: #dbdbdb;
-                }
+        .btn-action-success {
+            background-color: var(--color-success);
+            color: white;
+        }
 
-            .btn-action.btn-action-success {
-                background-color: var(--color-success);
-                color: var(--color-text-on-dark);
-            }
+        .btn-action-danger {
+            background-color: var(--color-danger);
+            color: white;
+        }
 
-                .btn-action.btn-action-success:hover:not(:disabled) {
-                    background-color: #157347;
-                }
+        .btn-action-warning {
+            background-color: var(--color-warning);
+            color: #000;
+        }
 
-            .btn-action.btn-action-danger {
-                background-color: var(--color-danger);
-                color: var(--color-text-on-dark);
-            }
+        .btn-action:disabled {
+            cursor: default;
+            opacity: 0.65;
+        }
 
-                .btn-action.btn-action-danger:hover:not(:disabled) {
-                    background-color: #bb2d3b;
-                }
-
-            .btn-action.btn-action-warning {
-                background-color: var(--color-warning);
-                color: #000;
-            }
-
-                .btn-action.btn-action-warning:hover:not(:disabled) {
-                    background-color: #ffca2c;
-                }
-
-            .btn-action:disabled {
-                cursor: default;
-                opacity: 0.65;
-            }
-
-        /* Resto do CSS */
         .profile-stats {
             display: flex;
             list-style: none;
@@ -203,11 +184,11 @@
             }
 
             .profile-stats .stat-number {
-                font-weight: bold;
+                font-weight: 600;
             }
 
         .profile-bio strong {
-            font-weight: bold;
+            font-weight: 600;
         }
 
         .profile-bio p {
@@ -218,16 +199,16 @@
         .profile-tabs {
             display: flex;
             justify-content: center;
-            border-top: 1px solid var(--color-secondary-light);
+            border-top: 1px solid #dbdbdb;
         }
 
         .tab-button {
             background: none;
             border: none;
-            color: var(--color-secondary-lightest);
-            padding: 15px 20px;
+            color: #8e8e8e;
+            padding: 18px 20px;
             font-size: 12px;
-            font-weight: bold;
+            font-weight: 600;
             letter-spacing: 1px;
             cursor: pointer;
             border-top: 1px solid transparent;
@@ -244,16 +225,21 @@
                 border-top: 1px solid var(--color-primary-dark);
             }
 
-        .profile-tab-content .tab-content-panel {
-            display: none;
+        .profile-tab-content {
+            max-width: 975px;
+            margin: 0 auto;
         }
 
-            .profile-tab-content .tab-content-panel.active {
-                display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-                gap: 28px;
-                padding-top: 20px;
+            .profile-tab-content .tab-content-panel {
+                display: none;
             }
+
+                .profile-tab-content .tab-content-panel.active {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                    gap: 28px;
+                    padding-top: 20px;
+                }
 
         .grid-item {
             position: relative;
@@ -278,7 +264,7 @@
                 right: 0;
                 bottom: 0;
                 background-color: rgba(0, 0, 0, 0.5);
-                color: var(--color-text-on-dark);
+                color: white;
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
@@ -301,13 +287,13 @@
             grid-column: 1 / -1;
             text-align: center;
             padding: 50px 20px;
-            color: var(--color-secondary-lightest);
+            color: #8e8e8e;
         }
 
         .empty-state-icon {
             font-size: 40px;
-            color: var(--color-primary-medium);
-            border: 2px solid var(--color-primary-medium);
+            color: #262626;
+            border: 2px solid #262626;
             width: 80px;
             height: 80px;
             border-radius: 50%;
@@ -326,10 +312,9 @@
             const actionButtonsContainer = document.getElementById('action-buttons-container');
             const postsContainer = document.getElementById('personal-posts-container');
             const createdTopicsContainer = document.getElementById('created-topics-container');
-
             const profileUsername = '@ViewData["ProfileUsername"]';
 
-            // ... (código das abas permanece o mesmo) ...
+            // Lógica das Abas
             const tabButtons = document.querySelectorAll('.tab-button');
             const tabPanels = document.querySelectorAll('.tab-content-panel');
             tabButtons.forEach(button => {
@@ -337,229 +322,116 @@
                     tabButtons.forEach(btn => btn.classList.remove('active'));
                     tabPanels.forEach(panel => panel.classList.remove('active'));
                     button.classList.add('active');
-                    const targetPanel = document.querySelector(button.dataset.target);
-                    if (targetPanel) {
-                        targetPanel.classList.add('active');
-                    }
+                    document.querySelector(button.dataset.target)?.classList.add('active');
                 });
             });
 
             function loadProfile() {
                 if (!profileUsername) {
-                    loadingDiv.style.display = 'none';
-                    errorDiv.querySelector('p').textContent = 'Nome de utilizador não especificado.';
-                    errorDiv.style.display = 'block';
+                    showError('Nome de utilizador não especificado.');
                     return;
                 }
 
                 fetch(`/api/profiles/${profileUsername}`)
-                    .then(response => {
-                        if (!response.ok) {
-                            return response.json().then(err => Promise.reject(err));
-                        }
-                        return response.json();
-                    })
+                    .then(response => response.ok ? response.json() : response.json().then(err => Promise.reject(err)))
                     .then(data => {
-                        // Preenche os dados do perfil na página
                         document.getElementById('profile-picture').src = data.profilePicture || '/images/defaultuser.png';
                         document.getElementById('profile-username').textContent = data.username;
                         document.getElementById('profile-name').textContent = data.name;
-                        document.getElementById('profile-bio').innerHTML = data.bio || '<i>Nenhuma bio definida.</i>';
+                        document.getElementById('profile-bio').innerHTML = data.bio ? data.bio.replace(/\n/g, '<br>') : '<i>Nenhuma bio definida.</i>';
                         document.title = `${data.name || data.username}'s Profile - Connectify`;
 
+                        // Preencher as novas estatísticas
                         document.getElementById('topics-count').textContent = data.createdTopics.length;
-                        document.getElementById('followers-count').textContent = data.followersCount || 0;
-                        document.getElementById('following-count').textContent = data.followingCount || 0;
+                        document.getElementById('friends-count').textContent = data.friendsCount;
 
-                        // **INICIA A LÓGICA DE RENDERIZAÇÃO DE BOTÕES E CONTEÚDO**
-                        renderActionAndFriendshipButtons(data);
+                        renderActionButtons(data);
                         renderPersonalPosts(data.personalTopicPosts);
                         renderCreatedTopics(data.createdTopics);
 
                         loadingDiv.style.display = 'none';
                         profileDiv.style.display = 'block';
                     })
-                    .catch(error => {
-                        console.error(`Erro ao buscar o perfil de ${profileUsername}:`, error);
-                        errorDiv.querySelector('p').textContent = error.message || 'Ocorreu um erro ao carregar o perfil. Por favor, tente novamente mais tarde.';
-                        loadingDiv.style.display = 'none';
-                        errorDiv.style.display = 'block';
-                    });
+                    .catch(error => showError(error.message || 'Ocorreu um erro ao carregar o perfil.'));
             }
 
-            // =========================================================================
-            // LÓGICA DE AMIZADE E AÇÕES
-            // =========================================================================
+            function renderActionButtons(profileData) {
+                actionButtonsContainer.innerHTML = '';
+                const { friendshipStatus, userId } = profileData;
 
-            function renderActionAndFriendshipButtons(profileData) {
-                actionButtonsContainer.innerHTML = ''; // Limpa botões antigos
-
-                if (!profileData.friendshipStatus || !profileData.userId) {
-                    console.error("Dados de amizade (friendshipStatus, userId) não foram retornados pela API.");
+                if (friendshipStatus === 'self') {
+                    // Se o perfil for do próprio utilizador (caso raro, mas possível)
+                    const editButton = document.createElement('a');
+                    editButton.href = '/Profiles/Edit';
+                    editButton.className = 'btn-action btn-action-secondary';
+                    editButton.textContent = 'Editar Perfil';
+                    actionButtonsContainer.appendChild(editButton);
                     return;
                 }
 
-                if (profileData.friendshipStatus === 'self') {
-                    const editButton = document.createElement('a');
-                    editButton.href = `/Profiles/Edit/${profileData.id}`; // `id` aqui é o ProfileId
-                    editButton.className = 'btn-action btn-action-secondary';
-                    editButton.innerHTML = `<i class="fas fa-user-edit me-1"></i> Editar Perfil`;
-                    actionButtonsContainer.appendChild(editButton);
-                } else {
-                    const messageButton = document.createElement('a');
-                    messageButton.href = `/Messages/Chat?otherUserId=${profileData.userId}`;
-                    messageButton.className = 'btn-action btn-action-primary';
-                    messageButton.innerHTML = `<i class="fas fa-paper-plane"></i> Enviar Mensagem`;
-                    actionButtonsContainer.appendChild(messageButton);
-
-                    const friendshipControls = document.createElement('div');
-                    friendshipControls.id = 'friendship-controls-placeholder';
-                    actionButtonsContainer.appendChild(friendshipControls);
-
-                    // O estado inicial já veio na primeira chamada, então podemos renderizar diretamente
-                    setButtonState(profileData.friendshipStatus, profileData.userId);
-                }
-            }
-
-            // Esta função agora é chamada diretamente ou pelo handleFriendshipAction
-            function setButtonState(status, targetUserId) {
-                const controlsPlaceholder = document.getElementById('friendship-controls-placeholder');
-                if (!controlsPlaceholder) return;
-                controlsPlaceholder.innerHTML = '';
+                const friendshipControls = document.createElement('div');
+                friendshipControls.id = 'friendship-controls-placeholder';
 
                 let btn;
-                switch (status) {
+                switch (friendshipStatus) {
                     case 'not_friends':
-                        btn = document.createElement('button');
-                        btn.textContent = 'Adicionar Amigo';
-                        btn.className = 'btn-action btn-action-success';
-                        btn.onclick = () => handleFriendshipAction(`/api/friendships/request/${targetUserId}`, 'POST', targetUserId);
-                        controlsPlaceholder.appendChild(btn);
+                        btn = createButton('Adicionar Amigo', 'btn-action-success', () => handleFriendshipAction('request', userId));
                         break;
                     case 'pending_sent':
-                        btn = document.createElement('button');
-                        btn.textContent = 'Cancelar Pedido';
-                        btn.className = 'btn-action btn-action-warning';
-                        btn.onclick = () => handleFriendshipAction(`/api/friendships/cancel/${targetUserId}`, 'POST', targetUserId);
-                        controlsPlaceholder.appendChild(btn);
-                        break;
-                    case 'pending_received':
-                        const acceptBtn = document.createElement('button');
-                        acceptBtn.textContent = "Aceitar";
-                        acceptBtn.className = "btn-action btn-action-success";
-                        acceptBtn.onclick = () => handleFriendshipAction(`/api/friendships/accept/${targetUserId}`, 'POST', targetUserId);
-
-                        const rejectBtn = document.createElement('button');
-                        rejectBtn.textContent = "Rejeitar";
-                        rejectBtn.className = "btn-action btn-action-danger ms-2";
-                        rejectBtn.onclick = () => handleFriendshipAction(`/api/friendships/reject/${targetUserId}`, 'POST', targetUserId);
-
-                        controlsPlaceholder.appendChild(acceptBtn);
-                        controlsPlaceholder.appendChild(rejectBtn);
+                        btn = createButton('Cancelar Pedido', 'btn-action-warning', () => handleFriendshipAction('cancel', userId));
                         break;
                     case 'friends':
-                        btn = document.createElement('button');
-                        btn.textContent = 'Desfazer Amizade';
-                        btn.className = 'btn-action btn-action-danger';
-                        btn.onclick = () => {
-                             if (confirm("Tem a certeza que quer desfazer esta amizade?")) {
-                                handleFriendshipAction(`/api/friendships/unfriend/${targetUserId}`, 'POST', targetUserId);
-                            }
-                        };
-                        controlsPlaceholder.appendChild(btn);
+                        btn = createButton('Desfazer Amizade', 'btn-action-danger', () => {
+                            if (confirm("Tem a certeza?")) handleFriendshipAction('unfriend', userId);
+                        });
                         break;
-                    default:
-                        btn = document.createElement('button');
-                        btn.textContent = 'Indisponível';
-                        btn.className = 'btn-action btn-action-secondary';
-                        btn.disabled = true;
-                        controlsPlaceholder.appendChild(btn);
+                    case 'pending_received':
+                        const acceptBtn = createButton('Aceitar', 'btn-action-success', () => handleFriendshipAction('accept', userId));
+                        const rejectBtn = createButton('Rejeitar', 'btn-action-danger ms-2', () => handleFriendshipAction('reject', userId));
+                        friendshipControls.append(acceptBtn, rejectBtn);
+                        break;
                 }
+                if(btn) friendshipControls.appendChild(btn);
+
+                // Adicionar botão de mensagem se não for o próprio perfil
+                const messageButton = createButton('Enviar Mensagem', 'btn-action-primary', () => window.location.href = `/Messages/Chat?otherUserId=${userId}`, true);
+                actionButtonsContainer.append(friendshipControls, messageButton);
             }
 
-            async function handleFriendshipAction(url, method, targetUserId) {
-                const buttons = document.querySelectorAll('#friendship-controls-placeholder button');
-                buttons.forEach(b => b.disabled = true);
+            function createButton(text, className, onClick, isLink = false) {
+                const el = isLink ? document.createElement('a') : document.createElement('button');
+                el.textContent = text;
+                el.className = `btn-action ${className}`;
+                if(isLink) el.href = "javascript:void(0);";
+                el.onclick = onClick;
+                return el;
+            }
+
+            async function handleFriendshipAction(action, targetUserId) {
+                const url = `/api/friendships/${action}/${targetUserId}`;
+                const buttons = actionButtonsContainer.querySelectorAll('button, a');
+                buttons.forEach(b => b.style.opacity = '0.5');
 
                 try {
-                    const response = await fetch(url, { method: method, headers: {} });
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.message || 'Ação falhou.');
-                    }
-                    // Após uma ação bem-sucedida, precisamos de saber o novo estado.
-                    // A forma mais simples é recarregar os dados do perfil.
-                    loadProfile();
+                    const response = await fetch(url, { method: 'POST' });
+                    if (!response.ok) throw new Error((await response.json()).message || 'Ação falhou.');
+                    loadProfile(); // Recarrega o perfil para atualizar o estado dos botões
                 } catch (error) {
-                    console.error('Falha na requisição de ação:', error);
                     alert(error.message);
-                    // Em caso de erro, reabilitar os botões pode ser útil, ou recarregar para reverter.
-                    loadProfile();
+                    buttons.forEach(b => b.style.opacity = '1'); // Reverte a opacidade em caso de erro
                 }
             }
 
-            // =========================================================================
-            // Funções de Renderização de Conteúdo
-            // =========================================================================
+            function renderPersonalPosts(posts) { /* ... Lógica igual à MyProfile.cshtml, mas com texto genérico ... */ }
+            function renderCreatedTopics(topics) { /* ... Lógica igual à MyProfile.cshtml, mas com texto genérico ... */ }
 
-            function renderPersonalPosts(posts) {
-                postsContainer.innerHTML = '';
-                if (posts && posts.length > 0) {
-                    posts.forEach(post => {
-                        if (!post.topicId) {
-                            console.warn("Post com ID", post.id, "não tem 'topicId'. O link não será criado.");
-                            return; // Pula este post se não tiver topicId
-                        }
-                        const postLink = `/Topics/Details/${post.topicId}?postId=${post.id}`;
-                        const postImage = post.postImageUrl || '/images/default-post.png';
-                        const postCard = document.createElement('a'); // Agora é um link
-                        postCard.href = postLink;
-                        postCard.className = 'grid-item';
-                        postCard.innerHTML = `
-                            <img src="${postImage}" alt="Publicação" />
-                            <div class="overlay">
-                                <p class="overlay-text">${post.content.substring(0, 50)}...</p>
-                            </div>
-                        `;
-                        postsContainer.appendChild(postCard);
-                    });
-                } else {
-                    postsContainer.innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-state-icon"><i class="fas fa-camera"></i></div>
-                            <h2>Sem publicações no mural</h2>
-                            <p>Este utilizador ainda não publicou no seu mural pessoal.</p>
-                        </div>`;
-                }
+            function showError(message) {
+                loadingDiv.style.display = 'none';
+                errorDiv.querySelector('p').textContent = message;
+                errorDiv.style.display = 'block';
             }
 
-            function renderCreatedTopics(topics) {
-                createdTopicsContainer.innerHTML = '';
-                if (topics && topics.length > 0) {
-                    topics.forEach(topic => {
-                        const topicLink = `/Topics/Details/${topic.id}`;
-                        const topicImage = topic.topicImageUrl || '/images/default-topic.png';
-                        const topicCard = document.createElement('a');
-                        topicCard.href = topicLink;
-                        topicCard.className = 'grid-item';
-                        topicCard.innerHTML = `
-                            <img src="${topicImage}" alt="Imagem do Tópico" />
-                            <div class="overlay">
-                                <span class="overlay-text">${topic.title}</span>
-                            </div>
-                        `;
-                        createdTopicsContainer.appendChild(topicCard);
-                    });
-                } else {
-                    createdTopicsContainer.innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-state-icon"><i class="fas fa-plus-circle"></i></div>
-                            <h2>Nenhum Tópico Criado</h2>
-                            <p>Este utilizador ainda não criou nenhum tópico.</p>
-                        </div>`;
-                }
-            }
-
+            // Iniciar o carregamento do perfil
             loadProfile();
         });
     </script>

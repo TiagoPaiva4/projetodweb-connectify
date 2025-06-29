@@ -127,7 +127,7 @@
                         <div class="sidebar-section p-3 bg-white rounded shadow-sm">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h5 class="mb-0 section-title">Sugestões para ti</h5>
-                                <a asp-controller="Profiles" asp-action="BrowseUsers" class="small text-decoration-none">Ver todas</a>
+                                <a asp-controller="Profiles" asp-action="Search" class="small text-decoration-none">Ver todas</a>
                             </div>
                             <ul class="list-unstyled">
                             @foreach (var suggestion in Model.FriendshipSuggestions.Take(4))

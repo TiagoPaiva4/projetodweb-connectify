@@ -19,6 +19,8 @@ namespace projetodweb_connectify.Models.DTOs
         public List<TopicSummaryDto> CreatedTopics { get; set; } = new List<TopicSummaryDto>();
         public List<SavedTopicDto> SavedTopics { get; set; } = new List<SavedTopicDto>();
         public string FriendshipStatus { get; set; } // Mudei para string para simplificar
+
+        public int FriendsCount { get; set; } // <-- Nova propriedade para a contagem de amigos
     }
 
     /// <summary>

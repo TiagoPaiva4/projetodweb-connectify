@@ -2,7 +2,6 @@
 	ViewData["Title"] = "O Meu Perfil";
 }
 
-<!-- Não precisa do <h1>, o nome de utilizador servirá de título -->
 <!-- Secção para mostrar um estado de carregamento -->
 <div id="loading-state" class="text-center mt-5">
 	<div class="spinner-border" role="status">
@@ -23,11 +22,13 @@
 				<h2 id="profile-username" class="profile-username"></h2>
 				<a href="@Url.Action("Edit", "Profiles")" class="btn-edit-profile">Editar perfil</a>
 			</div>
+
+			<!-- ESTATÍSTICAS ATUALIZADAS -->
 			<ul class="profile-stats">
-				<li><span id="topics-count" class="stat-number">0</span> tópicos</li>
-				<li><span id="followers-count" class="stat-number">0</span> seguidores</li>
-				<li><span id="following-count" class="stat-number">0</span> a seguir</li>
+				<li><span id="topics-count" class="stat-number">0</span> tópicos criados</li>
+				<li><span id="friends-count" class="stat-number">0</span> conexões</li>
 			</ul>
+
 			<div class="profile-bio">
 				<strong id="profile-name"></strong>
 				<p id="profile-bio"></p>
@@ -62,12 +63,7 @@
 
 		<!-- Painel 3: Tópicos Guardados -->
 		<div id="saved-topics-container" class="tab-content-panel">
-			<!-- Os tópicos guardados serão inseridos aqui. Precisará de os buscar na API. -->
-			<div class="empty-state">
-				<div class="empty-state-icon"><i class="fas fa-bookmark"></i></div>
-				<h2>Tópicos Guardados</h2>
-				<p>Guarde tópicos que queira rever mais tarde.</p>
-			</div>
+			<!-- O conteúdo será preenchido pelo JavaScript -->
 		</div>
 	</div>
 </div>
@@ -80,31 +76,28 @@
 
 @section Scripts {
 	<style>
-		/*
-						 * PALETA DE CORES AZUL
-						 * Definimos as cores como variáveis para ser fácil de gerir.
-						*/
 		:root {
-			--color-background: #fafafa; /* Fundo branco/cinza claro */
-			--color-primary-dark: #1D3461; /* Azul mais escuro (texto principal, títulos, abas ativas) */
-			--color-primary-medium: #376996; /* Azul médio (ícones, acentos) */
-			--color-secondary-light: #6290C8; /* Azul claro (bordas, hovers de botão) */
-			--color-secondary-lightest: #829CBC; /* Azul mais claro/acinzentado (texto secundário, fundo de botão) */
-			--color-text-on-dark: #ffffff; /* Texto branco para overlays */
+			--color-background: #fafafa;
+			--color-primary-dark: #1D3461;
+			--color-primary-medium: #376996;
+			--color-secondary-light: #6290C8;
+			--color-secondary-lightest: #829CBC;
+			--color-text-on-dark: #ffffff;
 		}
 
-		/* Estilo Geral */
 		body {
 			background-color: var(--color-background);
 			color: var(--color-primary-dark);
 		}
 
-		/* Cabeçalho do Perfil */
 		.profile-header {
 			display: flex;
 			align-items: center;
 			margin-bottom: 40px;
 			padding: 20px;
+			max-width: 975px; /* Alinhamento com o estilo do Instagram */
+			margin-left: auto;
+			margin-right: auto;
 		}
 
 		.profile-avatar-container {
@@ -117,7 +110,7 @@
 			height: 150px;
 			border-radius: 50%;
 			object-fit: cover;
-			border: 2px solid var(--color-secondary-light); /* Borda em azul claro */
+			border: 2px solid var(--color-secondary-light);
 		}
 
 		.profile-info {
@@ -138,18 +131,19 @@
 		}
 
 		.btn-edit-profile {
-			background-color: var(--color-secondary-lightest); /* Fundo do botão em azul mais claro */
-			color: var(--color-primary-dark); /* Texto do botão em azul escuro para contraste */
-			border: 1px solid var(--color-secondary-lightest);
+			background-color: #efefef;
+			color: #000;
+			border: 1px solid #dbdbdb;
 			border-radius: 8px;
-			padding: 5px 15px;
-			font-weight: bold;
+			padding: 7px 16px;
+			font-weight: 600;
 			cursor: pointer;
+			text-decoration: none;
 			transition: background-color 0.2s ease-in-out;
 		}
 
 			.btn-edit-profile:hover {
-				background-color: var(--color-secondary-light); /* Hover para azul claro */
+				background-color: #dbdbdb;
 			}
 
 		.profile-stats {
@@ -165,11 +159,11 @@
 			}
 
 			.profile-stats .stat-number {
-				font-weight: bold;
+				font-weight: 600;
 			}
 
 		.profile-bio strong {
-			font-weight: bold;
+			font-weight: 600;
 		}
 
 		.profile-bio p {
@@ -177,20 +171,19 @@
 			white-space: pre-wrap;
 		}
 
-		/* Abas de Navegação */
 		.profile-tabs {
 			display: flex;
 			justify-content: center;
-			border-top: 1px solid var(--color-secondary-light); /* Divisor em azul claro */
+			border-top: 1px solid #dbdbdb;
 		}
 
 		.tab-button {
 			background: none;
 			border: none;
-			color: var(--color-secondary-lightest); /* Cor da aba inativa (azul mais claro) */
-			padding: 15px 20px;
+			color: #8e8e8e;
+			padding: 18px 20px;
 			font-size: 12px;
-			font-weight: bold;
+			font-weight: 600;
 			letter-spacing: 1px;
 			cursor: pointer;
 			border-top: 1px solid transparent;
@@ -203,21 +196,25 @@
 			}
 
 			.tab-button.active {
-				color: var(--color-primary-dark); /* Cor da aba ativa (azul escuro) */
-				border-top: 1px solid var(--color-primary-dark); /* Borda superior em azul escuro */
+				color: var(--color-primary-dark);
+				border-top: 1px solid var(--color-primary-dark);
 			}
 
-		/* Grelha de Conteúdo */
-		.profile-tab-content .tab-content-panel {
-			display: none;
+		.profile-tab-content {
+			max-width: 975px;
+			margin: 0 auto;
 		}
 
-			.profile-tab-content .tab-content-panel.active {
-				display: grid;
-				grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-				gap: 28px;
-				padding-top: 20px;
+			.profile-tab-content .tab-content-panel {
+				display: none;
 			}
+
+				.profile-tab-content .tab-content-panel.active {
+					display: grid;
+					grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+					gap: 28px;
+					padding-top: 20px;
+				}
 
 		.grid-item {
 			position: relative;
@@ -239,7 +236,7 @@
 				left: 0;
 				right: 0;
 				bottom: 0;
-				background-color: rgba(0, 0, 0, 0.5); /* Overlay escuro continua a funcionar bem */
+				background-color: rgba(0, 0, 0, 0.5);
 				color: var(--color-text-on-dark);
 				display: flex;
 				flex-direction: column;
@@ -259,18 +256,17 @@
 			padding: 10px;
 		}
 
-		/* Estado Vazio */
 		.empty-state {
 			grid-column: 1 / -1;
 			text-align: center;
 			padding: 50px 20px;
-			color: var(--color-secondary-lightest); /* Texto secundário em azul claro */
+			color: #8e8e8e;
 		}
 
 		.empty-state-icon {
 			font-size: 40px;
-			color: var(--color-primary-medium); /* Ícone em azul médio */
-			border: 2px solid var(--color-primary-medium); /* Borda do círculo em azul médio */
+			color: #262626;
+			border: 2px solid #262626;
 			width: 80px;
 			height: 80px;
 			border-radius: 50%;
@@ -279,7 +275,6 @@
 			justify-content: center;
 			margin-bottom: 20px;
 		}
-
 	</style>
 
 	<script>
@@ -290,44 +285,38 @@
 
 			const postsContainer = document.getElementById('personal-posts-container');
 			const createdTopicsContainer = document.getElementById('created-topics-container');
-			const savedTopicsContainer = document.getElementById('saved-topics-container'); // Container para guardados
+			const savedTopicsContainer = document.getElementById('saved-topics-container');
 
-			// Lógica das Abas (Tabs)
 			const tabButtons = document.querySelectorAll('.tab-button');
 			const tabPanels = document.querySelectorAll('.tab-content-panel');
 
 			tabButtons.forEach(button => {
 				button.addEventListener('click', () => {
-					// Remover 'active' de todos
 					tabButtons.forEach(btn => btn.classList.remove('active'));
 					tabPanels.forEach(panel => panel.classList.remove('active'));
 
-					// Adicionar 'active' ao clicado
 					button.classList.add('active');
 					const targetPanel = document.querySelector(button.dataset.target);
 					targetPanel.classList.add('active');
 				});
 			});
 
-
 			fetch('/api/profiles/me')
 				.then(response => response.ok ? response.json() : Promise.reject(response))
 				.then(data => {
-					// Preencher dados do perfil
 					document.getElementById('profile-picture').src = data.profilePicture || '/images/default-avatar.png';
 					document.getElementById('profile-username').textContent = data.username;
 					document.getElementById('profile-name').textContent = data.name;
-					document.getElementById('profile-bio').innerHTML = data.bio; // innerHTML para respeitar <br> se houver
+					document.getElementById('profile-bio').innerHTML = data.bio ? data.bio.replace(/\n/g, '<br>') : '';
 
-					// Preencher estatísticas (valores de exemplo, ajuste conforme a sua API)
+					// Preencher as novas estatísticas
 					document.getElementById('topics-count').textContent = data.createdTopics.length;
-					// document.getElementById('followers-count').textContent = data.followersCount; // Descomente quando tiver
-					// document.getElementById('following-count').textContent = data.followingCount; // Descomente quando tiver
+					document.getElementById('friends-count').textContent = data.friendsCount;
 
-					// Renderizar Mural Pessoal e Tópicos Criados
+					// Renderizar o conteúdo de todas as abas
 					renderPersonalPosts(data.personalTopicPosts);
 					renderCreatedTopics(data.createdTopics);
-					// renderSavedTopics(data.savedTopics); // Chame esta função quando a API devolver os tópicos guardados
+					renderSavedTopics(data.savedTopics);
 
 					loadingDiv.style.display = 'none';
 					profileDiv.style.display = 'block';
@@ -338,42 +327,38 @@
 					errorDiv.style.display = 'block';
 				});
 
-					// Função para renderizar as publicações do mural no formato de grelha
-		function renderPersonalPosts(posts) {
-			postsContainer.innerHTML = '';
-			if (posts && posts.length > 0) {
-				posts.forEach(post => {
-					// Assumindo que a sua publicação tem uma imagem. Se não, use um placeholder.
-					// CORREÇÃO APLICADA AQUI:
-					const postImage = post.postImageUrl || '/images/default-post.png';
-					const postCard = document.createElement('div');
-					postCard.className = 'grid-item';
-					postCard.innerHTML = `
-						<img src="${postImage}" alt="Publicação" />
-						<div class="overlay">
-							<p class="overlay-text">${post.content.substring(0, 50)}...</p>
-						</div>
-					`;
-					postsContainer.appendChild(postCard);
-				});
-			} else {
-				postsContainer.innerHTML = `
-					<div class="empty-state">
-						<div class="empty-state-icon"><i class="fas fa-camera"></i></div>
-						<h2>Sem publicações no mural</h2>
-						<p>As publicações que fizer no seu mural pessoal aparecerão aqui.</p>
-					</div>`;
+			function renderPersonalPosts(posts) {
+				postsContainer.innerHTML = '';
+				if (posts && posts.length > 0) {
+					posts.forEach(post => {
+						const postImage = post.postImageUrl || '/images/default-post.png';
+						const postCard = document.createElement('div');
+						postCard.className = 'grid-item';
+						postCard.innerHTML = `
+							<img src="${postImage}" alt="Publicação" />
+							<div class="overlay">
+								<p class="overlay-text">${post.content.substring(0, 50)}...</p>
+							</div>
+						`;
+						postsContainer.appendChild(postCard);
+					});
+				} else {
+					postsContainer.innerHTML = `
+						<div class="empty-state">
+							<div class="empty-state-icon"><i class="fas fa-camera"></i></div>
+							<h2>Sem publicações no mural</h2>
+							<p>As publicações que fizer no seu mural pessoal aparecerão aqui.</p>
+						</div>`;
+				}
 			}
-		}
 
-			// Função para renderizar os tópicos criados no formato de grelha
 			function renderCreatedTopics(topics) {
 				createdTopicsContainer.innerHTML = '';
 				if (topics && topics.length > 0) {
 					topics.forEach(topic => {
 						const topicLink = `/Topics/Details/${topic.id}`;
 						const topicImage = topic.topicImageUrl || '/images/default-topic.png';
-						const topicCard = document.createElement('a'); // Agora é um link
+						const topicCard = document.createElement('a');
 						topicCard.href = topicLink;
 						topicCard.className = 'grid-item';
 						topicCard.innerHTML = `
@@ -393,10 +378,32 @@
 						</div>`;
 				}
 			}
-			 // NOTA: Precisará de uma função para os tópicos guardados
+
 			function renderSavedTopics(savedTopics) {
-				 // Implemente a lógica aqui quando a sua API devolver os 'savedTopics'
-				 // O código será muito semelhante a renderCreatedTopics
+				savedTopicsContainer.innerHTML = '';
+				if (savedTopics && savedTopics.length > 0) {
+					savedTopics.forEach(saved => {
+						const topicLink = `/Topics/Details/${saved.topicId}`;
+						const topicImage = saved.topicImageUrl || '/images/default-topic.png';
+						const topicCard = document.createElement('a');
+						topicCard.href = topicLink;
+						topicCard.className = 'grid-item';
+						topicCard.innerHTML = `
+							<img src="${topicImage}" alt="Imagem do Tópico" />
+							<div class="overlay">
+								<span class="overlay-text">${saved.title}</span>
+							</div>
+						`;
+						savedTopicsContainer.appendChild(topicCard);
+					});
+				} else {
+					savedTopicsContainer.innerHTML = `
+						<div class="empty-state">
+							<div class="empty-state-icon"><i class="fas fa-bookmark"></i></div>
+							<h2>Nenhum Tópico Guardado</h2>
+							<p>Guarde tópicos que queira rever mais tarde e eles aparecerão aqui.</p>
+						</div>`;
+				}
 			}
 		});
 	</script>

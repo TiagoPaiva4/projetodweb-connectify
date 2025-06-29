@@ -4,48 +4,210 @@
     ViewData["Title"] = "Editar Perfil";
 }
 
-<h1>Editar Perfil</h1>
+<!-- Painel de Edição Principal -->
+<div class="edit-profile-panel">
+    <form asp-action="Edit" enctype="multipart/form-data">
 
-<hr />
-<div class="row">
-    <div class="col-md-6">
-        <form asp-action="Edit" enctype="multipart/form-data">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <!-- Cabeçalho do Painel -->
+        <header class="panel-header">
+            <h1 class="panel-title">@ViewData["Title"]</h1>
+            <a asp-action="MyProfile" class="link-secondary text-decoration-none">Cancelar e Voltar</a>
+        </header>
 
-            <input type="hidden" asp-for="Id" />
-            <input type="hidden" asp-for="UserId" />
-            <input type="hidden" asp-for="CreatedAt" />
+        <!-- Corpo do Painel com Duas Colunas -->
+        <div class="panel-body row g-0">
 
-            <div class="form-group">
-                <label asp-for="Name" class="control-label"></label>
-                <input asp-for="Name" class="form-control" />
-                <span asp-validation-for="Name" class="text-danger"></span>
+            <!-- Coluna Esquerda: Foto de Perfil -->
+            <div class="col-md-5 image-edit-area">
+                <div class="profile-picture-container">
+                    <!-- Mostra a imagem de perfil atual -->
+                    <img id="image-preview" src="@Model.ProfilePicture" alt="Foto de Perfil Atual" />
+
+                    <!-- Overlay para alterar a foto -->
+                    <label for="profilePictureFile" class="change-photo-overlay">
+                        <i class="fas fa-camera"></i>
+                        <span>Alterar Foto</span>
+                    </label>
+                </div>
+                <!-- Input de ficheiro escondido -->
+                <input type="file" name="ProfilePicture" id="profilePictureFile" class="d-none" accept="image/*" />
             </div>
 
-            <div class="form-group">
-                <label asp-for="Bio" class="control-label"></label>
-                <textarea asp-for="Bio" class="form-control"></textarea>
-                <span asp-validation-for="Bio" class="text-danger"></span>
-            </div>
+            <!-- Coluna Direita: Campos do Formulário -->
+            <div class="col-md-7 form-fields-area">
+                <!-- Inputs escondidos são essenciais! -->
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                <input type="hidden" asp-for="Id" />
+                <input type="hidden" asp-for="UserId" />
+                <input type="hidden" asp-for="CreatedAt" />
 
-            <div class="form-group">
-                <label for="ProfilePicture">Nova Foto de Perfil</label>
-                <input type="file" name="ProfilePicture" class="form-control" accept="image/*" />
-            </div>
+                <div class="form-group mb-4">
+                    <label asp-for="Name" class="form-label fw-bold">Nome</label>
+                    <input asp-for="Name" class="form-control" />
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                </div>
 
-            <div class="form-group mt-3">
-                <input type="submit" value="Guardar" class="btn btn-primary" />
-            </div>
-        </form>
-    </div>
-</div>
+                <div class="form-group mb-4">
+                    <label asp-for="Bio" class="form-label fw-bold">Biografia</label>
+                    <textarea asp-for="Bio" class="form-control" rows="8"></textarea>
+                    <span asp-validation-for="Bio" class="text-danger"></span>
+                </div>
 
-<div class="mt-3">
-    <a asp-action="Index" class="btn btn-secondary">Voltar</a>
+                <div class="form-group mt-5 d-grid">
+                    <button type="submit" class="btn btn-primary-custom btn-lg">Guardar Alterações</button>
+                </div>
+            </div>
+        </div>
+    </form>
 </div>
 
 @section Scripts {
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const fileInput = document.getElementById('profilePictureFile');
+            const previewImage = document.getElementById('image-preview');
+
+            fileInput.addEventListener('change', function (event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        previewImage.setAttribute('src', e.target.result);
+                    }
+                    reader.readAsDataURL(file);
+                }
+            });
+        });
+    </script>
 }
+
+<!-- CSS para a nova página de edição -->
+<style>
+    :root {
+        --color-primary-dark: #1D3461;
+        --color-primary-medium: #376996;
+        --color-secondary-light: #6290C8;
+        --color-background-light: #f8f9fa;
+    }
+
+    /* Remove o título H1 padrão da página */
+    h1:first-of-type {
+        display: none;
+    }
+
+    .edit-profile-panel {
+        background-color: #fff;
+        border-radius: 12px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        max-width: 800px;
+        margin: 2rem auto;
+        border: 1px solid #dee2e6;
+    }
+
+    .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .panel-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--color-primary-dark);
+        margin: 0;
+    }
+
+    .btn-primary-custom {
+        background-color: var(--color-primary-medium);
+        border-color: var(--color-primary-medium);
+        color: #fff;
+        font-weight: 600;
+        padding: 0.5rem 1.25rem;
+        border-radius: 8px;
+    }
+
+        .btn-primary-custom:hover {
+            background-color: var(--color-primary-dark);
+            border-color: var(--color-primary-dark);
+        }
+
+    .panel-body {
+        min-height: 450px;
+    }
+
+    /* Coluna Esquerda - Imagem */
+    .image-edit-area {
+        background-color: var(--color-background-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        border-right: 1px solid #e9ecef;
+    }
+
+    .profile-picture-container {
+        width: 200px;
+        height: 200px;
+        border-radius: 50%; /* Faz a imagem ficar circular */
+        overflow: hidden;
+        position: relative;
+        border: 4px solid #fff;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    #image-preview {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* Garante que a imagem preencha o círculo sem distorcer */
+    }
+
+    .change-photo-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        color: white;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        font-size: 0.9rem;
+    }
+
+        .change-photo-overlay .fas {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+    .profile-picture-container:hover .change-photo-overlay {
+        opacity: 1;
+    }
+
+    /* Coluna Direita - Formulário */
+    .form-fields-area {
+        padding: 2rem;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-control, .form-select {
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+    }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--color-secondary-light);
+            box-shadow: 0 0 0 0.25rem rgba(30, 52, 97, 0.25);
+        }
+</style>

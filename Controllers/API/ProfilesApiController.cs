@@ -83,6 +83,16 @@ namespace projetodweb_connectify.Controllers.API
             if (profileUser == null || profileUser.Profile == null)
                 return NotFound(new { message = $"Perfil para '{username}' não encontrado." });
 
+            // ======================= INÍCIO DA ALTERAÇÃO =======================
+            // Contar o número de amizades aceites para o UTILIZADOR DO PERFIL VISITADO.
+            var friendsCount = await _context.Friendships
+                .AsNoTracking()
+                .CountAsync(f =>
+                    (f.User1Id == profileUser.Id || f.User2Id == profileUser.Id) &&
+                    f.Status == FriendshipStatus.Accepted
+                );
+            // ======================= FIM DA ALTERAÇÃO =======================
+
             // =========== INÍCIO DA LÓGICA DE CORREÇÃO ===========
 
             // 1. Criar o DTO e preencher os novos campos
@@ -95,7 +105,8 @@ namespace projetodweb_connectify.Controllers.API
                 Bio = profileUser.Profile.Bio,
                 ProfilePicture = profileUser.Profile.ProfilePicture,
                 Username = profileUser.Username,
-                CreatedAt = profileUser.Profile.CreatedAt
+                CreatedAt = profileUser.Profile.CreatedAt,
+                FriendsCount = friendsCount
             };
 
             // 2. Determinar o estado da amizade
@@ -206,6 +217,18 @@ namespace projetodweb_connectify.Controllers.API
             if (user == null || user.Profile == null)
                 return NotFound(new { message = "Perfil não encontrado." });
 
+            // ======================= INÍCIO DA ALTERAÇÃO =======================
+            // 1. Contar o número de amizades aceites para este utilizador.
+            //    Uma amizade é contada se o status for 'Accepted' e o ID do utilizador
+            //    estiver em User1Id ou User2Id.
+            var friendsCount = await _context.Friendships
+                .AsNoTracking()
+                .CountAsync(f =>
+                    (f.User1Id == user.Id || f.User2Id == user.Id) &&
+                    f.Status == FriendshipStatus.Accepted
+                );
+            // ======================= FIM DA ALTERAÇÃO =======================
+
             var profileDto = new ProfileDto
             {
                 Id = user.Profile.Id,
@@ -215,7 +238,7 @@ namespace projetodweb_connectify.Controllers.API
                 ProfilePicture = user.Profile.ProfilePicture,
                 Username = user.Username,
                 CreatedAt = user.Profile.CreatedAt,
-       
+                FriendsCount = friendsCount
             };
 
             // O resto da sua lógica para obter posts, tópicos criados e tópicos guardados
