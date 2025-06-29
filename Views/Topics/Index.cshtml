@@ -3,191 +3,60 @@
 @using projetodweb_connectify.Models
 
 @{
-    ViewData["Title"] = "Tópicos";
+    ViewData["Title"] = "Explorar Tópicos";
     string defaultTopicImage = Url.Content("~/images/topics/default_topic_image.png");
-    int? loggedInUserProfileId = ViewData["CurrentUserProfileId"] as int?;
     var categoriesList = ViewData["CategoriesList"] as List<Category>;
     string defaultCategoryImage = Url.Content("~/images/categories/default_category_image.png");
 }
 
-@* ========== CATEGORIES SECTION ========== *@
-<div class="category-section mb-4">
-    <h2 class="h4 category-section-title mb-3">
-        <a asp-controller="Categories" asp-action="Index" class="text-decoration-none text-dark fw-bold">
-            Categorias <i class="fas fa-arrow-right ms-1 fs-sm align-middle"></i>
-        </a>
-    </h2>
-    @if (categoriesList != null && categoriesList.Any())
-    {
-        <div class="category-scroll-container pb-2">
-            @foreach (var category in categoriesList)
-            {
-                <a asp-controller="Categories" asp-action="Details" asp-route-id="@category.Id" class="category-item">
-                    @{
-                        string imageUrl = string.IsNullOrEmpty(category.CategoryImageUrl) ? defaultCategoryImage : Url.Content(category.CategoryImageUrl);
-                    }
-                    <div class="category-icon-circle" style="background-image: url('@imageUrl');"></div>
-                    <span class="category-name">@category.Name</span>
-                </a>
-            }
-            <a asp-controller="Categories" asp-action="Index" class="category-item category-item-more">
-                <div class="category-icon-circle">
-                    <i class="fas fa-ellipsis-h category-default-icon"></i>
-                </div>
-                <span class="category-name">Ver Todas</span>
-            </a>
-        </div>
-    }
-    else
-    {
-        <p class="text-muted mb-0">Nenhuma categoria encontrada.</p>
-    }
-</div>
-@* ========== END CATEGORIES SECTION ========== *@
-
-
-@* ========== TOPICS SECTION HEADING AND CREATE BUTTON ========== *@
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="h4 category-section-title mb-0">
-        <a asp-controller="Topics" asp-action="Index" class="text-decoration-none text-dark fw-bold">
-            Tópicos <i class="fas fa-arrow-right ms-1 fs-sm align-middle"></i>
-        </a>
-    </h2>
-    @if (User.Identity != null && User.Identity.IsAuthenticated)
-    {
-        <a asp-action="Create" class="btn btn-success btn-sm"><i class="fas fa-plus-circle"></i> Novo Tópico</a> @* btn-sm for consistency *@
-    }
-    else
-    {
-        <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Url.Action("Index", "Topics")" class="btn btn-outline-primary btn-sm">Login para Criar</a>
-    }
-</div>
-
-
-@* Display TempData messages *@
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        @TempData["SuccessMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-}
-
-
-@if (!Model.Any())
-{
-    <div class="alert alert-info mt-3 text-center" role="alert">
-        <i class="fas fa-info-circle fa-2x mb-2"></i><br /> 
-        Ainda não existem tópicos.
-        @if (User.Identity != null && User.Identity.IsAuthenticated)
-        {
-            @:Seja o primeiro a <a asp-action="Create" class="alert-link">criar um</a>!
-        }
-        else
-        {
-            @:<a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Url.Action("Index", "Topics")" class="alert-link">Faça login</a> para criar o primeiro tópico!
-        }
-    </div>
-}
-else
-{
-    @* ========== NEW TOPIC GRID LAYOUT ========== *@
-    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
-        @* Responsive Grid: 1, 2, 3, then 4 cols. g-3 for gutters *@
-        @foreach (var item in Model)
-        {
-            <div class="col">
-                <div class="card h-100 topic-card shadow-sm">
-                    @* h-100 for equal height cards, custom class topic-card *@
-                    <a asp-action="Details" asp-route-id="@item.Id" class="topic-card-image-link">
-                        @{
-                            string topicImageUrl = string.IsNullOrEmpty(item.TopicImageUrl) ? defaultTopicImage : Url.Content(item.TopicImageUrl);
-                        }
-                        <div class="topic-card-image-wrapper">
-                            <img src="@topicImageUrl" alt="Imagem do Tópico: @item.Title" class="card-img-top" onerror="this.onerror=null; this.src='@defaultTopicImage';" />
-                            @if (item.IsPrivate)
-                            {
-                                <span class="badge bg-warning text-dark private-topic-badge" title="Tópico Privado"><i class="fas fa-lock"></i></span>
-                            }
-                        </div>
-                    </a>
-                    <div class="card-body d-flex flex-column">
-                        @* flex-column to push actions to bottom *@
-                        <h5 class="card-title topic-title mb-1">
-                            <a asp-action="Details" asp-route-id="@item.Id" class="text-decoration-none">
-                                @item.Title
-                            </a>
-                        </h5>
-                        @if (item.Category != null)
-                        {
-                            <small class="text-muted mb-2 topic-category">
-                                <a asp-controller="Categories" asp-action="Details" asp-route-id="@item.CategoryId" class="text-decoration-none">
-                                    @item.Category.Name
-                                </a>
-                            </small>
-                        }
-                        else
-                        {
-                            <small class="text-muted mb-2 topic-category">(Sem Categoria)</small>
-                        }
-
-                        <p class="card-text topic-description flex-grow-1">
-                            @* flex-grow-1 to take available space *@
-                            @Html.Raw(item.Description?.Length > 60 ? System.Web.HttpUtility.HtmlEncode(item.Description.Substring(0, 60)) + "..." : System.Web.HttpUtility.HtmlEncode(item.Description ?? "Sem descrição."))
-                        </p>
-
-                        <div class="mt-auto d-flex justify-content-between align-items-center topic-actions">
-                            @* Actions at the bottom *@
-                            <small class="text-muted" title="@item.CreatedAt.ToString("F")">
-                                @item.CreatedAt.ToString("dd/MM/yy")
-                            </small>
-                            <div class="btn-group btn-group-sm">
-                                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-info" title="Detalhes"><i class="fas fa-eye"></i></a>
-                                @if (User.Identity != null && User.Identity.IsAuthenticated)
-                                {
-                                    <form asp-action="SaveTopic" asp-route-id="@item.Id" method="post" class="d-inline">
-                                        @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn btn-outline-success" title="Guardar Tópico"><i class="far fa-bookmark"></i></button>
-                                    </form>
-                                    @if (loggedInUserProfileId.HasValue && item.CreatedBy == loggedInUserProfileId.Value)
-                                    {
-                                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-outline-secondary" title="Editar"><i class="fas fa-edit"></i></a>
-                                        @* Delete is usually on the details page, but can be here if desired with strong confirmation *@
-                                    }
-                                }
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        }
-    </div>
-}
-
+<!-- ================================================================= -->
+<!--         CSS COM O AJUSTE FINAL NOS TÍTULOS DE SECÇÃO            -->
+<!-- ================================================================= -->
 @section Styles {
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
-        /* CATEGORY STYLES */
-        .category-section-title a {
-            color: #343a40;
+        :root {
+            --color-background: #fafafa;
+            --color-primary-dark: #1D3461;
+            --color-primary-medium: #376996;
+            --color-secondary-light: #6290C8;
+            --color-secondary-lightest: #829CBC;
+            --color-text-on-dark: #ffffff;
+            --color-text-primary: #333;
+            --color-text-secondary: #6c757d;
+            --color-border: #dee2e6;
+            --color-success: #198754;
+            --color-warning: #ffc107;
+            --color-danger: #dc3545;
+        }
+
+        .page-container {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* ========================================================== */
+        <!-- ALTERAÇÃO: ESTILO UNIFICADO PARA OS TÍTULOS DE SECÇÃO -->
+        /* ========================================================== */
+        .section-title {
+            color: var(--color-primary-dark); /* A cor base é definida no elemento do título (h2) */
+            font-weight: 700;
+        }
+
+        .section-title a {
+            color: inherit; /* O link herda a cor do seu pai (o h2), garantindo que sejam idênticos */
             transition: color 0.2s ease-in-out;
         }
 
-            .category-section-title a:hover {
-                color: #0d6efd;
+            .section-title a:hover {
+                color: var(--color-primary-medium); /* A cor de hover aplica-se apenas ao link */
             }
 
-        .category-section-title .fs-sm {
-            font-size: 0.9em;
-        }
-
+        /* Resto do CSS das categorias (sem alterações) */
         .category-scroll-container {
             display: flex;
             overflow-x: auto;
-            white-space: nowrap;
             padding-bottom: 15px;
             scrollbar-width: thin;
-            scrollbar-color: #adb5bd #f8f9fa;
+            scrollbar-color: var(--color-secondary-lightest) #f8f9fa;
         }
 
             .category-scroll-container::-webkit-scrollbar {
@@ -200,21 +69,19 @@ else
             }
 
             .category-scroll-container::-webkit-scrollbar-thumb {
-                background-color: #adb5bd;
+                background-color: var(--color-secondary-lightest);
                 border-radius: 4px;
                 border: 2px solid #f8f9fa;
             }
 
                 .category-scroll-container::-webkit-scrollbar-thumb:hover {
-                    background-color: #6c757d;
+                    background-color: var(--color-secondary-light);
                 }
 
         .category-item {
-            display: inline-block;
             text-align: center;
             margin-right: 20px;
             text-decoration: none;
-            color: inherit;
             flex-shrink: 0;
             transition: transform 0.2s ease;
         }
@@ -223,155 +90,234 @@ else
                 transform: translateY(-3px);
             }
 
-            .category-item:last-child {
-                margin-right: 0;
-            }
-
         .category-icon-circle {
             width: 65px;
             height: 65px;
             border-radius: 50%;
-            background-color: #e9ecef;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            background-color: #f0f0f0;
             margin-bottom: 8px;
-            border: 1px solid #dee2e6;
+            border: 2px solid transparent;
             background-size: cover;
             background-position: center;
-            background-repeat: no-repeat;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: border-color 0.2s ease;
         }
 
-            .category-icon-circle[style*="default_category_image.png"]::before,
-            .category-icon-circle:not([style*="background-image: url"]) { 
-                content: "\f02b";
-                font-family: "Font Awesome 6 Free";
-                font-weight: 900;
-                font-size: 24px;
-                color: #6c757d;
-            }
+        .category-item:hover .category-icon-circle {
+            border-color: var(--color-primary-medium);
+        }
 
         .category-name {
             font-size: 0.8rem;
-            display: block;
-            color: #495057;
-            font-weight: 500;
-            white-space: normal;
+            color: var(--color-primary-medium);
+            font-weight: 600;
             max-width: 70px;
+            white-space: normal;
         }
 
-        .category-item-more .category-icon-circle {
-            background-color: #f8f9fa;
-            border-style: dashed;
+        /* Resto do CSS (sem alterações) */
+        .btn-create-topic {
+            background-color: var(--color-primary-medium);
+            border-color: var(--color-primary-medium);
+            color: var(--color-text-on-dark);
+            font-weight: 600;
+            padding: 0.25rem 0.75rem;
         }
 
-        .category-item-more .category-default-icon {
-            color: #6c757d;
-        }
-
-
-        /* ========== NEW TOPIC CARD STYLES ========== */
-        .topic-card {
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-            display: flex; /* Ensure card uses flex for its children */
-            flex-direction: column; /* Stack card elements vertically */
-        }
-
-            .topic-card:hover {
-                transform: translateY(-5px);
-                box-shadow: 0 8px 16px rgba(0,0,0,0.1) !important; /* Stronger shadow on hover */
+            .btn-create-topic:hover {
+                background-color: var(--color-primary-dark);
+                border-color: var(--color-primary-dark);
+                color: var(--color-text-on-dark);
             }
 
-        .topic-card-image-link {
-            display: block; /* Make the link a block for image wrapper */
+        .topic-card-link {
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            height: 100%;
+        }
+
+        .topic-card {
+            background-color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .topic-card-link:hover .topic-card {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(29, 52, 97, 0.15);
         }
 
         .topic-card-image-wrapper {
-            width: 100%;
-            padding-top: 75%; /* Aspect ratio 4:3 for image container (100/4*3) - adjust as needed */
-            /* For square images (1:1): padding-top: 100%; */
+            padding-top: 75%;
             position: relative;
             overflow: hidden;
-            background-color: #eee; /* Placeholder background */
+            background-color: #e9ecef;
         }
 
-            .topic-card-image-wrapper .card-img-top {
+            .topic-card-image-wrapper img {
                 position: absolute;
                 top: 0;
                 left: 0;
                 width: 100%;
                 height: 100%;
-                object-fit: cover; /* Cover the area, crop if needed */
+                object-fit: cover;
+                border-top-left-radius: 8px;
+                border-top-right-radius: 8px;
             }
 
         .private-topic-badge {
             position: absolute;
-            top: 8px;
-            right: 8px;
-            font-size: 0.75rem;
-            padding: 0.3em 0.5em;
+            top: 10px;
+            right: 10px;
+            background-color: var(--color-warning);
+            color: var(--color-text-primary);
         }
 
         .topic-card .card-body {
-            padding: 0.8rem; /* Slightly reduced padding */
+            padding: 0.8rem 1rem;
             display: flex;
             flex-direction: column;
-            flex-grow: 1; /* Allow card-body to grow and fill space */
+            flex-grow: 1;
         }
 
-        .topic-title a {
-            color: #212529;
+        .topic-title {
+            color: var(--color-primary-dark);
             font-weight: 600;
-            font-size: 1rem; /* Adjust as needed */
+            font-size: 1rem;
             display: -webkit-box;
-            -webkit-line-clamp: 2; /* Limit title to 2 lines */
+            -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
-            text-overflow: ellipsis;
-            line-height: 1.3;
-            height: 2.6em; /* Roughly 2 lines (line-height * number of lines) */
+            line-height: 1.4;
+            height: 2.8em;
+            margin-bottom: 0.4rem;
         }
 
-            .topic-title a:hover {
-                color: #0056b3;
-            }
+        .topic-category-container {
+            margin-bottom: 0.6rem;
+        }
 
-        .topic-category a {
+        .topic-category-tag {
+            display: inline-block;
             font-size: 0.75rem;
-            color: #6c757d;
-            background-color: #f8f9fa;
-            padding: 0.2em 0.5em;
-            border-radius: 0.2rem;
-            text-decoration: none;
+            font-weight: 600;
+            padding: 0.25em 0.8em;
+            border-radius: 50rem;
+            background-color: var(--color-secondary-lightest);
+            color: var(--color-text-on-dark);
         }
-
-            .topic-category a:hover {
-                background-color: #e9ecef;
-            }
 
         .topic-description {
             font-size: 0.85rem;
-            color: #495057;
-            line-height: 1.4;
-            /* For multi-line ellipsis (if desired and supported) */
+            color: var(--color-text-secondary);
+            line-height: 1.5;
+            margin-bottom: 0.75rem;
             display: -webkit-box;
-            -webkit-line-clamp: 3; /* Limit description to 3 lines */
+            -webkit-line-clamp: 3;
             -webkit-box-orient: vertical;
             overflow: hidden;
-            text-overflow: ellipsis;
-            margin-bottom: 0.5rem;
-            min-height: 3.0em; /* Reserve space for ~3 lines to prevent jumpiness */
         }
 
-        .topic-actions {
+        .topic-footer {
             border-top: 1px solid #f0f0f0;
-            padding-top: 0.5rem;
-            margin-top: 0.5rem; /* Space above actions if description is short */
+            padding-top: 0.75rem;
+            margin-top: auto;
+            font-size: 0.8rem;
+            color: var(--color-text-secondary);
         }
-
-            .topic-actions .btn-group .btn {
-                padding: 0.25rem 0.5rem; /* Smaller buttons */
-            }
     </style>
 }
+
+<div class="page-container">
+    <!-- ========== CATEGORIES SECTION ========== -->
+    <div class="category-section mb-4">
+        <h2 class="h4 section-title mb-3">
+            <a asp-controller="Categories" asp-action="Index" class="text-decoration-none">
+                Categorias <i class="fas fa-arrow-right ms-1 fs-sm align-middle"></i>
+            </a>
+        </h2>
+        @if (categoriesList != null && categoriesList.Any())
+        {
+            <div class="category-scroll-container pb-2">
+                @foreach (var category in categoriesList)
+                {
+                    <a asp-controller="Categories" asp-action="Details" asp-route-id="@category.Id" class="category-item">
+                        <div class="category-icon-circle" style="background-image: url('@(Url.Content(category.CategoryImageUrl ?? defaultCategoryImage))');"></div>
+                        <span class="category-name">@category.Name</span>
+                    </a>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="text-muted mb-0">Nenhuma categoria encontrada.</p>
+        }
+    </div>
+    <!-- ========== END CATEGORIES SECTION ========== -->
+    <!-- ========== TOPICS SECTION HEADING AND CREATE BUTTON ========== -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h4 section-title mb-0">
+            Tópicos Populares
+        </h2>
+        @if (User.Identity != null && User.Identity.IsAuthenticated)
+        {
+            <a asp-action="Create" class="btn btn-sm btn-create-topic"><i class="fas fa-plus me-1"></i> Novo Tópico</a>
+        }
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info text-center">Ainda não existem tópicos. Seja o primeiro a criar um!</div>
+    }
+    else
+    {
+        <!-- ========== TOPIC GRID LAYOUT ========== -->
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-4">
+            @foreach (var item in Model)
+            {
+                <div class="col">
+                    <a asp-action="Details" asp-route-id="@item.Id" class="topic-card-link">
+                        <div class="card topic-card">
+                            <div class="topic-card-image-wrapper">
+                                <img src="@(Url.Content(item.TopicImageUrl ?? defaultTopicImage))" alt="Imagem do Tópico: @item.Title" />
+                                @if (item.IsPrivate)
+                                {
+                                    <span class="badge private-topic-badge" title="Tópico Privado"><i class="fas fa-lock"></i></span>
+                                }
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title topic-title">@item.Title</h5>
+
+                                @if (item.Category != null)
+                                {
+                                    <div class="topic-category-container">
+                                        <span class="topic-category-tag">@item.Category.Name</span>
+                                    </div>
+                                }
+
+                                <p class="card-text topic-description">
+                                    @Html.Raw(item.Description?.Length > 80 ? System.Web.HttpUtility.HtmlEncode(item.Description.Substring(0, 80)) + "..." : System.Web.HttpUtility.HtmlEncode(item.Description ?? ""))
+                                </p>
+
+                                <div class="topic-footer">
+                                    Criado a @item.CreatedAt.ToString("dd MMM yyyy")
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            }
+        </div>
+    }
+</div>
