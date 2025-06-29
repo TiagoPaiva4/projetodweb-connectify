@@ -1,0 +1,94 @@
+﻿@{
+    ViewData["Title"] = "Sobre o Projeto";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light text-center py-4">
+                    <img src="~/images/logo.png" alt="Connectify Logo" style="max-height: 60px; margin-bottom: 1rem;" />
+                    <h1 class="h2">@ViewData["Title"]</h1>
+                    <p class="lead text-muted">Detalhes do projeto Connectify</p>
+                </div>
+                <div class="card-body p-4 p-md-5">
+
+                    <!-- Seção 1: Detalhes do Curso -->
+                    <section class="mb-5">
+                        <h3 class="section-title">Informação Académica</h3>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item"><strong>Curso:</strong> Engenharia Informática</li>
+                            <li class="list-group-item"><strong>Disciplina:</strong> Desenvolvimento Web</li>
+                            <li class="list-group-item"><strong>Ano Letivo:</strong> 2024/2025</li>
+                        </ul>
+                    </section>
+
+                    <!-- Seção 2: Autores -->
+                    <section class="mb-5">
+                        <h3 class="section-title">Autores</h3>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item"><strong>Nº 26471:</strong> Mário Bonacho</li>
+                            <li class="list-group-item"><strong>Nº 25958:</strong> Tiago Paiva</li>
+                        </ul>
+                    </section>
+
+                    <!-- Seção 3: Tecnologias e Frameworks -->
+                    <section class="mb-5">
+                        <h3 class="section-title">Tecnologias e Bibliotecas</h3>
+                        <p>Este projeto foi desenvolvido utilizando um ecossistema de tecnologias moderno e robusto, centrado na plataforma .NET.</p>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item">
+                                <strong>ASP.NET Core 8:</strong> Framework principal para a construção da aplicação web e da API, fornecendo uma base sólida para rotas, controladores e serviços.
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Entity Framework Core:</strong> Utilizado como o ORM (Object-Relational Mapper) para interagir com a base de dados SQL Server, simplificando as operações de dados.
+                            </li>
+                            <li class="list-group-item">
+                                <strong>ASP.NET Core Identity:</strong> Framework para gestão de utilizadores, autenticação (login/registo) e autorização, integrado de forma nativa.
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Bootstrap 5:</strong> Framework CSS utilizado para a criação de layouts responsivos e componentes de interface, como grelhas, botões e formulários.
+                            </li>
+                            <li class="list-group-item">
+                                <strong>jQuery:</strong> Biblioteca JavaScript utilizada para simplificar a manipulação do DOM e a realização de chamadas AJAX para interações dinâmicas.
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Font Awesome:</strong> Biblioteca de ícones vetoriais utilizada em toda a interface para melhorar a usabilidade e o apelo visual.
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Swagger (Swashbuckle):</strong> Ferramenta para gerar a documentação interativa da API, facilitando os testes e a compreensão dos endpoints.
+                            </li>
+                        </ul>
+                    </section>
+
+                    <!-- Seção 4: Credenciais de Acesso (Exemplo) -->
+                    <section>
+                        <h3 class="section-title">Credenciais de Acesso</h3>
+                        <div class="alert alert-info">
+                            <h5 class="alert-heading">Utilizadores de Teste</h5>
+                            <p>Para fins de demonstração e avaliação, foram criados os seguintes utilizadores iniciais:</p>
+                            <hr>
+                            <ul class="mb-0">
+                                <li><strong>Login:</strong> <code>admin@mail.com</code> | <strong>Password:</strong> <code>Aa0_aa </code></li>
+                                <li><strong>Login:</strong> <code>defesadweb@gmail.com </code> | <strong>Password:</strong> <code>Defesa1// </code></li>
+                            </ul>
+                        </div>
+                    </section>
+
+                </div>
+                <div class="card-footer text-muted text-center">
+                    <a asp-controller="Home" asp-action="Index">Voltar à Página Inicial</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .section-title {
+        color: var(--color-primary-dark);
+        border-bottom: 2px solid var(--color-primary-medium);
+        padding-bottom: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+</style>

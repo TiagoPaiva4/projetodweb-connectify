@@ -11,18 +11,16 @@
 <hr />
 <div class="row">
     <div class="col-md-6">
-        @* Increased col width for more space *@
         <form asp-action="Edit" method="post" enctype="multipart/form-data">
-            @* Added method="post" and enctype for file upload *@
+            @* Os atributos method="post" e enctype são necessários para o upload de ficheiros. *@
             <div asp-validation-summary="All" class="text-danger"></div>
             <input type="hidden" asp-for="Id" />
-            @* Important: Keep hidden fields for properties not directly edited on the form but needed by the backend or to maintain state *@
+
+            @* É importante manter campos ocultos para propriedades que não são editadas no formulário, mas que são necessárias no back-end para manter o estado da entidade. *@
             <input type="hidden" asp-for="CreatedBy" />
             <input type="hidden" asp-for="CreatedAt" />
             <input type="hidden" asp-for="IsPersonal" />
-            <input type="hidden" asp-for="TopicImageUrl" /> @* To retain current image if none is uploaded *@
-            @* IsPrivate is intentionally omitted as per previous request to keep it always false for non-personal topics *@
-
+            <input type="hidden" asp-for="TopicImageUrl" /> @* Para manter a imagem atual se nenhuma nova for enviada. *@
 
             <div class="form-group mb-3">
                 <label asp-for="Title" class="control-label"></label>
@@ -30,7 +28,7 @@
                 <span asp-validation-for="Title" class="text-danger"></span>
             </div>
 
-            @* CAMPO PARA CATEGORIA *@
+            @* Campo para a Categoria *@
             <div class="form-group mb-3">
                 <label asp-for="CategoryId" class="control-label"></label>
                 <select asp-for="CategoryId" class="form-select" asp-items="ViewBag.CategoryId">
@@ -41,11 +39,12 @@
 
             <div class="form-group mb-3">
                 <label asp-for="Description" class="control-label"></label>
-                <textarea asp-for="Description" class="form-control" rows="5"></textarea> @* Changed to textarea for better editing *@
+                @* Alterado para 'textarea' para facilitar a edição de texto longo. *@
+                <textarea asp-for="Description" class="form-control" rows="5"></textarea>
                 <span asp-validation-for="Description" class="text-danger"></span>
             </div>
 
-            @* CAMPO PARA IMAGEM DO TÓPICO *@
+            @* Campo para a Imagem do Tópico *@
             <div class="form-group mb-3">
                 <label for="topicImageFile" class="control-label">Alterar Imagem do Tópico (Opcional)</label>
                 <input type="file" id="topicImageFile" name="topicImageFile" class="form-control" accept="image/png, image/jpeg, image/gif" />
@@ -60,15 +59,14 @@
                 else
                 {
                     <div class="mt-2">
-                        <small>Nenhuma imagem específica definida (usará a padrão).</small>
+                        <small>Nenhuma imagem específica definida (será utilizada a imagem padrão).</small>
                     </div>
                 }
             </div>
 
-            @* IsPrivate is intentionally not shown/editable for regular topics *@
+            @* A propriedade 'IsPrivate' não é apresentada para edição em tópicos gerais, conforme a regra de negócio. *@
 
             <div class="form-group mt-4">
-                @* Added mt-4 for spacing *@
                 <input type="submit" value="Guardar Alterações" class="btn btn-primary" />
                 <a asp-action="Index" class="btn btn-secondary ms-2">Cancelar</a>
             </div>
