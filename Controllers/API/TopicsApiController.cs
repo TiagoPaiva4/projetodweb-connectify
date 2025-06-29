@@ -74,7 +74,7 @@ namespace projetodweb_connectify.Controllers.API
                 .Where(p => p.TopicId == id)
                 .Include(p => p.Profile.User)
                 .Include(p => p.Likes)
-                .OrderByDescending(p => p.CreatedAt) // Ordena os posts aqui
+                .OrderByDescending(p => p.CreatedAt) 
                 .Select(p => new TopicPostDto
                 {
                     Id = p.Id,
@@ -145,7 +145,7 @@ namespace projetodweb_connectify.Controllers.API
         }
 
         /// <summary>
-        /// Remove um tópico da lista de salvos do utilizador.
+        /// Adiciona um tópico da lista de salvos do utilizador.
         /// </summary>
         [HttpPost("{id}/save")]
         [Authorize]
@@ -186,11 +186,6 @@ namespace projetodweb_connectify.Controllers.API
             return NoContent();
         }
 
-        // A lógica de PUT (Edit) e DELETE (Delete) seguiria o mesmo padrão:
-        // 1. Verificar autenticação e propriedade
-        // 2. Realizar a operação
-        // 3. Retornar o status code apropriado
-
         #region Helper Methods
         private async Task<int?> GetCurrentProfileIdAsync()
         {
@@ -208,7 +203,6 @@ namespace projetodweb_connectify.Controllers.API
             using (var fileStream = new FileStream(filePath, FileMode.Create)) { await imageFile.CopyToAsync(fileStream); }
             return "/images/topics/" + uniqueFileName;
         }
-        // ... outros helpers como DeleteImage se necessário ...
         #endregion
     }
 }

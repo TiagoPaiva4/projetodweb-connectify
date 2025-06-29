@@ -13,7 +13,7 @@ namespace projetodweb_connectify.Controllers.API
 {
     [Route("api/messages")]
     [ApiController]
-    [Authorize] // Todas as ações de mensagens são protegidas
+    [Authorize] 
     public class MessagesApiController : ControllerBase
     {
         private readonly ApplicationDbContext _context;

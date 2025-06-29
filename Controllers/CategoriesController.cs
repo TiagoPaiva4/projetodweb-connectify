@@ -56,10 +56,8 @@ namespace projetodweb_connectify.Controllers
         // POST: Categories/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        // Adicionar IFormFile categoryImageFile e remover CategoryImageUrl do Bind
         public async Task<IActionResult> Create([Bind("Name,Description")] Category category, IFormFile? categoryImageFile)
         {
-            // Remover CategoryImageUrl da validação explícita do ModelState, pois será definido aqui
             ModelState.Remove(nameof(Category.CategoryImageUrl));
             ModelState.Remove(nameof(Category.Id)); // Id é gerado pela BD
             ModelState.Remove(nameof(Category.Topics)); // Propriedade de navegação
@@ -100,7 +98,7 @@ namespace projetodweb_connectify.Controllers
                 else
                 {
                     // Nenhuma imagem enviada, usar a padrão (se existir uma)
-                    category.CategoryImageUrl = "/images/categories/default_category_image.png"; // Ajuste o caminho da sua padrão
+                    category.CategoryImageUrl = "/images/categories/default_category_image.png"; 
                 }
 
                 _context.Add(category);
@@ -130,7 +128,6 @@ namespace projetodweb_connectify.Controllers
         // POST: Categories/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        // Adicionar IFormFile e CategoryImageUrl ao Bind (para o campo hidden)
         public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Description,CategoryImageUrl")] Category categoryViewModel, IFormFile? categoryImageFile)
         {
             if (id != categoryViewModel.Id) return NotFound();
@@ -179,7 +176,7 @@ namespace projetodweb_connectify.Controllers
                     else
                     {
                         // Nenhuma nova imagem foi enviada, manter a imagem que veio do hidden field (ou a da BD se o hidden field estiver vazio)
-                        categoryToUpdate.CategoryImageUrl = categoryViewModel.CategoryImageUrl; // Usa o valor do campo hidden
+                        categoryToUpdate.CategoryImageUrl = categoryViewModel.CategoryImageUrl;
                     }
 
 
@@ -225,12 +222,11 @@ namespace projetodweb_connectify.Controllers
                 if (hasTopics && _context.Model.FindEntityType(typeof(Topic))?.GetForeignKeys().FirstOrDefault(fk => fk.PrincipalEntityType.ClrType == typeof(Category))?.DeleteBehavior == DeleteBehavior.Restrict)
                 {
                     TempData["ErrorMessage"] = "Não é possível apagar esta categoria pois existem tópicos associados a ela. Mova ou apague os tópicos primeiro.";
-                    return RedirectToAction(nameof(Index)); // Ou para Details(id)
+                    return RedirectToAction(nameof(Index)); 
                 }
 
-
                 // Apagar imagem
-                if (!string.IsNullOrEmpty(category.CategoryImageUrl) && category.CategoryImageUrl != "/images/categories/default_category_image.png") // Ajuste
+                if (!string.IsNullOrEmpty(category.CategoryImageUrl) && category.CategoryImageUrl != "/images/categories/default_category_image.png") 
                 {
                     string wwwRootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
                     string imagePath = Path.Combine(wwwRootPath, category.CategoryImageUrl.TrimStart('/'));

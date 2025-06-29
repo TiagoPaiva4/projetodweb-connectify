@@ -5,7 +5,7 @@ using projetodweb_connectify.Data;
 using projetodweb_connectify.Models;
 using System.Linq;
 using System.Threading.Tasks;
-using System.ComponentModel.DataAnnotations; // <-- CORREÇÃO 1: Adicionar este using
+using System.ComponentModel.DataAnnotations; 
 
 namespace projetodweb_connectify.Controllers
 {
@@ -21,10 +21,10 @@ namespace projetodweb_connectify.Controllers
             _context = context;
         }
 
-        // DTO (Data Transfer Object) para o pedido de envio de amizade
+        // DTO para o pedido de envio de amizade
         public class SendFriendRequestDto
         {
-            [Required] // Este atributo agora será reconhecido
+            [Required] 
             public int TargetUserId { get; set; }
         }
 
@@ -38,14 +38,12 @@ namespace projetodweb_connectify.Controllers
             var currentUser = await GetCurrentUserAsync();
             if (currentUser == null) return Unauthorized();
 
-            // CORREÇÃO 2: A ordem da consulta foi alterada.
-            // Primeiro fazemos os Includes e ThenIncludes, e SÓ DEPOIS aplicamos o Where.
             var query = _context.Friendships
                 .Include(f => f.User1)
-                    .ThenInclude(u => u.Profile) // Agora isto funciona
+                    .ThenInclude(u => u.Profile) 
                 .Include(f => f.User2)
-                    .ThenInclude(u => u.Profile) // E isto também
-                .Where(f => f.User1Id == currentUser.Id || f.User2Id == currentUser.Id); // Filtro vem depois
+                    .ThenInclude(u => u.Profile) 
+                .Where(f => f.User1Id == currentUser.Id || f.User2Id == currentUser.Id); 
 
             if (status.HasValue)
             {

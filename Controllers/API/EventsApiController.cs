@@ -152,15 +152,13 @@ namespace projetodweb_connectify.Controllers.API
             return NoContent();
         }
 
-        // Dentro da classe EventsApiController
-
         /// <summary>
         /// Regista ou atualiza a participação de um utilizador num evento.
         /// Requer autenticação.
         /// </summary>
         /// <param name="id">O ID do evento.</param>
         /// <param name="dto">O DTO com o novo status de participação.</param>
-        [HttpPost("{id}/attend")] // URL: api/events/5/attend
+        [HttpPost("{id}/attend")] 
         [Authorize]
         public async Task<IActionResult> AttendEvent(int id, [FromBody] EventAttendanceDto dto)
         {
@@ -168,7 +166,6 @@ namespace projetodweb_connectify.Controllers.API
             var currentUserId = GetCurrentUserId();
             if (currentUserId == null)
             {
-                // Esta verificação é redundante devido ao [Authorize], mas é boa prática
                 return Unauthorized(new { message = "Utilizador não autenticado." });
             }
 
@@ -215,7 +212,7 @@ namespace projetodweb_connectify.Controllers.API
             var username = User.Identity?.Name;
             if (string.IsNullOrEmpty(username)) return null;
 
-            // Esta consulta é otimizada para apenas buscar o ID do utilizador.
+            // Esta consulta é otimizada para apenas encontrar o ID do utilizador.
             var user = _context.Users.AsNoTracking().FirstOrDefault(u => u.Username == username);
             return user?.Id;
         }
@@ -239,8 +236,6 @@ namespace projetodweb_connectify.Controllers.API
         private void DeleteImage(string imageUrl)
         {
             if (string.IsNullOrEmpty(imageUrl)) return;
-            // Evitar apagar uma imagem padrão, se houver
-            // if (imageUrl == "/images/events/default.png") return;
 
             string imagePath = Path.Combine(_env.WebRootPath, imageUrl.TrimStart('/'));
             if (System.IO.File.Exists(imagePath))

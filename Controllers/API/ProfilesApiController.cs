@@ -34,17 +34,15 @@ namespace projetodweb_connectify.Controllers.API
 
             var profiles = await _context.Users
                 .AsNoTracking()
-                .Where(u => u.Profile != null && u.Username != currentUsername) // Garante que o utilizador tem perfil e não é o próprio
-                .OrderBy(u => u.Profile.Name) // Ordena por nome de perfil para consistência
+                .Where(u => u.Profile != null && u.Username != currentUsername) 
+                .OrderBy(u => u.Profile.Name) 
                 .Select(u => new ProfileSummaryDto
                 {
-                    // Selecionamos apenas os campos necessários para a lista de exploração
                     Username = u.Username,
                     Name = u.Profile.Name,
                     ProfilePicture = u.Profile.ProfilePicture,
                     Bio = u.Profile.Bio,
                     Type = u.Profile.Type
-                    // Nota: O FriendshipStatus foi removido deste DTO ou será nulo
                 })
                 .ToListAsync();
 
@@ -54,16 +52,13 @@ namespace projetodweb_connectify.Controllers.API
         /// <summary>
         /// Devolve os dados públicos de um perfil específico pelo username.
         /// </summary>
-        /// <summary>
-        /// Devolve os dados públicos de um perfil específico pelo username.
-        /// </summary>
         [HttpGet("{username}")]
         public async Task<ActionResult<ProfileDto>> GetProfileByUsername(string username)
         {
             if (string.IsNullOrEmpty(username))
                 return BadRequest("O nome de utilizador é obrigatório.");
 
-            // Encontrar o utilizador logado pelo seu nome (username)
+            // Encontrar o utilizador logado
             var loggedInUsername = User.Identity?.Name;
             if (string.IsNullOrEmpty(loggedInUsername))
                 return Unauthorized("Não foi possível identificar o utilizador logado.");
@@ -84,23 +79,19 @@ namespace projetodweb_connectify.Controllers.API
             if (profileUser == null || profileUser.Profile == null)
                 return NotFound(new { message = $"Perfil para '{username}' não encontrado." });
 
-            // ======================= INÍCIO DA ALTERAÇÃO =======================
-            // Contar o número de amizades aceites para o UTILIZADOR DO PERFIL VISITADO.
+            // Contar o número de amizades aceites 
             var friendsCount = await _context.Friendships
                 .AsNoTracking()
                 .CountAsync(f =>
                     (f.User1Id == profileUser.Id || f.User2Id == profileUser.Id) &&
                     f.Status == FriendshipStatus.Accepted
                 );
-            // ======================= FIM DA ALTERAÇÃO =======================
-
-            // =========== INÍCIO DA LÓGICA DE CORREÇÃO ===========
 
             // 1. Criar o DTO e preencher os novos campos
             var profileDto = new ProfileDto
             {
-                Id = profileUser.Profile.Id, // ProfileId
-                UserId = profileUser.Id,     // UserId (int)
+                Id = profileUser.Profile.Id, 
+                UserId = profileUser.Id,    
                 Name = profileUser.Profile.Name,
                 Type = profileUser.Profile.Type,
                 Bio = profileUser.Profile.Bio,
@@ -147,10 +138,8 @@ namespace projetodweb_connectify.Controllers.API
                             }
                             break;
                         case FriendshipStatus.Rejected:
-                            // Na sua UI, "rejeitado" funciona como "não amigos" para um novo pedido.
                             profileDto.FriendshipStatus = "not_friends";
                             break;
-                        // Adicionar outros casos se necessário (Blocked, etc.)
                         default:
                             profileDto.FriendshipStatus = "not_friends";
                             break;
@@ -158,7 +147,7 @@ namespace projetodweb_connectify.Controllers.API
                 }
             }
 
-            // 3. Lógica para obter posts do mural pessoal (públicos)
+            // 3. Lógica para obter posts pessoais
             var personalTopic = await _context.Topics
                 .AsNoTracking()
                 .Include(t => t.Posts)
@@ -172,7 +161,7 @@ namespace projetodweb_connectify.Controllers.API
                     .Select(p => new TopicPostDto
                     {
                         Id = p.Id,
-                        TopicId = p.TopicId, // <-- PREENCHER O TopicId
+                        TopicId = p.TopicId, 
                         Content = p.Content,
                         CreatedAt = p.CreatedAt,
                         PostImageUrl = p.PostImageUrl
@@ -180,7 +169,6 @@ namespace projetodweb_connectify.Controllers.API
                     .ToList();
             }
 
-            // ... (A lógica para CreatedTopics permanece a mesma) ...
             profileDto.CreatedTopics = await _context.Topics
                 .AsNoTracking()
                 .Where(t => t.CreatedBy == profileUser.Profile.Id && !t.IsPersonal)
@@ -193,8 +181,6 @@ namespace projetodweb_connectify.Controllers.API
                     CreatedAt = t.CreatedAt
                 })
                 .ToListAsync();
-
-            // =========== FIM DA LÓGICA DE CORREÇÃO ===========
 
             return Ok(profileDto);
         }
@@ -218,19 +204,13 @@ namespace projetodweb_connectify.Controllers.API
             if (user == null || user.Profile == null)
                 return NotFound(new { message = "Perfil não encontrado." });
 
-  
-
-            // ======================= INÍCIO DA ALTERAÇÃO =======================
-            // 1. Contar o número de amizades aceites para este utilizador.
-            //    Uma amizade é contada se o status for 'Accepted' e o ID do utilizador
-            //    estiver em User1Id ou User2Id.
+   
             var friendsCount = await _context.Friendships
                 .AsNoTracking()
                 .CountAsync(f =>
                     (f.User1Id == user.Id || f.User2Id == user.Id) &&
                     f.Status == FriendshipStatus.Accepted
                 );
-            // ======================= FIM DA ALTERAÇÃO =======================
 
             var personalTopic = await _context.Topics
                 .AsNoTracking()
@@ -250,11 +230,6 @@ namespace projetodweb_connectify.Controllers.API
                 PersonalTopicId = personalTopic?.Id,
                 FriendsCount = friendsCount
             };
-
-            // O resto da sua lógica para obter posts, tópicos criados e tópicos guardados
-            // permanece aqui, pois pertence ao perfil do próprio utilizador.
-
-          
 
             if (personalTopic != null && personalTopic.Posts.Any())
             {
@@ -315,7 +290,7 @@ namespace projetodweb_connectify.Controllers.API
             profile.Name = profileUpdateDto.Name;
             profile.Bio = profileUpdateDto.Bio;
 
-            // 3. Lógica para upload de imagem (exatamente como no seu controller MVC)
+            // 3. Lógica para upload de imagem 
             if (profileUpdateDto.ProfilePictureFile != null && profileUpdateDto.ProfilePictureFile.Length > 0)
             {
                 string uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images/profiles");
@@ -345,7 +320,6 @@ namespace projetodweb_connectify.Controllers.API
             }
 
             // 5. Retornar o perfil atualizado (opcional, mas boa prática)
-            // Para isso, precisaríamos de remapear para o ProfileDto, mas por simplicidade, vamos retornar NoContent.
             return NoContent(); // HTTP 204 - Sucesso, sem conteúdo para retornar
         }
     }

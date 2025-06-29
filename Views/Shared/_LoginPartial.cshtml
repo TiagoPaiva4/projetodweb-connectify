@@ -2,25 +2,21 @@
 @inject SignInManager<IdentityUser> SignInManager
 @inject UserManager<IdentityUser> UserManager
 
-@* Verificamos se o utilizador está autenticado *@
 @if (SignInManager.IsSignedIn(User))
 {
-    @* Se estiver, mostramos a saudação e o botão de Logout. *@
-    @* Adaptei o HTML para se parecer com os links da sua sidebar *@
-
-    <div class="sidebar-nav-item">
-        <a class="sidebar-nav-link" asp-area="Identity" asp-page="/Account/Manage/Index" title="Manage">
-            <i class="fas fa-user-check"></i> @* Ícone opcional *@
+    <div class="sidebar-nav-item dropdown">
+        <a class="sidebar-nav-link dropdown-toggle" href="#" id="userMenuDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="fas fa-user-check"></i>
             <span class="sidebar-nav-text">Olá @UserManager.GetUserName(User)!</span>
         </a>
-    </div>
-    <div class="sidebar-nav-item">
-        <form method="post" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
-            <button type="submit" class="sidebar-nav-link btn w-100">
-                <i class="fas fa-sign-out-alt"></i> @* Ícone opcional *@
-                <span class="sidebar-nav-text">Logout</span>
-            </button>
-        </form>
+        <ul class="dropdown-menu" aria-labelledby="userMenuDropdown">
+            <li><a class="dropdown-item" asp-area="Identity" asp-page="/Account/Manage/Index" title="Manage">Gerir Conta</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+                <form method="post" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
+                    <button type="submit" class="dropdown-item w-100 text-start">Logout</button>
+                </form>
+            </li>
+        </ul>
     </div>
 }
-@* Se o utilizador NÃO estiver autenticado, não mostramos nada. O bloco 'else' foi removido. *@

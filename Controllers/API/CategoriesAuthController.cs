@@ -15,13 +15,12 @@ namespace projetodweb_connectify.Controllers.API
 {
     [Route("api/categories-auth")]
     [ApiController]
-    [Authorize(Roles = "Admin")] // Protege todas as ações por defeito para Admins
+    [Authorize(Roles = "Admin")] 
     public class CategoriesAuthController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
         private readonly IWebHostEnvironment _env;
 
-        // Injetar IWebHostEnvironment para obter o caminho para wwwroot
         public CategoriesAuthController(ApplicationDbContext context, IWebHostEnvironment env)
         {
             _context = context;
@@ -155,7 +154,7 @@ namespace projetodweb_connectify.Controllers.API
                 }
             }
 
-            return NoContent(); // Retorna 204 No Content, indicando sucesso
+            return NoContent(); // Retorna 204 No Content
         }
 
 
@@ -186,7 +185,7 @@ namespace projetodweb_connectify.Controllers.API
             _context.Categories.Remove(category);
             await _context.SaveChangesAsync();
 
-            return NoContent(); // Retorna 204 No Content, indicando sucesso
+            return NoContent(); // Retorna 204 No Content
         }
 
 
