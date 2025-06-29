@@ -1,40 +1,51 @@
-﻿@model projetodweb_connectify.Models.Users
+﻿@* Define o tipo de dados que esta view espera receber do Controller. Neste caso, um objeto do tipo 'Users'. *@
+@model projetodweb_connectify.Models.Users
 
 @{
+    // Define o título da página que será exibido no separador do browser.
     ViewData["Title"] = "Edit";
 }
 
-<h1>Edit</h1>
+<h1>Editar Utilizador</h1>
 
-<h4>Users</h4>
+<h4>Dados do Utilizador</h4>
 <hr />
 <div class="row">
     <div class="col-md-4">
+        @* O formulário será submetido para a action 'Edit' do Controller. *@
         <form asp-action="Edit">
+            @* Exibe um sumário de todos os erros de validação do modelo num único local. *@
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            
+            @* 'asp-for="Id"' cria um campo de input oculto (<input type="hidden">) que contém o ID do utilizador a ser editado. *@
+            @* Isto é crucial para que o Controller saiba qual registo deve atualizar na base de dados. *@
             <input type="hidden" asp-for="Id" />
+
+            @* Bloco para o campo 'Username'. Os valores atuais são pré-preenchidos nos inputs. *@
             <div class="form-group">
+                @* 'asp-for' gera uma label (etiqueta) para a propriedade 'Username'. *@
                 <label asp-for="Username" class="control-label"></label>
+                @* 'asp-for' gera um campo de input ligado à propriedade 'Username', permitindo a sua edição. *@
                 <input asp-for="Username" class="form-control" />
+                @* 'asp-validation-for' exibe mensagens de erro específicas para o campo 'Username'. *@
                 <span asp-validation-for="Username" class="text-danger"></span>
             </div>
+
+            @* Bloco para o campo 'Email'. *@
             <div class="form-group">
                 <label asp-for="Email" class="control-label"></label>
                 <input asp-for="Email" class="form-control" />
                 <span asp-validation-for="Email" class="text-danger"></span>
             </div>
-            @* TABELA USERS
-            <div class="form-group">
-                <label asp-for="PasswordHash" class="control-label"></label>
-                <input asp-for="PasswordHash" class="form-control" />
-                <span asp-validation-for="PasswordHash" class="text-danger"></span>
-            </div>
-            *@
+
+            @* Bloco para o campo 'CreatedAt' (Data de Criação). Geralmente este campo não é editável pelo utilizador. *@
             <div class="form-group">
                 <label asp-for="CreatedAt" class="control-label"></label>
                 <input asp-for="CreatedAt" class="form-control" />
                 <span asp-validation-for="CreatedAt" class="text-danger"></span>
             </div>
+
+            @* Bloco do botão de submissão do formulário. *@
             <div class="form-group">
                 <input type="submit" value="Save" class="btn btn-primary" />
             </div>
@@ -43,9 +54,14 @@
 </div>
 
 <div>
-    <a asp-action="Index">Back to List</a>
+    @* Link para voltar à página de índice (lista de utilizadores). *@
+    <a asp-action="Index">Voltar à Lista</a>
 </div>
 
+@* Secção para carregar scripts no final da página, útil para validação do lado do cliente. *@
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+        // Renderiza a partial view que contém os scripts de validação do jQuery.
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }

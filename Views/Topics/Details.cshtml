@@ -1,13 +1,19 @@
-﻿@model projetodweb_connectify.Models.Topic
+﻿@* Define o tipo de dados que esta view espera receber do Controller, neste caso, um objeto do tipo 'Topic'. *@
+@model projetodweb_connectify.Models.Topic
+@* Importa os serviços do ASP.NET Core Identity para verificar o estado de login do utilizador. *@
 @using Microsoft.AspNetCore.Identity
 @inject SignInManager<IdentityUser> SignInManager
 
 @{
+    // Define o título da página com base no título do tópico recebido.
     ViewData["Title"] = Model.Title;
+    
+    // Define caminhos para imagens padrão, caso a imagem do tópico ou do utilizador não exista.
     string defaultTopicImage = Url.Content("~/images/topics/default_topic_image.png");
     string topicImageUrl = string.IsNullOrEmpty(Model.TopicImageUrl) ? defaultTopicImage : Url.Content(Model.TopicImageUrl);
     string defaultUserImage = Url.Content("~/images/defaultuser.png");
 
+    // Obtém variáveis do ViewBag, que foram definidas no Controller, para controlar a lógica da view.
     bool isTopicCreator = ViewBag.IsCurrentUserTheCreator ?? false;
     int? loggedInUserProfileId = ViewBag.CurrentUserProfileId as int?;
 }
@@ -16,7 +22,7 @@
     <div class="row">
         <div class="col-md-10 offset-md-1">
 
-            <!-- This is your original Topic Details card. No changes were made here. -->
+            <!-- Cartão que exibe os detalhes principais do Tópico. -->
             <div class="card shadow-sm mb-4">
                 <img src="@topicImageUrl" alt="Imagem do Tópico: @Model.Title" class="card-img-top img-fluid" style="max-height: 400px; object-fit: cover;" onerror="this.onerror=null; this.src='@defaultTopicImage';" />
                 <div class="card-body">
@@ -50,6 +56,7 @@
                         </dd>
                     </dl>
 
+                    @* Ações de gestão do tópico (Editar/Apagar), visíveis apenas para o criador. *@
                     <div class="mt-3">
                         @if (isTopicCreator)
                         {
@@ -64,7 +71,7 @@
                 </div>
             </div>
 
-            <!-- Your original "Add New Post" button -->
+            <!-- Botão para adicionar uma nova publicação a este tópico. -->
             <div class="mb-3 text-end">
                 <a asp-controller="TopicPosts" asp-action="Create" asp-route-topicId="@Model.Id" class="btn btn-success">
                     <i class="fas fa-plus-circle"></i> Adicionar Nova Publicação
@@ -73,25 +80,23 @@
 
             <h3 class="mt-4 mb-3">Publicações no Tópico (@(Model.Posts?.Count ?? 0))</h3>
 
+            @* Verifica se existem publicações para exibir. *@
             @if (Model.Posts != null && Model.Posts.Any())
             {
+                @* Itera sobre cada publicação (post) do tópico. *@
                 foreach (var post in Model.Posts)
                 {
-                    <div class="card mb-3 shadow-sm">
+                    <div class="card mb-3 shadow-sm" id="post-@post.Id">
                         <div class="card-body">
-                            <!-- Your original post image display -->
+                            @* Exibe a imagem da publicação, se existir. *@
                             @if (!string.IsNullOrEmpty(post.PostImageUrl))
                             {
                                 <div class="mb-3 text-center">
-                                    <img src="@Url.Content(post.PostImageUrl)"
-                                         alt="Imagem da Publicação"
-                                         class="img-fluid rounded"
-                                         style="max-height: 500px; object-fit: contain;"
-                                         onerror="this.style.display='none';" />
+                                    <img src="@Url.Content(post.PostImageUrl)" alt="Imagem da Publicação" class="img-fluid rounded" style="max-height: 500px; object-fit: contain;" onerror="this.style.display='none';" />
                                 </div>
                             }
                             
-                            <!-- Your original post content and footer -->
+                            @* Exibe o conteúdo da publicação e o seu autor. *@
                             <p class="card-text">
                                 @Html.Raw(post.Content?.Replace(Environment.NewLine, "<br />"))
                             </p>
@@ -110,11 +115,9 @@
                                 em <span title="@post.CreatedAt.ToString("F")">@post.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
                             </footer>
                             
-                            <!-- =================================================================================== -->
-                            <!-- START: COMBINED ACTIONS (LIKE BUTTON AND YOUR ORIGINAL EDIT/DELETE BUTTONS) -->
-                            <!-- =================================================================================== -->
+                            @* Secção de ações combinadas: Botão de Gosto e botões de Editar/Apagar. *@
                             <div class="d-flex justify-content-between align-items-center mt-3">
-                                <!-- Like Button on the left -->
+                                <!-- Botão de Gosto para a publicação, funciona com AJAX. -->
                                 @if (SignInManager.IsSignedIn(User))
                                 {
                                     <form asp-controller="Likes" asp-action="TogglePostLike" asp-route-id="@post.Id" 
@@ -136,7 +139,7 @@
                                     </span>
                                 }
 
-                                <!-- Your original Edit/Delete buttons on the right -->
+                                <!-- Botões de Editar/Apagar a publicação, visíveis apenas para o autor. -->
                                 <div class="text-end">
                                     @if (loggedInUserProfileId.HasValue && post.ProfileId == loggedInUserProfileId.Value)
                                     {
@@ -148,17 +151,15 @@
                                     }
                                 </div>
                             </div>
-                            <!-- =================================================================================== -->
-                            <!-- END: COMBINED ACTIONS -->
-                            <!-- =================================================================================== -->
-
 
                             <hr class="my-3" />
+                            @* Secção dedicada a exibir e adicionar comentários. *@
                             <div class="comments-section ms-3">
                                 <h6 class="mb-2">Comentários (@post.Comments.Count)</h6>
 
                                 @if (post.Comments != null && post.Comments.Any())
                                 {
+                                    @* Itera sobre cada comentário da publicação. *@
                                     foreach (var comment in post.Comments)
                                     {
                                         <div class="comment mb-2 pb-2 border-bottom">
@@ -169,25 +170,16 @@
                                                      onerror="this.onerror=null; this.src='@defaultUserImage';" />
                                                 <div class="flex-grow-1">
                                                     <strong>
-                                                        @if (comment.Profile != null)
-                                                        {
-                                                            <a asp-controller="Profiles" asp-action="Details" asp-route-id="@comment.Profile.Id" class="text-dark text-decoration-none">
-                                                                @(comment.Profile.Name ?? comment.Profile.User?.Username ?? "Anónimo")
-                                                            </a>
-                                                        }
-                                                        else
-                                                        {
-                                                            @:Anónimo
-                                                        }
+                                                        <a asp-controller="Profiles" asp-action="Details" asp-route-id="@comment.Profile.Id" class="text-dark text-decoration-none">
+                                                            @(comment.Profile.Name ?? comment.Profile.User?.Username ?? "Anónimo")
+                                                        </a>
                                                     </strong>
                                                     <small class="text-muted ms-2" title="@comment.CreatedAt.ToString("F")">
                                                         @comment.CreatedAt.ToString("dd/MM/yy HH:mm")
                                                     </small>
                                                     <p class="mb-0">@Html.Raw(comment.Content?.Replace(Environment.NewLine, "<br />"))</p>
 
-                                                    <!-- ======================================================================= -->
-                                                    <!-- START: COMMENT LIKE BUTTON, ADDED HERE -->
-                                                    <!-- ======================================================================= -->
+                                                    <!-- Botão de Gosto para o comentário. -->
                                                     <div class="mt-1">
                                                         @if (SignInManager.IsSignedIn(User))
                                                         {
@@ -210,9 +202,6 @@
                                                             </span>
                                                         }
                                                     </div>
-                                                    <!-- ======================================================================= -->
-                                                    <!-- END: COMMENT LIKE BUTTON -->
-                                                    <!-- ======================================================================= -->
                                                 </div>
                                             </div>
                                         </div>
@@ -223,7 +212,7 @@
                                     <p class="text-muted small"><em>Ainda não há comentários. Seja o primeiro a comentar!</em></p>
                                 }
                                 
-                                <!-- Your original "Add Comment" form -->
+                                <!-- Formulário para adicionar um novo comentário. Visível apenas para utilizadores autenticados com perfil. -->
                                 @if (User.Identity != null && User.Identity.IsAuthenticated && loggedInUserProfileId.HasValue)
                                 {
                                     <div class="add-comment-form mt-3" id="comment-form-@post.Id">
@@ -269,23 +258,26 @@
     </div>
 </div>
 
-<!-- ======================================================================= -->
-<!-- START: JAVASCRIPT SECTION FOR LIKES -->
-<!-- ======================================================================= -->
+<!-- Secção para scripts que serão injetados no final da página. -->
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 
     <script>
+        // Este script é executado quando o documento HTML está completamente carregado.
         document.addEventListener('DOMContentLoaded', function () {
             
+            // Encontra todos os formulários de "Gosto" na página.
             const allLikeForms = document.querySelectorAll('form[data-like-form]');
             
+            // Adiciona um "ouvinte" de eventos a cada formulário encontrado.
             allLikeForms.forEach(form => {
                 form.addEventListener('submit', function (e) {
+                    // Impede o comportamento padrão do formulário (que seria recarregar a página).
                     e.preventDefault();
 
                     const currentForm = this;
                     const url = currentForm.action;
+                    // Obtém o token anti-falsificação, essencial para a segurança de requisições POST.
                     const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
 
                     if (!token) {
@@ -293,6 +285,7 @@
                         return;
                     }
 
+                    // Envia uma requisição assíncrona (AJAX) para o servidor com a API 'fetch'.
                     fetch(url, {
                         method: 'POST',
                         headers: {
@@ -300,6 +293,7 @@
                         }
                     })
                     .then(response => {
+                        // Verifica se a resposta do servidor foi bem-sucedida.
                         if (response.status === 401) {
                             alert("Precisa de iniciar sessão para gostar disto.");
                             throw new Error('Unauthorized');
@@ -307,31 +301,39 @@
                         if (!response.ok) {
                             throw new Error('Network response was not ok');
                         }
+                        // Converte a resposta do servidor (que está em formato JSON) para um objeto JavaScript.
                         return response.json();
                     })
                     .then(data => {
+                        // 'data' é o objeto { count: newLikeCount } retornado pelo LikesController.
+                        // Esta secção atualiza a interface do utilizador sem recarregar a página.
                         const itemId = currentForm.getAttribute('data-like-form');
                         const countSpan = document.querySelector(`span[data-like-count="${itemId}"]`);
                         const button = currentForm.querySelector('button[type="submit"]');
 
+                        // Atualiza o texto do contador de gostos.
                         countSpan.textContent = data.count;
                         
+                        // Alterna a aparência do botão para dar feedback visual ao utilizador.
                         const isPost = itemId.startsWith('post');
                         const likedClass = isPost ? 'btn-primary' : 'btn-info';
                         const unlikedClass = isPost ? 'btn-outline-primary' : 'btn-outline-info';
                         
                         if (button.classList.contains(unlikedClass)) {
+                            // Se o botão estava "não gostado", muda para o estilo "gostado".
                             button.classList.remove(unlikedClass);
                             button.classList.add(likedClass);
                             if (!isPost) button.classList.add('text-white');
                             button.innerHTML = '<i class="fas fa-thumbs-up"></i> Gostei';
                         } else {
+                            // Se o botão estava "gostado", muda para o estilo "não gostado".
                             button.classList.remove(likedClass, 'text-white');
                             button.classList.add(unlikedClass);
                             button.innerHTML = '<i class="fas fa-thumbs-up"></i> Gosto';
                         }
                     })
                     .catch(error => {
+                        // Captura e exibe no console quaisquer erros que ocorram durante a requisição.
                         if (error.message !== 'Unauthorized') {
                            console.error('Error toggling like:', error);
                         }
@@ -341,6 +343,3 @@
         });
     </script>
 }
-<!-- ======================================================================= -->
-<!-- END: JAVASCRIPT SECTION -->
-<!-- ======================================================================= -->

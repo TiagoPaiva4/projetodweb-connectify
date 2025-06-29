@@ -1,6 +1,8 @@
-﻿@model projetodweb_connectify.Models.Topic
+﻿@* Define o tipo de dados que esta view espera receber do Controller. Neste caso, um objeto do tipo 'Topic'. *@
+@model projetodweb_connectify.Models.Topic
 
 @{
+    // Define o título da página, personalizando-o com o título do tópico a ser editado.
     ViewData["Title"] = "Editar Tópico: " + Model.Title;
 }
 
@@ -9,46 +11,53 @@
 <h4>Tópico</h4>
 <hr />
 <div class="row">
+    @* Aumenta a largura da coluna para dar mais espaço ao formulário. *@
     <div class="col-md-6">
-        @* Increased col width for more space *@
+        @* O formulário será submetido para a action 'Edit' do Controller via método POST. *@
+        @* 'enctype="multipart/form-data"' é essencial para permitir o upload de um novo ficheiro de imagem. *@
         <form asp-action="Edit" method="post" enctype="multipart/form-data">
-            @* Added method="post" and enctype for file upload *@
+            @* Exibe um sumário de todos os erros de validação do modelo num único local. *@
             <div asp-validation-summary="All" class="text-danger"></div>
+            
+            @* Campos ocultos são cruciais para manter o estado e identificar o registo a ser atualizado. *@
             <input type="hidden" asp-for="Id" />
-            @* Important: Keep hidden fields for properties not directly edited on the form but needed by the backend or to maintain state *@
             <input type="hidden" asp-for="CreatedBy" />
             <input type="hidden" asp-for="CreatedAt" />
             <input type="hidden" asp-for="IsPersonal" />
-            <input type="hidden" asp-for="TopicImageUrl" /> @* To retain current image if none is uploaded *@
-            @* IsPrivate is intentionally omitted as per previous request to keep it always false for non-personal topics *@
+            @* Este campo oculto ajuda a manter a imagem atual se nenhuma nova for enviada. *@
+            <input type="hidden" asp-for="TopicImageUrl" />
 
 
+            @* Bloco para o campo 'Title'. O valor atual do título é pré-preenchido. *@
             <div class="form-group mb-3">
                 <label asp-for="Title" class="control-label"></label>
                 <input asp-for="Title" class="form-control" />
                 <span asp-validation-for="Title" class="text-danger"></span>
             </div>
 
-            @* CAMPO PARA CATEGORIA *@
+            @* Bloco para o campo 'CategoryId' (Categoria). É uma lista dropdown. *@
             <div class="form-group mb-3">
                 <label asp-for="CategoryId" class="control-label"></label>
+                @* 'asp-items="ViewBag.CategoryId"' popula a dropdown com a lista de categorias enviada pelo Controller. *@
                 <select asp-for="CategoryId" class="form-select" asp-items="ViewBag.CategoryId">
                     <option value="">-- Selecione uma Categoria --</option>
                 </select>
                 <span asp-validation-for="CategoryId" class="text-danger"></span>
             </div>
 
+            @* Bloco para o campo 'Description'. Usa uma 'textarea' para facilitar a edição de texto longo. *@
             <div class="form-group mb-3">
                 <label asp-for="Description" class="control-label"></label>
-                <textarea asp-for="Description" class="form-control" rows="5"></textarea> @* Changed to textarea for better editing *@
+                <textarea asp-for="Description" class="form-control" rows="5"></textarea>
                 <span asp-validation-for="Description" class="text-danger"></span>
             </div>
 
-            @* CAMPO PARA IMAGEM DO TÓPICO *@
+            @* Bloco para o upload de uma nova imagem para o tópico. *@
             <div class="form-group mb-3">
                 <label for="topicImageFile" class="control-label">Alterar Imagem do Tópico (Opcional)</label>
                 <input type="file" id="topicImageFile" name="topicImageFile" class="form-control" accept="image/png, image/jpeg, image/gif" />
                 <span asp-validation-for="TopicImageUrl" class="text-danger"></span>
+                @* Exibe a imagem atual do tópico para referência do utilizador. *@
                 @if (!string.IsNullOrEmpty(Model.TopicImageUrl) && Model.TopicImageUrl != "/images/topics/default_topic.jpeg")
                 {
                     <div class="mt-2">
@@ -63,11 +72,9 @@
                     </div>
                 }
             </div>
-
-            @* IsPrivate is intentionally not shown/editable for regular topics *@
-
+            
+            @* Bloco dos botões de ação do formulário. *@
             <div class="form-group mt-4">
-                @* Added mt-4 for spacing *@
                 <input type="submit" value="Guardar Alterações" class="btn btn-primary" />
                 <a asp-action="Index" class="btn btn-secondary ms-2">Cancelar</a>
             </div>
@@ -76,11 +83,14 @@
 </div>
 
 <div class="mt-3">
+    @* Link para voltar à página de índice (lista de tópicos). *@
     <a asp-action="Index">Voltar à Lista de Tópicos</a>
 </div>
 
+@* Secção para carregar scripts no final da página, útil para validação do lado do cliente. *@
 @section Scripts {
     @{
+        // Renderiza a partial view que contém os scripts de validação do jQuery.
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
 }

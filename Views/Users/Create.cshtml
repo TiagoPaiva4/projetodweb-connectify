@@ -1,39 +1,47 @@
-﻿@model projetodweb_connectify.Models.Users
+﻿@* Define o tipo de dados que esta view espera receber do Controller. Neste caso, um objeto do tipo 'Users'. *@
+@model projetodweb_connectify.Models.Users
 
 @{
+    // Define o título da página que será exibido no separador do browser.
     ViewData["Title"] = "Create";
 }
 
-<h1>Create</h1>
+<h1>Criar Novo Utilizador</h1>
 
-<h4>Users</h4>
+<h4>Dados do Utilizador</h4>
 <hr />
 <div class="row">
     <div class="col-md-4">
+        @* O formulário será submetido para a action 'Create' do Controller atual. *@
         <form asp-action="Create">
+            @* Exibe um sumário de todos os erros de validação do modelo num único local. *@
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            
+            @* Bloco para o campo 'Username'. *@
             <div class="form-group">
+                @* 'asp-for' gera uma label (etiqueta) para a propriedade 'Username' do modelo. *@
                 <label asp-for="Username" class="control-label"></label>
+                @* 'asp-for' gera um campo de input ligado à propriedade 'Username'. *@
                 <input asp-for="Username" class="form-control" />
+                @* 'asp-validation-for' exibe mensagens de erro específicas para o campo 'Username'. *@
                 <span asp-validation-for="Username" class="text-danger"></span>
             </div>
+
+            @* Bloco para o campo 'Email'. *@
             <div class="form-group">
                 <label asp-for="Email" class="control-label"></label>
                 <input asp-for="Email" class="form-control" />
                 <span asp-validation-for="Email" class="text-danger"></span>
             </div>
+
+            @* Bloco para o campo 'Phone' (Telemóvel). *@
             <div class="form-group">
                 <label asp-for="Phone" class="control-label"></label>
                 <input asp-for="Phone" class="form-control" />
                 <span asp-validation-for="Phone" class="text-danger"></span>
             </div>
-            @* PASSWORD TABELA USERS    
-            <div class="form-group">
-                <label asp-for="PasswordHash" class="control-label"></label>
-                <input asp-for="PasswordHash" type="password" class="form-control" />
-                <span asp-validation-for="PasswordHash" class="text-danger"></span>
-            </div>
-            *@
+            
+            @* Bloco do botão de submissão do formulário. *@
             <div class="form-group">
                 <input type="submit" value="Create" class="btn btn-primary" />
             </div>
@@ -42,9 +50,14 @@
 </div>
 
 <div>
-    <a asp-action="Index">Back to List</a>
+    @* Link para voltar à página de índice (lista de utilizadores). *@
+    <a asp-action="Index">Voltar à Lista</a>
 </div>
 
+@* Secção para carregar scripts no final da página, útil para validação do lado do cliente. *@
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+        // Renderiza a partial view que contém os scripts de validação do jQuery.
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }

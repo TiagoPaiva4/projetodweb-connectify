@@ -1,44 +1,50 @@
-﻿@model projetodweb_connectify.Models.Users
+﻿@* Define o tipo de dados que esta view espera receber do Controller. Neste caso, um objeto do tipo 'Users'. *@
+@model projetodweb_connectify.Models.Users
 
 @{
+    // Define o título da página que será exibido no separador do browser.
     ViewData["Title"] = "Details";
 }
 
-<h1>Details</h1>
+<h1>Detalhes do Utilizador</h1>
 
 <div>
-    <h4>Users</h4>
+    <h4>Dados do Utilizador</h4>
     <hr />
+    @* 'dl' (Definition List) é usado para exibir os dados do utilizador num formato de lista de termos e descrições. *@
     <dl class="row">
+        @* Exibe o nome do campo 'Username'. *@
         <dt class = "col-sm-2">
             @Html.DisplayNameFor(model => model.Username)
         </dt>
+        @* Exibe o valor do campo 'Username'. *@
         <dd class = "col-sm-10">
             @Html.DisplayFor(model => model.Username)
         </dd>
+
+        @* Exibe o nome do campo 'Email'. *@
         <dt class = "col-sm-2">
             @Html.DisplayNameFor(model => model.Email)
         </dt>
+        @* Exibe o valor do campo 'Email'. *@
         <dd class = "col-sm-10">
             @Html.DisplayFor(model => model.Email)
         </dd>
-        @*
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.PasswordHash)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.PasswordHash)
-        </dd>
-        *@
+
+        @* Exibe o nome do campo 'CreatedAt' (Data de Criação). *@
         <dt class = "col-sm-2">
             @Html.DisplayNameFor(model => model.CreatedAt)
         </dt>
+        @* Exibe o valor do campo 'CreatedAt'. *@
         <dd class = "col-sm-10">
             @Html.DisplayFor(model => model.CreatedAt)
         </dd>
     </dl>
 </div>
 <div>
-    <a asp-action="Edit" asp-route-id="@Model?.Id">Edit</a> |
-    <a asp-action="Index">Back to List</a>
+    @* 'asp-route-id' passa o ID do utilizador atual como um parâmetro no URL para a action 'Edit'. *@
+    @* O '?' (operador de anulação condicional) garante que não haverá erro se o Model for nulo. *@
+    <a asp-action="Edit" asp-route-id="@Model?.Id">Editar</a> |
+    @* Link para voltar à página de índice (lista de utilizadores). *@
+    <a asp-action="Index">Voltar à Lista</a>
 </div>

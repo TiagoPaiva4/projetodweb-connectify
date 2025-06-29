@@ -1,27 +1,31 @@
-﻿@model projetodweb_connectify.Models.Topic
+﻿@* Define o tipo de dados que esta view espera receber do Controller, neste caso, um objeto do tipo 'Topic'. *@
+@model projetodweb_connectify.Models.Topic
 
 @{
+    // Define o título da página que será exibido no cabeçalho do painel e no separador do browser.
     ViewData["Title"] = "Criar Novo Tópico";
 }
 
-<!-- Painel de Criação Principal -->
+<!-- Painel principal para a criação do tópico. -->
 <div class="create-topic-panel">
+    @* O formulário será submetido para a action 'Create' do Controller via método POST. *@
+    @* 'enctype="multipart/form-data"' é essencial para permitir o upload de ficheiros (a imagem do tópico). *@
     <form asp-action="Create" method="post" enctype="multipart/form-data">
 
-        <!-- ======================= INÍCIO DA ALTERAÇÃO 1 ======================= -->
-        <!-- O botão "Criar Tópico" foi removido daqui e o link "Voltar" foi adicionado -->
+        @* Cabeçalho do painel, contendo o título e o link para voltar. *@
         <header class="panel-header">
             <h1 class="panel-title">@ViewData["Title"]</h1>
-            <!-- LINK MOVIDO DA PARTE INFERIOR DA PÁGINA PARA AQUI -->
             <a asp-action="Index" class="link-secondary text-decoration-none">Voltar à Lista de Tópicos</a>
         </header>
-        <!-- ======================= FIM DA ALTERAÇÃO 1 ======================= -->
-        <!-- Corpo do Painel com Duas Colunas -->
+
+        @* Corpo do painel, dividido em duas colunas (upload de imagem e campos do formulário). *@
         <div class="panel-body row g-0">
 
-            <!-- Coluna Esquerda: Upload de Imagem -->
+            <!-- Coluna da Esquerda: Área de Upload de Imagem -->
             <div class="col-md-7 image-upload-area">
+                @* Contentor para a mensagem de "arraste e solte". Fica visível por defeito. *@
                 <div class="upload-prompt" id="upload-prompt-container">
+                    @* A 'label' cobre toda a área e está associada ao input de ficheiro, tornando toda a zona clicável. *@
                     <label for="topicImageFile" class="upload-label">
                         <i class="fas fa-cloud-upload-alt upload-icon"></i>
                         <span class="upload-text">Arraste a imagem para aqui ou clique para selecionar</span>
@@ -29,72 +33,87 @@
                     </label>
                 </div>
 
+                @* O input de ficheiro real está escondido ('d-none'), mas é acionado pela label. *@
                 <input type="file" name="topicImageFile" id="topicImageFile" class="d-none" accept="image/png, image/jpeg, image/gif" />
 
+                @* Contentor para a pré-visualização da imagem. Fica escondido até que uma imagem seja selecionada. *@
                 <div class="image-preview-container" id="image-preview-container">
                     <img id="image-preview" src="#" alt="Pré-visualização da imagem" />
                 </div>
             </div>
 
-            <!-- Coluna Direita: Campos do Formulário -->
+            <!-- Coluna da Direita: Campos do Formulário -->
             <div class="col-md-5 form-fields-area">
+                @* Exibe um sumário de todos os erros de validação do modelo, se existirem. *@
                 <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
+                @* Bloco para o campo 'Title' (Título do tópico). *@
                 <div class="form-group mb-4">
                     <label asp-for="Title" class="form-label fw-bold"></label>
                     <input asp-for="Title" class="form-control" placeholder="Dê um título ao seu tópico..." />
                     <span asp-validation-for="Title" class="text-danger"></span>
                 </div>
 
+                @* Bloco para o campo 'CategoryId' (Categoria). É uma lista dropdown. *@
                 <div class="form-group mb-4">
                     <label asp-for="CategoryId" class="form-label fw-bold">Categoria</label>
+                    @* 'asp-items="ViewBag.CategoryId"' popula a dropdown com a lista de categorias enviada pelo Controller. *@
                     <select asp-for="CategoryId" class="form-select" asp-items="ViewBag.CategoryId">
                         <option value="">Selecione uma Categoria</option>
                     </select>
                     <span asp-validation-for="CategoryId" class="text-danger"></span>
                 </div>
 
+                @* Bloco para o campo 'Description' (Descrição do tópico). *@
                 <div class="form-group mb-4">
                     <label asp-for="Description" class="form-label fw-bold">Descrição</label>
                     <textarea asp-for="Description" class="form-control" rows="6" placeholder="Escreva uma descrição detalhada..."></textarea>
                     <span asp-validation-for="Description" class="text-danger"></span>
                 </div>
-
-                <!-- ======================= INÍCIO DA ALTERAÇÃO 2 ======================= -->
-                <!-- BOTÃO MOVIDO DO CABEÇALHO PARA AQUI -->
+                
+                @* Bloco do botão de submissão, estilizado para ter grande destaque. *@
                 <div class="form-group mt-5 d-grid">
                     <button type="submit" class="btn btn-primary-custom btn-lg">Criar Tópico</button>
                 </div>
-                <!-- ======================= FIM DA ALTERAÇÃO 2 ======================= -->
 
             </div>
         </div>
     </form>
 </div>
 
-<!-- O link "Voltar" foi removido daqui -->
+@* Secção para carregar scripts no final da página. *@
 @section Scripts {
     @{
+        // Renderiza os scripts de validação padrão do ASP.NET.
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
     <script>
+        // Este script é executado quando o documento HTML está completamente carregado.
         document.addEventListener('DOMContentLoaded', function() {
+            // Obtém referências aos elementos HTML necessários para a funcionalidade de pré-visualização.
             const fileInput = document.getElementById('topicImageFile');
             const previewContainer = document.getElementById('image-preview-container');
             const previewImage = document.getElementById('image-preview');
             const uploadPrompt = document.getElementById('upload-prompt-container');
 
+            // Adiciona um "ouvinte" de eventos que é acionado quando o utilizador seleciona um ficheiro.
             fileInput.addEventListener('change', function(event) {
+                // Obtém o primeiro ficheiro da lista de ficheiros selecionados.
                 const file = event.target.files[0];
                 if (file) {
+                    // 'FileReader' permite que aplicações web leiam o conteúdo de ficheiros de forma assíncrona.
                     const reader = new FileReader();
 
+                    // 'onload' é um evento que é acionado quando a leitura do ficheiro está completa.
                     reader.onload = function(e) {
+                        // Define o atributo 'src' da imagem de pré-visualização para o resultado da leitura do ficheiro.
                         previewImage.setAttribute('src', e.target.result);
+                        // Mostra o contentor da pré-visualização e esconde a mensagem de upload.
                         previewContainer.style.display = 'flex';
                         uploadPrompt.style.display = 'none';
                     }
 
+                    // Inicia a leitura do ficheiro. O resultado será um URL de dados.
                     reader.readAsDataURL(file);
                 }
             });
@@ -102,7 +121,6 @@
     </script>
 }
 
-<!-- O CSS permanece exatamente o mesmo, não precisa de alterações. -->
 <style>
     :root {
         --color-primary-dark: #1D3461;

@@ -1,57 +1,68 @@
-﻿@model IEnumerable<projetodweb_connectify.Models.Users>
+﻿@* Define o tipo de dados que esta view espera receber do Controller. *@
+@* Neste caso, uma coleção de objetos do tipo 'Users' (IEnumerable<Users>). *@
+@model IEnumerable<projetodweb_connectify.Models.Users>
 
 @{
+    // Define o título da página que será exibido no separador do browser.
     ViewData["Title"] = "Index";
 }
 
-<h1>Index</h1>
+<h1>Lista de Utilizadores</h1>
 
 <p>
-    <a asp-action="Create">Create New</a>
+    @* Link que aponta para a action 'Create', permitindo adicionar um novo utilizador. *@
+    <a asp-action="Create">Criar Novo</a>
 </p>
+
+@* Tabela para exibir a lista de utilizadores. *@
 <table class="table">
+    @* Cabeçalho da tabela. *@
     <thead>
         <tr>
+            @* Cria uma célula de cabeçalho com o nome da propriedade 'Username'. *@
             <th>
                 @Html.DisplayNameFor(model => model.Username)
             </th>
+            @* Cria uma célula de cabeçalho com o nome da propriedade 'Email'. *@
             <th>
                 @Html.DisplayNameFor(model => model.Email)
             </th>
-            @*
-            <th>
-                @Html.DisplayNameFor(model => model.PasswordHash)
-            </th>
-            *@
+            @* Cria uma célula de cabeçalho com o nome da propriedade 'CreatedAt'. *@
             <th>
                 @Html.DisplayNameFor(model => model.CreatedAt)
             </th>
+            @* Célula de cabeçalho vazia para a coluna das ações (Editar, Detalhes, Apagar). *@
             <th></th>
         </tr>
     </thead>
+    @* Corpo da tabela, onde os dados dos utilizadores serão listados. *@
     <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Username)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Email)
-            </td>
-            @*
-            <td>
-                @Html.DisplayFor(modelItem => item.PasswordHash)
-            </td>
-            *@
-            <td>
-                @Html.DisplayFor(modelItem => item.CreatedAt)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-            </td>
-        </tr>
-}
+        @* Loop 'foreach' que itera sobre cada 'item' (cada utilizador) na coleção 'Model'. *@
+        @foreach (var item in Model) {
+            @* 'tr' define uma linha da tabela para cada utilizador. *@
+            <tr>
+                @* Exibe o valor da propriedade 'Username' do utilizador atual. *@
+                <td>
+                    @Html.DisplayFor(modelItem => item.Username)
+                </td>
+                @* Exibe o valor da propriedade 'Email' do utilizador atual. *@
+                <td>
+                    @Html.DisplayFor(modelItem => item.Email)
+                </td>
+                @* Exibe o valor da propriedade 'CreatedAt' do utilizador atual. *@
+                <td>
+                    @Html.DisplayFor(modelItem => item.CreatedAt)
+                </td>
+                @* Célula que contém os links de ações para este utilizador específico. *@
+                <td>
+                    @* Link para a action 'Edit', passando o ID do utilizador atual. *@
+                    <a asp-action="Edit" asp-route-id="@item.Id">Editar</a> |
+                    @* Link para a action 'Details', passando o ID do utilizador atual. *@
+                    <a asp-action="Details" asp-route-id="@item.Id">Detalhes</a> |
+                    @* Link para a action 'Delete', passando o ID do utilizador atual. *@
+                    <a asp-action="Delete" asp-route-id="@item.Id">Apagar</a>
+                </td>
+            </tr>
+        }
     </tbody>
 </table>
