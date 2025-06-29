@@ -226,7 +226,7 @@
                                 <!-- Your original "Add Comment" form -->
                                 @if (User.Identity != null && User.Identity.IsAuthenticated && loggedInUserProfileId.HasValue)
                                 {
-                                    <div class="add-comment-form mt-3">
+                                    <div class="add-comment-form mt-3" id="comment-form-@post.Id">
                                         <form asp-controller="Topics" asp-action="AddComment" method="post">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="TopicPostId" value="@post.Id" />

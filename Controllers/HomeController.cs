@@ -25,22 +25,24 @@ namespace projetodweb_connectify.Controllers
             var viewModel = new Feed();
             viewModel.IsUserAuthenticated = User.Identity?.IsAuthenticated ?? false;
 
-            // --- Tópicos Recomendados ---
-            // Pegar alguns tópicos públicos, não pessoais, ordenados por data de criação
-            // ou por alguma métrica de popularidade se você tiver.
+            // --- Tï¿½picos Recomendados ---
+            // Pegar alguns tï¿½picos pï¿½blicos, nï¿½o pessoais, ordenados por data de criaï¿½ï¿½o
+            // ou por alguma mï¿½trica de popularidade se vocï¿½ tiver.
             viewModel.RecommendedTopics = await _context.Topics
                 .Include(t => t.Category) // Para mostrar a categoria se desejar
                 .Include(t => t.Creator).ThenInclude(c => c.User) // Para mostrar o criador
                 .Where(t => !t.IsPrivate && !t.IsPersonal)
                 .OrderByDescending(t => t.CreatedAt) // Mais recentes primeiro
-                                                     // .OrderByDescending(t => t.Posts.Count()) // Mais populares (se a relação Posts estiver carregada e for performático)
-                .Take(5) // Quantidade de tópicos recomendados
+                                                     // .OrderByDescending(t => t.Posts.Count()) // Mais populares (se a relaï¿½ï¿½o Posts estiver carregada e for performï¿½tico)
+                .Take(5) // Quantidade de tï¿½picos recomendados
                 .ToListAsync();
 
-            // --- Posts Gerais ("Para Você") ---
+            // --- Posts Gerais ("Para Vocï¿½") ---
             viewModel.GeneralPosts = await _context.TopicPosts
                 .Include(tp => tp.Profile).ThenInclude(p => p.User)
                 .Include(tp => tp.Topic).ThenInclude(t => t.Category)
+                .Include(tp => tp.Likes)       // Load likes for each post
+                .Include(tp => tp.Comments)    // Load comments for the count
                 .Where(tp => tp.Topic != null && !tp.Topic.IsPrivate && !tp.Topic.IsPersonal)
                 .OrderByDescending(p => p.CreatedAt)
                 .Take(20)
@@ -87,6 +89,8 @@ namespace projetodweb_connectify.Controllers
                             viewModel.FriendsPosts = await _context.TopicPosts
                                 .Include(tp => tp.Profile).ThenInclude(p => p.User)
                                 .Include(tp => tp.Topic).ThenInclude(t => t.Category)
+                                .Include(tp => tp.Likes)       // Load likes for each post
+                                .Include(tp => tp.Comments)    // Load comments for the count
                                 .Where(tp => friendProfileIds.Contains(tp.ProfileId))
                                 .OrderByDescending(p => p.CreatedAt)
                                 .Take(20)
@@ -98,23 +102,23 @@ namespace projetodweb_connectify.Controllers
                         viewModel.UserHasFriends = false;
                     }
 
-                    // --- Sugestões de Amizade ---
+                    // --- Sugestï¿½es de Amizade ---
                     var existingRelationsUserIds = await _context.Friendships
                         .Where(f => f.User1Id == appUser.Id || f.User2Id == appUser.Id)
                         .Select(f => f.User1Id == appUser.Id ? f.User2Id : f.User1Id)
                         .Distinct()
                         .ToListAsync();
 
-                    // Adiciona o próprio ID do usuário para garantir que ele não apareça nas sugestões
+                    // Adiciona o prï¿½prio ID do usuï¿½rio para garantir que ele nï¿½o apareï¿½a nas sugestï¿½es
                     existingRelationsUserIds.Add(appUser.Id);
 
-                    // Buscar perfis de usuários que não estão em existingRelationsUserIds
-                    // e que não são o próprio usuário
+                    // Buscar perfis de usuï¿½rios que nï¿½o estï¿½o em existingRelationsUserIds
+                    // e que nï¿½o sï¿½o o prï¿½prio usuï¿½rio
                     viewModel.FriendshipSuggestions = await _context.Profiles
                         .Include(p => p.User) // Incluir Users para ter o Username/Id
                         .Where(p => !existingRelationsUserIds.Contains(p.UserId))
-                        .OrderBy(p => p.CreatedAt) // Ou Guid.NewGuid() para aleatório no DB que suporta, ou outra lógica
-                        .Take(5) // Pegar 5 sugestões
+                        .OrderBy(p => p.CreatedAt) // Ou Guid.NewGuid() para aleatï¿½rio no DB que suporta, ou outra lï¿½gica
+                        .Take(5) // Pegar 5 sugestï¿½es
                         .ToListAsync();
                 }
             }

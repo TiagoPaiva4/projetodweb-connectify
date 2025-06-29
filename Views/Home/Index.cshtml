@@ -1,4 +1,5 @@
 ﻿@model projetodweb_connectify.Models.Feed
+@Html.AntiForgeryToken()
 @{
     ViewData["Title"] = "Feed Principal";
 }
@@ -189,6 +190,71 @@
                     }
                 });
             });
+            // This function will handle clicks on the like buttons.
+            function handleLikeButtonClick(e) {
+                e.preventDefault(); // Prevent the form from doing a full page reload
+
+                const currentForm = this; // 'this' is the form that was submitted
+                const url = currentForm.action;
+                const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: { 'RequestVerificationToken': token }
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            if (response.status === 401) alert("Precisa de iniciar sessão para gostar disto.");
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Update the UI
+                        const itemId = currentForm.getAttribute('data-like-form');
+                        const countSpan = document.querySelector(`span[data-like-count="${itemId}"]`);
+                        const button = currentForm.querySelector('button[type="submit"]');
+
+                        countSpan.textContent = data.count; // Update the like count number
+
+                        // Toggle the button's appearance
+                        if (button.classList.contains('btn-outline-secondary')) {
+                            button.classList.remove('btn-outline-secondary');
+                            button.classList.add('btn-primary');
+                        } else {
+                            button.classList.remove('btn-primary');
+                            button.classList.add('btn-outline-secondary');
+                        }
+                    })
+                    .catch(error => {
+                        if (error.message !== 'Unauthorized') {
+                            console.error('Error toggling like:', error);
+                        }
+                    });
+            }
+
+            // We need to attach the event listener to any like forms that are
+            // already on the page when it loads.
+            document.querySelectorAll('form[data-like-form]').forEach(form => {
+                form.addEventListener('submit', handleLikeButtonClick);
+            });
+
+            // IMPORTANT FOR TABS: When you switch tabs (e.g., from "Para Você" to "Amigos"),
+            // new like buttons are shown. The original event listeners won't work on them.
+            // We need to re-attach the listeners every time a tab becomes visible.
+            var tabElms = document.querySelectorAll('button[data-bs-toggle="tab"]');
+            tabElms.forEach(function(tabElm) {
+                tabElm.addEventListener('shown.bs.tab', function (event) {
+                    // Find any *new* like forms in the now-visible tab content
+                    // and attach the same click handler to them.
+                    document.querySelectorAll('form[data-like-form]').forEach(form => {
+                        // To prevent attaching multiple listeners, we remove it before adding it.
+                        form.removeEventListener('submit', handleLikeButtonClick);
+                        form.addEventListener('submit', handleLikeButtonClick);
+                    });
+                });
+            });
+
         });
     </script>
 }
