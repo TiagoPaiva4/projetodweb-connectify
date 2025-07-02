@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using projetodweb_connectify.Data;
 using projetodweb_connectify.Models;
 using projetodweb_connectify.Models.DTOs;
-using System;
+using System; // Adicionado para corrigir o erro 'Console' não existe.
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -15,7 +15,7 @@ namespace projetodweb_connectify.Controllers.API
 {
     [Route("api/topic-posts")]
     [ApiController]
-    [Authorize] 
+    [Authorize]
     public class TopicPostsApiController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -28,11 +28,11 @@ namespace projetodweb_connectify.Controllers.API
         }
 
         /// <summary>
-        /// Obtém todos os posts de um tópico específico.
+        /// Obtém todas as publicações de um tópico específico.
         /// </summary>
         /// <param name="topicId">O ID do tópico.</param>
         [HttpGet("by-topic/{topicId}")]
-        [AllowAnonymous] 
+        [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<TopicPostDto>>> GetPostsForTopic(int topicId)
         {
             var currentUserProfileId = await GetCurrentProfileIdAsync();
@@ -40,7 +40,7 @@ namespace projetodweb_connectify.Controllers.API
             var posts = await _context.TopicPosts
                 .Where(p => p.TopicId == topicId)
                 .Include(p => p.Profile).ThenInclude(pr => pr.User)
-                .Include(p => p.Likes) 
+                .Include(p => p.Likes)
                 .OrderBy(p => p.CreatedAt)
                 .Select(p => new TopicPostDto
                 {
@@ -49,7 +49,7 @@ namespace projetodweb_connectify.Controllers.API
                     PostImageUrl = p.PostImageUrl,
                     CreatedAt = p.CreatedAt,
                     LikesCount = p.Likes.Count,
-                    // Verifica se o utilizador atual (se houver) deu like neste post
+                    // Verifica se o utilizador atual (se houver) deu "gosto" nesta publicação.
                     IsLikedByCurrentUser = currentUserProfileId.HasValue && p.Likes.Any(l => l.ProfileId == currentUserProfileId.Value),
                     Author = new AuthorProfileDto
                     {
@@ -64,7 +64,7 @@ namespace projetodweb_connectify.Controllers.API
         }
 
         /// <summary>
-        /// Cria um novo post num tópico.
+        /// Cria uma nova publicação num tópico.
         /// </summary>
         [HttpPost]
         public async Task<ActionResult<TopicPostDto>> CreatePost([FromForm] TopicPostCreateDto createDto)
@@ -85,15 +85,16 @@ namespace projetodweb_connectify.Controllers.API
 
             if (createDto.PostImageFile != null)
             {
-                newPost.PostImageUrl = await SaveImage(createDto.PostImageFile);
+                newPost.PostImageUrl = await SaveImageAsync(createDto.PostImageFile);
             }
 
             _context.TopicPosts.Add(newPost);
             await _context.SaveChangesAsync();
 
-            // Carregar os dados do post recém-criado para retornar um DTO completo
+            // Carrega os dados da publicação recém-criada para retornar um DTO completo.
             var createdPostDto = await _context.TopicPosts
                 .Where(p => p.Id == newPost.Id)
+                .Include(p => p.Profile).ThenInclude(pr => pr.User)
                 .Select(p => new TopicPostDto
                 {
                     Id = p.Id,
@@ -115,31 +116,29 @@ namespace projetodweb_connectify.Controllers.API
         }
 
         /// <summary>
-        /// Atualiza um post existente.
+        /// Atualiza uma publicação existente.
         /// </summary>
-        /// <param name="id">O ID do post a editar.</param>
-        /// <param name="editDto">Os novos dados do post.</param>
+        /// <param name="id">O ID da publicação a editar.</param>
+        /// <param name="editDto">Os novos dados da publicação.</param>
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdatePost(int id, [FromForm] TopicPostEditDto editDto)
         {
             var postToUpdate = await _context.TopicPosts.FindAsync(id);
-            if (postToUpdate == null) return NotFound(new { message = "Post não encontrado." });
+            if (postToUpdate == null) return NotFound(new { message = "Publicação não encontrada." });
 
             var profileId = await GetCurrentProfileIdAsync();
-            if (postToUpdate.ProfileId != profileId)
+            // Apenas o autor da publicação ou um administrador podem editar.
+            if (postToUpdate.ProfileId != profileId && !User.IsInRole("Admin"))
             {
-                if (!User.IsInRole("Admin"))
-                {
-                    return Forbid(); // Utilizador não é o dono nem admin
-                }
+                return Forbid();
             }
 
             postToUpdate.Content = editDto.Content;
 
             if (editDto.PostImageFile != null)
             {
-                DeleteImage(postToUpdate.PostImageUrl); // Apaga a imagem antiga
-                postToUpdate.PostImageUrl = await SaveImage(editDto.PostImageFile); // Guarda a nova
+                DeleteImage(postToUpdate.PostImageUrl); // Apaga a imagem antiga.
+                postToUpdate.PostImageUrl = await SaveImageAsync(editDto.PostImageFile); // Guarda a nova.
             }
 
             _context.Entry(postToUpdate).State = EntityState.Modified;
@@ -149,9 +148,9 @@ namespace projetodweb_connectify.Controllers.API
         }
 
         /// <summary>
-        /// Apaga um post.
+        /// Apaga uma publicação.
         /// </summary>
-        /// <param name="id">O ID do post a apagar.</param>
+        /// <param name="id">O ID da publicação a apagar.</param>
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeletePost(int id)
         {
@@ -159,24 +158,25 @@ namespace projetodweb_connectify.Controllers.API
             if (postToDelete == null) return NotFound();
 
             var profileId = await GetCurrentProfileIdAsync();
+            // Apenas o autor da publicação ou um administrador podem apagar.
             if (postToDelete.ProfileId != profileId && !User.IsInRole("Admin"))
             {
                 return Forbid();
             }
 
-            // Guardar o caminho da imagem ANTES de apagar o registo
+            // Guarda o caminho da imagem antes de apagar o registo da BD.
             var imagePath = postToDelete.PostImageUrl;
 
             _context.TopicPosts.Remove(postToDelete);
             await _context.SaveChangesAsync();
 
-            // Apagar o ficheiro da imagem DEPOIS de a transação na BD ser bem-sucedida
+            // Apaga o ficheiro da imagem depois de a transação na BD ser bem-sucedida.
             DeleteImage(imagePath);
 
             return NoContent();
         }
 
-        #region Helper Methods
+        #region Métodos Auxiliares
         private async Task<int?> GetCurrentProfileIdAsync()
         {
             var username = User.Identity?.Name;
@@ -188,7 +188,7 @@ namespace projetodweb_connectify.Controllers.API
             return user?.Profile?.Id;
         }
 
-        private async Task<string> SaveImage(IFormFile imageFile)
+        private async Task<string> SaveImageAsync(IFormFile imageFile)
         {
             string uploadsFolder = Path.Combine(_env.WebRootPath, "images", "posts");
             if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
@@ -211,8 +211,15 @@ namespace projetodweb_connectify.Controllers.API
             string imagePath = Path.Combine(_env.WebRootPath, imageUrl.TrimStart('/'));
             if (System.IO.File.Exists(imagePath))
             {
-                try { System.IO.File.Delete(imagePath); }
-                catch (Exception ex) { Console.WriteLine($"Erro ao apagar imagem do post: {ex.Message}"); }
+                try
+                {
+                    System.IO.File.Delete(imagePath);
+                }
+                catch (Exception ex)
+                {
+                    // Numa aplicação real, seria ideal usar um logger aqui.
+                    Console.WriteLine($"Erro ao apagar imagem da publicação: {ex.Message}");
+                }
             }
         }
         #endregion

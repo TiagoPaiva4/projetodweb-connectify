@@ -1,15 +1,19 @@
-﻿@* File: Views/Shared/_TopicPostCard.cshtml *@
+﻿@* Ficheiro: Views/Shared/_TopicPostCard.cshtml *@
 @model projetodweb_connectify.Models.TopicPost
 @using Microsoft.AspNetCore.Identity
 @inject SignInManager<IdentityUser> SignInManager
 
 @{
-    // We need to get the logged-in user's profile ID from the main view's ViewBag.
+    // Obtém o ID do perfil do utilizador autenticado a partir do ViewBag da view principal.
     int? loggedInUserProfileId = ViewContext.ViewBag.CurrentUserProfileId as int?;
+
+    // Cria um identificador único para os elementos desta publicação no DOM.
+    // Isto é crucial para que o JavaScript possa encontrar o botão e o contador corretos.
+    var postIdentifier = $"post-feed-{Model.Id}";
 }
 
 <div class="card mb-3 shadow-sm topic-post-card">
-    <!-- Your original card header is perfect. No changes needed. -->
+    <!-- O cabeçalho do card permanece inalterado. -->
     <div class="card-header bg-light py-2">
         <div class="d-flex align-items-center">
             <a asp-controller="Profiles" asp-action="UserProfile" asp-route-identifier="@Model.Profile?.User?.Username" class="text-decoration-none">
@@ -31,13 +35,11 @@
         </div>
     </div>
 
-    <!-- ========================================================== -->
-    <!-- == START: CLICKABLE POST BODY (IMAGE AND TEXT)          == -->
-    <!-- ========================================================== -->
-    <a asp-controller="Topics" 
-       asp-action="Details" 
-       asp-route-id="@Model.TopicId" 
-       asp-fragment="post-@Model.Id" 
+    <!-- O corpo do card permanece inalterado. -->
+    <a asp-controller="Topics"
+       asp-action="Details"
+       asp-route-id="@Model.TopicId"
+       asp-fragment="post-@Model.Id"
        class="text-decoration-none text-dark">
 
         @if (!string.IsNullOrEmpty(Model.PostImageUrl))
@@ -48,68 +50,60 @@
             <p class="card-text">@Html.Raw(Model.Content?.Replace("\n", "<br />"))</p>
         </div>
     </a>
-    <!-- ========================================================== -->
-    <!-- == END: CLICKABLE POST BODY                             == -->
-    <!-- ========================================================== -->
 
+    <!-- Rodapé interativo do card - MODIFICADO PARA SIGNALR -->
+    <div class="card-footer bg-white d-flex text-center p-0">
 
-    <!-- ========================================================== -->
-    <!-- == START: NEW INTERACTIVE FOOTER                        == -->
-    <!-- ========================================================== -->
-    <div class="card-footer bg-white d-flex text-center p-0"> @* p-0 removes padding *@
-
-        <!-- AJAX LIKE BUTTON -->
-        <div class="flex-grow-1 border-end"> @* Use a border for a nice separator *@
+        <!-- BOTÃO DE GOSTO PARA SIGNALR -->
+        <div class="flex-grow-1 border-end">
             @if (SignInManager.IsSignedIn(User))
             {
-                <form asp-controller="Likes" asp-action="TogglePostLike" asp-route-id="@Model.Id" 
-                      data-like-form="@($"post-feed-{Model.Id}")" class="m-0">
-                    @{
-                        var hasLikedPost = Model.Likes.Any(l => l.ProfileId == loggedInUserProfileId);
-                    }
-                    <button type="submit" 
-                            class="btn btn-link text-decoration-none w-100 py-2 @(hasLikedPost ? "text-primary fw-bold" : "text-muted")">
-                        <i class="fas fa-thumbs-up"></i> 
-                        <span class="ms-1">Gosto</span> 
-                        <span class="ms-1 badge rounded-pill bg-secondary" data-like-count="@($"post-feed-{Model.Id}")">@Model.Likes.Count</span>
-                    </button>
-                </form>
+                var hasLikedPost = Model.Likes.Any(l => l.ProfileId == loggedInUserProfileId);
+
+                <button type="button"
+                        class="btn btn-link text-decoration-none w-100 py-2 signalr-like-button @(hasLikedPost ? "text-primary fw-bold" : "text-muted")"
+                        data-post-id="@Model.Id">
+                    <i class="fas fa-thumbs-up"></i>
+                    <span class="ms-1">Gosto</span>
+                    <!-- O contador de gostos tem um `id` único para ser encontrado pelo JS -->
+                    <span id="like-count-post-feed-@Model.Id" class="ms-1 badge rounded-pill bg-secondary">@Model.Likes.Count</span>
+                </button>
             }
             else
             {
+                // Para utilizadores não autenticados, o botão continua desativado.
                 <button class="btn btn-link text-decoration-none text-muted w-100 py-2" disabled>
-                    <i class="fas fa-thumbs-up"></i> 
+                    <i class="fas fa-thumbs-up"></i>
                     <span class="ms-1">Gosto</span>
                     <span class="ms-1 badge rounded-pill bg-secondary">@Model.Likes.Count</span>
                 </button>
             }
         </div>
 
-        <!-- COMMENT BUTTON (LINK) -->
+        <!-- O botão de comentar permanece inalterado. -->
         <div class="flex-grow-1">
-            <a asp-controller="Topics" 
-               asp-action="Details" 
-               asp-route-id="@Model.TopicId" 
-               asp-fragment="comment-form-@Model.Id" 
+            <a asp-controller="Topics"
+               asp-action="Details"
+               asp-route-id="@Model.TopicId"
+               asp-fragment="comment-form-@Model.Id"
                class="btn btn-link text-decoration-none text-muted w-100 py-2">
-                <i class="fas fa-comment"></i> 
+                <i class="fas fa-comment"></i>
                 <span class="ms-1">Comentar</span>
                 <span class="ms-1 badge rounded-pill bg-secondary">@Model.Comments.Count</span>
             </a>
         </div>
 
     </div>
-    <!-- ========================================================== -->
-    <!-- == END: NEW INTERACTIVE FOOTER                          == -->
-    <!-- ========================================================== -->
 </div>
 
-<!-- Your original style block is good to keep -->
+<!-- O estilo do card permanece inalterado. -->
 <style>
     .topic-post-card .card-header, .topic-post-card .card-footer {
         border-top: 1px solid rgba(0,0,0,.125);
     }
+
     .topic-post-card .card-text {
         white-space: pre-wrap; /* Para respeitar quebras de linha e espaços do conteúdo */
     }
 </style>
+
