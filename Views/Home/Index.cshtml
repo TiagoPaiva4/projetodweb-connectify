@@ -197,23 +197,52 @@
                 });
             }
 
-            // 5. Função que gere o clique no botão de "gosto".
-            function handleLikeClick(event) {
-                const button = this;
-                const postId = button.getAttribute('data-post-id');
+        // 5. Função que gere o clique no botão de "gosto" (VERSÃO ATUALIZADA)
+        function handleLikeClick(event) {
+            const button = this;
+            const postId = button.getAttribute('data-post-id');
 
-                button.classList.toggle('text-muted');
-                button.classList.toggle('text-primary');
-                button.classList.toggle('fw-bold');
+            // --- FEEDBACK VISUAL IMEDIATO ---
+            // Adiciona ou remove a classe 'active' do botão. O CSS fará o resto.
+            button.classList.toggle('active');
 
-                // Envia a informação para o Hub no servidor.
-                likesConnection.invoke("TogglePostLike", postId).catch(err => { // <-- Corresponde ao método no Hub
-                     console.error("Erro ao enviar 'gosto': ", err.toString());
-                     button.classList.toggle('text-muted');
-                     button.classList.toggle('text-primary');
-                     button.classList.toggle('fw-bold');
-                });
+            // --- ATUALIZAÇÃO OTIMISTA DO CONTADOR ---
+            const postIdentifier = `post-feed-${postId}`;
+            const countElement = document.getElementById(`like-count-${postIdentifier}`);
+            if (countElement) {
+                let currentCount = parseInt(countElement.textContent, 10);
+                // Se o botão agora está ativo, incrementamos. Senão, decrementamos.
+                if (button.classList.contains('active')) {
+                    currentCount++;
+                } else {
+                    currentCount--;
+                }
+                countElement.textContent = currentCount;
             }
+
+            // --- ENVIO DA AÇÃO PARA O SERVIDOR EM SEGUNDO PLANO ---
+            // A chamada para o servidor continua a mesma.
+            likesConnection.invoke("TogglePostLike", postId).catch(err => {
+                 console.error("Erro ao sincronizar 'gosto' com o servidor: ", err.toString());
+
+                 // --- LÓGICA DE REVERSÃO EM CASO DE ERRO ---
+                 // Se o envio falhar, revertemos o que fizemos no feedback otimista.
+                 button.classList.toggle('active'); // Desfaz a mudança de cor do botão.
+
+                 // Reverte a contagem
+                 if (countElement) {
+                     let revertedCount = parseInt(countElement.textContent, 10);
+                     if (button.classList.contains('active')) {
+                         revertedCount++;
+                     } else {
+                         revertedCount--;
+                     }
+                     countElement.textContent = revertedCount;
+                 }
+                 // Pode também mostrar uma mensagem de erro ao utilizador.
+                 alert("Não foi possível registar o seu 'gosto'. Tente novamente.");
+            });
+        }
 
             // Inicia a ligação do SignalR quando a página carrega.
             startLikesConnection();

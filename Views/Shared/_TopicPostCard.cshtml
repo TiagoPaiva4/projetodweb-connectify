@@ -1,109 +1,251 @@
-﻿@* Ficheiro: Views/Shared/_TopicPostCard.cshtml *@
+﻿@* Ficheiro: Views/Shared/_TopicPostCard.cshtml (Versão Final e Correta) *@
 @model projetodweb_connectify.Models.TopicPost
 @using Microsoft.AspNetCore.Identity
 @inject SignInManager<IdentityUser> SignInManager
 
 @{
-    // Obtém o ID do perfil do utilizador autenticado a partir do ViewBag da view principal.
     int? loggedInUserProfileId = ViewContext.ViewBag.CurrentUserProfileId as int?;
-
-    // Cria um identificador único para os elementos desta publicação no DOM.
-    // Isto é crucial para que o JavaScript possa encontrar o botão e o contador corretos.
-    var postIdentifier = $"post-feed-{Model.Id}";
 }
 
-<div class="card mb-3 shadow-sm topic-post-card">
-    <!-- O cabeçalho do card permanece inalterado. -->
-    <div class="card-header bg-light py-2">
-        <div class="d-flex align-items-center">
-            <a asp-controller="Profiles" asp-action="UserProfile" asp-route-identifier="@Model.Profile?.User?.Username" class="text-decoration-none">
-                <img src="@(Model.Profile?.ProfilePicture ?? "/images/defaultuser.png")" alt="Foto de @Model.Profile?.Name" class="rounded-circle me-2" style="width: 40px; height: 40px; object-fit: cover;">
+<div class="post-card-ig">
+    <!-- CABEÇALHO DO POST -->
+    <div class="post-header-ig">
+        <a asp-controller="Profiles" asp-action="UserProfile" asp-route-identifier="@Model.Profile?.User?.Username">
+            <img src="@(Model.Profile?.ProfilePicture ?? "/images/defaultuser.png")" alt="Foto de @Model.Profile?.Name" class="post-profile-pic-ig">
+        </a>
+        <div class="post-author-info-ig">
+            <a asp-controller="Profiles" asp-action="UserProfile" asp-route-identifier="@Model.Profile?.User?.Username" class="post-author-name-ig">
+                @(Model.Profile?.Name ?? Model.Profile?.User?.Username ?? "Utilizador Desconhecido")
             </a>
-            <div>
-                <a asp-controller="Profiles" asp-action="UserProfile" asp-route-identifier="@Model.Profile?.User?.Username" class="fw-bold text-dark text-decoration-none">
-                    @(Model.Profile?.Name ?? Model.Profile?.User?.Username ?? "Utilizador Desconhecido")
-                </a>
-                <small class="text-muted d-block">
-                    Publicado em <a asp-controller="Topics" asp-action="Details" asp-route-id="@Model.TopicId" class="text-decoration-none">@Model.Topic?.Title</a>
-                    @if (Model.Topic?.Category != null)
-                    {
-                        <span class="badge bg-secondary">@Model.Topic.Category.Name</span>
-                    }
-                    · @Model.CreatedAt.ToString("dd MMM yyyy 'às' HH:mm")
-                </small>
-            </div>
+            <span class="post-timestamp-ig">· @Model.CreatedAt.ToString("dd MMM")</span>
         </div>
     </div>
 
-    <!-- O corpo do card permanece inalterado. -->
-    <a asp-controller="Topics"
-       asp-action="Details"
-       asp-route-id="@Model.TopicId"
-       asp-fragment="post-@Model.Id"
-       class="text-decoration-none text-dark">
+    <!-- IMAGEM DO POST -->
+    @if (!string.IsNullOrEmpty(Model.PostImageUrl))
+    {
+        <img src="@Model.PostImageUrl" class="post-image-ig" alt="Imagem do post">
+    }
 
-        @if (!string.IsNullOrEmpty(Model.PostImageUrl))
-        {
-            <img src="@Model.PostImageUrl" class="card-img-top" alt="Imagem do post" style="max-height: 400px; object-fit: cover;">
-        }
-        <div class="card-body">
-            <p class="card-text">@Html.Raw(Model.Content?.Replace("\n", "<br />"))</p>
-        </div>
-    </a>
-
-    <!-- Rodapé interativo do card - MODIFICADO PARA SIGNALR -->
-    <div class="card-footer bg-white d-flex text-center p-0">
-
-        <!-- BOTÃO DE GOSTO PARA SIGNALR -->
-        <div class="flex-grow-1 border-end">
+    <!-- CORPO DO POST (AÇÕES, GOSTOS, LEGENDA) -->
+    <div class="post-content-ig">
+        <!-- BOTÕES DE AÇÃO -->
+        <div class="post-actions-ig">
             @if (SignInManager.IsSignedIn(User))
             {
                 var hasLikedPost = Model.Likes.Any(l => l.ProfileId == loggedInUserProfileId);
 
                 <button type="button"
-                        class="btn btn-link text-decoration-none w-100 py-2 signalr-like-button @(hasLikedPost ? "text-primary fw-bold" : "text-muted")"
+                        class="post-action-button-ig signalr-like-button @(hasLikedPost ? "active" : "")"
                         data-post-id="@Model.Id">
-                    <i class="fas fa-thumbs-up"></i>
-                    <span class="ms-1">Gosto</span>
-                    <!-- O contador de gostos tem um `id` único para ser encontrado pelo JS -->
-                    <span id="like-count-post-feed-@Model.Id" class="ms-1 badge rounded-pill bg-secondary">@Model.Likes.Count</span>
+                    <i class="far fa-heart"></i> <!-- Vazio (por defeito) -->
+                    <i class="fas fa-heart"></i> <!-- Cheio (quando 'active') -->
                 </button>
             }
             else
             {
-                // Para utilizadores não autenticados, o botão continua desativado.
-                <button class="btn btn-link text-decoration-none text-muted w-100 py-2" disabled>
-                    <i class="fas fa-thumbs-up"></i>
-                    <span class="ms-1">Gosto</span>
-                    <span class="ms-1 badge rounded-pill bg-secondary">@Model.Likes.Count</span>
-                </button>
+                <button class="post-action-button-ig" disabled><i class="far fa-heart"></i></button>
             }
-        </div>
 
-        <!-- O botão de comentar permanece inalterado. -->
-        <div class="flex-grow-1">
             <a asp-controller="Topics"
                asp-action="Details"
                asp-route-id="@Model.TopicId"
                asp-fragment="comment-form-@Model.Id"
-               class="btn btn-link text-decoration-none text-muted w-100 py-2">
-                <i class="fas fa-comment"></i>
-                <span class="ms-1">Comentar</span>
-                <span class="ms-1 badge rounded-pill bg-secondary">@Model.Comments.Count</span>
+               class="post-action-button-ig">
+                <i class="far fa-comment"></i>
             </a>
+
         </div>
 
+        <!-- CONTADOR DE GOSTOS -->
+        <div class="post-likes-ig">
+            <span id="like-count-post-feed-@Model.Id">@Model.Likes.Count</span> gostos
+        </div>
+
+        <!-- LEGENDA DO POST -->
+        <div class="post-caption-ig">
+            <a asp-controller="Profiles" asp-action="UserProfile" asp-route-identifier="@Model.Profile?.User?.Username" class="post-author-name-ig">
+                @(Model.Profile?.Name ?? Model.Profile?.User?.Username)
+            </a>
+            <span>@Html.Raw(Model.Content?.Replace("\n", "<br />"))</span>
+        </div>
+
+        <!-- COMENTÁRIOS -->
+        <div class="post-comments-summary-ig">
+            <a asp-controller="Topics"
+               asp-action="Details"
+               asp-route-id="@Model.TopicId"
+               asp-fragment="post-@Model.Id">
+                @if (Model.Comments.Count > 0)
+                {
+                    <span>Ver todos os @Model.Comments.Count comentários</span>
+                }
+                else
+                {
+                    <span>Adicionar um comentário...</span>
+                }
+            </a>
+        </div>
     </div>
 </div>
 
-<!-- O estilo do card permanece inalterado. -->
+
+<!-- ESTILOS PARA O NOVO CARD -->
 <style>
-    .topic-post-card .card-header, .topic-post-card .card-footer {
-        border-top: 1px solid rgba(0,0,0,.125);
+    :root {
+        --color-primary-dark: #1D3461;
+        --color-primary-medium: #376996;
+        --color-border: #dbdbdb;
+        --color-text-primary: #262626;
+        --color-text-secondary: #8e8e8e;
     }
 
-    .topic-post-card .card-text {
-        white-space: pre-wrap; /* Para respeitar quebras de linha e espaços do conteúdo */
+    .post-card-ig {
+        background-color: #fff;
+        border: 1px solid var(--color-border);
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    .post-header-ig, .post-content-ig, .post-actions-ig, .post-likes-ig, .post-caption-ig, .post-comments-summary-ig {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    .post-header-ig {
+        padding-top: 12px;
+        padding-bottom: 12px;
+        display: flex;
+        align-items: center;
+    }
+
+    .post-content-ig {
+        padding-top: 0;
+        padding-bottom: 12px;
+    }
+
+    .post-actions-ig {
+        padding-top: 8px;
+        padding-bottom: 8px;
+        padding-left: 0;
+        padding-right: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .post-likes-ig {
+        padding-left: 0;
+        padding-right: 0;
+        margin-bottom: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--color-text-primary);
+    }
+
+    .post-caption-ig {
+        padding-left: 0;
+        padding-right: 0;
+        font-size: 14px;
+        color: var(--color-text-primary);
+        line-height: 1.4;
+    }
+
+    .post-comments-summary-ig {
+        padding-left: 0;
+        padding-right: 0;
+        font-size: 14px;
+        color: var(--color-text-secondary);
+        margin-top: 8px;
+    }
+
+    .post-profile-pic-ig {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 12px;
+    }
+
+    .post-author-name-ig {
+        font-weight: 600;
+        font-size: 14px;
+        color: var(--color-text-primary);
+        text-decoration: none;
+    }
+
+        .post-author-name-ig:hover {
+            text-decoration: underline;
+        }
+
+    .post-timestamp-ig {
+        color: var(--color-text-secondary);
+        font-size: 13px;
+    }
+
+    .post-image-ig {
+        width: 100%;
+        height: auto;
+        object-fit: cover;
+        border-top: 1px solid var(--color-border);
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    .post-action-button-ig {
+        background: none;
+        border: none;
+        padding: 0;
+        margin-right: 16px;
+        cursor: pointer;
+        color: var(--color-text-primary);
+        font-size: 24px;
+        position: relative;
+        width: 24px;
+        height: 24px;
+    }
+
+        .post-action-button-ig:hover i {
+            color: var(--color-text-secondary);
+        }
+
+        .post-action-button-ig i {
+            transition: transform 0.2s ease-in-out, opacity 0.2s ease-in-out;
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+
+        .post-action-button-ig .fas.fa-heart {
+            opacity: 0;
+            transform: scale(0);
+            color: var(--color-primary-medium);
+        }
+
+        .post-action-button-ig .far.fa-heart {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .post-action-button-ig.active .fas.fa-heart {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .post-action-button-ig.active .far.fa-heart {
+            opacity: 0;
+            transform: scale(0);
+        }
+
+    .post-caption-ig .post-author-name-ig {
+        margin-right: 5px;
+    }
+
+    .post-caption-ig span {
+        font-weight: 400;
+    }
+
+    .post-comments-summary-ig a {
+        color: inherit;
+        text-decoration: none;
     }
 </style>
-
