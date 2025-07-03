@@ -8,13 +8,15 @@
 }
 
 <div class="post-card-ig">
-    <!-- CABEÇALHO DO POST -->
+    <!-- CABEÇALHO DO POST (COM LINKS ATUALIZADOS) -->
     <div class="post-header-ig">
-        <a asp-controller="Profiles" asp-action="UserProfile" asp-route-identifier="@Model.Profile?.User?.Username">
+        <!-- Link na imagem do perfil -->
+        <a href="/profile/@Model.Profile?.User?.Username" class="text-decoration-none">
             <img src="@(Model.Profile?.ProfilePicture ?? "/images/defaultuser.png")" alt="Foto de @Model.Profile?.Name" class="post-profile-pic-ig">
         </a>
         <div class="post-author-info-ig">
-            <a asp-controller="Profiles" asp-action="UserProfile" asp-route-identifier="@Model.Profile?.User?.Username" class="post-author-name-ig">
+            <!-- Link no nome do autor -->
+            <a href="/profile/@Model.Profile?.User?.Username" class="post-author-name-ig">
                 @(Model.Profile?.Name ?? Model.Profile?.User?.Username ?? "Utilizador Desconhecido")
             </a>
             <span class="post-timestamp-ig">· @Model.CreatedAt.ToString("dd MMM")</span>

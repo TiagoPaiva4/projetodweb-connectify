@@ -283,7 +283,6 @@
 }
 
 <style>
-    /* O bloco de estilos permanece o mesmo, não precisa de ser alterado. */
     :root {
         --color-primary-dark: #1D3461;
         --color-primary-medium: #376996;
@@ -300,5 +299,91 @@
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     }
 
-    /* ... resto do CSS ... */
+    .welcome-icon {
+        max-width: 60px;
+        margin-bottom: 1rem;
+    }
+
+    .welcome-title {
+        font-weight: 600;
+        color: var(--color-primary-dark);
+        margin-bottom: 0.5rem;
+    }
+
+    .welcome-text {
+        font-size: 1.1rem;
+        color: var(--color-primary-medium);
+        margin-bottom: 0;
+    }
+
+        .welcome-text a {
+            color: var(--color-primary-dark);
+            font-weight: 600;
+            text-decoration: underline;
+        }
+
+            .welcome-text a:hover {
+                color: var(--color-primary-medium);
+            }
+
+    .section-title {
+        color: var(--color-primary-dark);
+        font-weight: 600;
+    }
+
+    .nav-tabs .nav-link {
+        color: #6c757d;
+        border: none;
+        border-bottom: 2px solid transparent;
+    }
+
+        .nav-tabs .nav-link.active,
+        .nav-tabs .nav-item.show .nav-link {
+            color: var(--color-primary-medium);
+            border-color: var(--color-primary-medium);
+            background-color: transparent;
+            font-weight: 600;
+        }
+
+    .btn-primary-custom {
+        background-color: var(--color-primary-medium);
+        border-color: var(--color-primary-medium);
+        color: #fff;
+    }
+
+        .btn-primary-custom:hover {
+            background-color: var(--color-primary-dark);
+            border-color: var(--color-primary-dark);
+            color: #fff;
+        }
+
+    .post-card {
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+    }
+
+    .empty-state {
+        background-color: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+    }
+
+    .like-button {
+        width: 38px;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .sidebar-section {
+        border: 1px solid #e9ecef;
+    }
+
+    .sidebar-item-hover {
+        padding: 8px;
+        border-radius: 6px;
+        transition: background-color 0.2s ease-in-out;
+    }
+
+        .sidebar-item-hover:hover {
+            background-color: #f8f9fa;
+        }
 </style>

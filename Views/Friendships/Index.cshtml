@@ -40,11 +40,11 @@
                     var requester = request.User1; // User1 é quem enviou o pedido
                     <div class="list-group-item pending-request-item">
                         <div class="d-flex align-items-center flex-grow-1">
-                            <a asp-controller="Profiles" asp-action="UserProfile" asp-route-identifier="@requester.Username">
+                            <a href="/profile/@requester.Username">
                                 <img src="@(requester.Profile?.ProfilePicture ?? "/images/defaultuser.png")" alt="Foto de @requester.Username" class="profile-pic me-3" />
                             </a>
                             <div>
-                                <a asp-controller="Profiles" asp-action="UserProfile" asp-route-identifier="@requester.Username" class="user-name-link">
+                                <a href="/profile/@requester.Username" class="user-name-link">
                                     @(requester.Profile?.Name ?? requester.Username)
                                 </a>
                                 <div class="text-muted small">Pedido enviado em: @request.RequestDate.ToString("dd/MM/yyyy 'às' HH:mm")</div>
@@ -92,12 +92,12 @@
 
                     <div class="col">
                         <div class="card h-100 friend-card">
-                            <a asp-controller="Profiles" asp-action="UserProfile" asp-route-identifier="@friendUser.Username">
+                            <a href="/profile/@friendUser.Username">
                                 <img src="@(friendUser.Profile?.ProfilePicture ?? "/images/defaultuser.png")" class="card-img-top" alt="Foto de @(friendUser.Profile?.Name ?? friendUser.Username)">
                             </a>
                             <div class="card-body text-center">
                                 <h5 class="card-title">
-                                    <a asp-controller="Profiles" asp-action="UserProfile" asp-route-identifier="@friendUser.Username" class="user-name-link">
+                                    <a href="/profile/@friendUser.Username" class="user-name-link">
                                         @(friendUser.Profile?.Name ?? friendUser.Username)
                                     </a>
                                 </h5>

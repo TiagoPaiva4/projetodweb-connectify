@@ -81,6 +81,7 @@ builder.Services.AddSwaggerGen(options =>
     options.IncludeXmlComments(xmlPath);
 });
 
+
 // --- CONFIGURAÇÃO DA APLICAÇÃO (MIDDLEWARE PIPELINE) ---
 
 var app = builder.Build();
@@ -113,6 +114,7 @@ app.UseAuthorization();
 
 // Mapeia o Hub do SignalR para o seu endpoint específico.
 app.MapHub<LikesHub>("/likesHub");
+app.MapHub<ChatHub>("/chatHub");
 
 // Rota para a área de Administração.
 app.MapControllerRoute(

@@ -218,17 +218,60 @@
 }
 
 @section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"
+            integrity="sha512-7SRCYIJtR6F8ocwW7UxW6wGKqbSyqREDbfCORCbGLatU0iugBLwyOXpzhkPyHIFdBO0K2VCu57fvP2Twgx1o2A=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script>
         $(document).ready(function () {
             const chatViewTarget = $('#chatViewTarget');
-            const placeholderHtml = chatViewTarget.html();
+            const currentUserId = @(currentUserId.HasValue ? currentUserId.Value.ToString() : "null");
+            let activeOtherUserId = @(initialChatOtherUserId.HasValue ? initialChatOtherUserId.Value.ToString() : "null");
 
+            // =======================================================
+            // 1. CONFIGURAÇÃO DO SIGNALR
+            // =======================================================
+            const chatConnection = new signalR.HubConnectionBuilder()
+                .withUrl("/chatHub") // O URL que mapeámos no Program.cs
+                .configureLogging(signalR.LogLevel.Information)
+                .build();
+
+            // 2. OUVIR POR NOVAS MENSAGENS DO SERVIDOR
+            chatConnection.on("ReceiveMessage", function (message) {
+                // Verificar se a janela de chat correta está aberta
+                const messageIsForActiveChat = (message.senderId === currentUserId && activeOtherUserId === message.recipientId) ||
+                                               (message.senderId === activeOtherUserId && activeOtherUserId === message.senderId);
+
+                // No futuro, se a janela não estiver ativa, pode-se mostrar uma notificação aqui.
+                // Por agora, só adicionamos a mensagem se o chat estiver ativo.
+                if (activeOtherUserId && message.senderId !== currentUserId) {
+                     appendMessageToChat(message);
+                }
+            });
+
+            // 3. INICIAR A LIGAÇÃO SIGNALR
+            async function startChatConnection() {
+                try {
+                    await chatConnection.start();
+                    console.log("SignalR Ligado ao ChatHub.");
+                } catch (err) {
+                    console.error("Falha na ligação SignalR: ", err);
+                    setTimeout(startChatConnection, 5000); // Tenta reconectar em 5 segundos
+                }
+            }
+            startChatConnection();
+
+
+            // =======================================================
+            // LÓGICA EXISTENTE (COM AJUSTES)
+            // =======================================================
+
+            // Função para carregar um chat (continua a usar AJAX para o carregamento inicial)
             function loadChat(otherUserId) {
+                activeOtherUserId = otherUserId; // Guarda o ID do utilizador com quem estamos a falar
                 $('.conversation-item').removeClass('active');
                 $(`.conversation-item[data-otheruserid='${otherUserId}']`).addClass('active');
 
                 chatViewTarget.html('<div class="d-flex justify-content-center align-items-center h-100"><div class="spinner-border text-primary" role="status"></div></div>');
-
                 const chatUrl = '@Url.Action("ChatPartial", "Messages")' + '?otherUserId=' + otherUserId;
 
                 $.ajax({
@@ -236,10 +279,7 @@
                     type: 'GET',
                     success: function (response) {
                         chatViewTarget.html(response);
-                        const chatMessagesArea = chatViewTarget.find('.chat-messages-partial');
-                        if (chatMessagesArea.length) {
-                            chatMessagesArea.scrollTop(chatMessagesArea[0].scrollHeight);
-                        }
+                        scrollToBottom();
                     },
                     error: function () {
                         chatViewTarget.html('<div class="alert alert-danger m-3">Erro ao carregar a conversa.</div>');
@@ -247,36 +287,82 @@
                 });
             }
 
+            // Ação de clicar numa conversa na lista
             $('.conversation-item').on('click', function (e) {
                 e.preventDefault();
                 const otherUserId = $(this).data('otheruserid');
                 loadChat(otherUserId);
             });
 
-            const initialOtherUserId = @(initialChatOtherUserId.HasValue ? initialChatOtherUserId.Value.ToString() : "null");
-            if (initialOtherUserId) {
-                loadChat(initialOtherUserId);
+            // Carregar o chat inicial (se houver)
+            if (activeOtherUserId) {
+                loadChat(activeOtherUserId);
             }
 
-            $(document).on('submit', '#chatInputFormAjax', function(e){
+            // =======================================================
+            // 4. SUBMISSÃO DO FORMULÁRIO COM SIGNALR (A GRANDE MUDANÇA)
+            // =======================================================
+            $(document).on('submit', '#chatInputFormAjax', function (e) {
                 e.preventDefault();
                 var form = $(this);
-                var messageContent = form.find('textarea[name="messageContent"]').val();
-                if (!messageContent.trim()) return;
+                var messageContentInput = form.find('textarea[name="messageContent"]');
+                var messageContent = messageContentInput.val();
+                var recipientUserId = form.find('input[name="recipientUserId"]').val();
 
-                $.ajax({
-                    url: form.attr('action'),
-                    type: 'POST',
-                    data: form.serialize(),
-                    success: function(){
-                        var otherUserId = form.find('input[name="recipientUserId"]').val();
-                        loadChat(otherUserId); // Recarrega o chat para mostrar a nova mensagem
-                    },
-                    error: function(){
-                        alert("Erro ao enviar mensagem.");
-                    }
-                });
+                if (!messageContent.trim() || !recipientUserId) return;
+
+                // Em vez de AJAX, invocamos o método do Hub
+                chatConnection.invoke("SendMessage", recipientUserId, messageContent)
+                    .then(() => {
+                        // A mensagem será recebida pelo "ReceiveMessage", mas podemos adicionar a nossa própria
+                        // mensagem imediatamente para um feedback ainda mais rápido (atualização otimista).
+                        const optimisticMessage = {
+                            content: messageContent,
+                            sentAt: new Date(),
+                            senderId: currentUserId
+                        };
+                        appendMessageToChat(optimisticMessage);
+                        messageContentInput.val(''); // Limpa o campo de texto
+                        messageContentInput.focus();
+                    })
+                    .catch(err => console.error("Erro ao enviar mensagem via SignalR:", err.toString()));
             });
+
+
+            // =======================================================
+            // FUNÇÕES AUXILIARES DE UI
+            // =======================================================
+
+            function appendMessageToChat(message) {
+                const chatMessagesArea = chatViewTarget.find('.chat-messages-partial');
+                if (!chatMessagesArea.length) return; // Não faz nada se o chat não estiver carregado
+
+                // Remove o placeholder "Envie a primeira mensagem!" se existir
+                chatMessagesArea.find('.text-center.text-muted').remove();
+
+                const isSentByMe = message.senderId === currentUserId;
+                const bubbleClass = isSentByMe ? "sent" : "received";
+                const time = new Date(message.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                // Sanitiza o conteúdo para prevenir XSS
+                const sanitizedContent = $('<div/>').text(message.content).html().replace(/\n/g, '<br />');
+
+                const messageHtml = `
+                    <div class="message-bubble ${bubbleClass}">
+                        ${sanitizedContent}
+                        <div class="timestamp">${time}</div>
+                    </div>`;
+
+                chatMessagesArea.append(messageHtml);
+                scrollToBottom();
+            }
+
+            function scrollToBottom() {
+                const chatMessagesArea = chatViewTarget.find('.chat-messages-partial');
+                if (chatMessagesArea.length) {
+                    chatMessagesArea.scrollTop(chatMessagesArea[0].scrollHeight);
+                }
+            }
         });
     </script>
 }
